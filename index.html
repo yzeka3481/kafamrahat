@@ -12,8 +12,7 @@
 
     <style>
         body {
-            /* Daha yumuşak, göz yormayan arka plan */
-            background: #e5e7eb; /* slate-200 tonunda */
+            background: #e5e7eb; /* yumuşak gri */
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
         .card {
@@ -21,9 +20,8 @@
                 0 8px 12px -4px rgba(15, 23, 42, 0.06),
                 0 2px 4px -2px rgba(15, 23, 42, 0.04);
         }
-        /* Saf beyaz yerine kırık beyaz kullan */
         .bg-white {
-            background-color: #fdfcf7 !important;
+            background-color: #fdfcf7 !important; /* kırık beyaz */
         }
     </style>
 </head>
@@ -63,7 +61,7 @@
                     id="brainDump"
                     rows="3"
                     class="w-full border border-slate-200 rounded-xl text-sm p-3 mb-3 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent bg-slate-50"
-                    placeholder="Akşam eve giderken süt al. Ali'nin spor çantasını hazırla, dişçiyi ara ve çöpü çıkar..."
+                    placeholder="Yarın 19.30'da süt al. Bugün 21:00 Ali'nin spor çantasını hazırla ve çöpü çıkar..."
                 ></textarea>
 
                 <div class="flex items-center justify-between gap-3">
@@ -83,8 +81,8 @@
 
                 <p class="mt-2 text-[11px] text-slate-400">
                     İpucu: Cümleleri <span class="font-semibold">virgül</span>, <span class="font-semibold">nokta</span>,
-                    <span class="font-semibold">satır sonu (Enter)</span> veya <span class="font-semibold">"ve"</span> ile ayırırsan
-                    tek tek görev oluşturmaya çalışır.
+                    <span class="font-semibold">satır sonu (Enter)</span> ile ayırabilirsin. <br>
+                    Zaman yakalama örnekleri: <span class="font-semibold">"bugün 19:30"</span>, <span class="font-semibold">"yarın 07.00"</span>.
                 </p>
             </section>
 
@@ -223,7 +221,7 @@
                     🔔 Test bildirimi gönder
                 </button>
                 <p class="mt-2 text-[11px] text-slate-400">
-                    Not: Bu sadece uygulama açıkkken ve tarayıcı izin veriyorsa çalışır.
+                    Not: Zamanlı bildirimler şu an sadece uygulama açıkkken çalışır ve tarayıcıdan izin alman gerekir.
                 </p>
             </section>
         </div>
@@ -320,9 +318,9 @@
 
     function applyTheme() {
         if (settings.theme === 'soft') {
-            document.body.style.background = '#e0f2fe'; // soft mavi (sky-100)
+            document.body.style.background = '#e0f2fe'; // soft mavi
         } else {
-            document.body.style.background = '#e5e7eb'; // varsayılan yumuşak gri
+            document.body.style.background = '#e5e7eb'; // varsayılan gri
         }
     }
 
@@ -354,10 +352,8 @@
     // Metni akıllıca parçalara böl
     function splitIntoParts(text) {
         if (!text) return [];
-        // Önce satır sonu, nokta, ünlem, soru, noktalı virgül ve virgüllere göre böl
-        let parts = text.split(/[\n\.!?;]+|,(?!\d)/);
+        let parts = text.split(/[\n\.!?;]+|,(?!\d)/); // satır, nokta, ünlem, soru, noktalı virgül, virgül
 
-        // Eğer her şey tek parçaysa ve içinde " ve " geçiyorsa, "ve" ile bölmeyi dene
         if (parts.length === 1) {
             const veSplit = text.split(/\s+ve\s+/i);
             if (veSplit.length > 1) {
@@ -368,6 +364,85 @@
         return parts
             .map(p => p.trim())
             .filter(p => p.length > 0);
+    }
+
+    // Metinden tarih-saat çıkar (bugün/yarın + hh:mm veya hh.mm)
+    function parseDateTimeFromText(text) {
+        const lower = text.toLowerCase();
+        const now = new Date();
+        let dateObj = new Date(now.getTime());
+        let hasDay = false;
+        let hasTime = false;
+        let dayLabel = null;
+
+        if (lower.includes('yarın')) {
+            dateObj.setDate(dateObj.getDate() + 1);
+            hasDay = true;
+            dayLabel = 'Yarın';
+        } else if (lower.includes('bugün')) {
+            hasDay = true;
+            dayLabel = 'Bugün';
+        }
+
+        const timeMatch = lower.match(/(\d{1,2})[.:](\d{2})/);
+        if (timeMatch) {
+            const h = parseInt(timeMatch[1], 10);
+            const m = parseInt(timeMatch[2], 10);
+            if (h >= 0 && h < 24 && m >= 0 && m < 60) {
+                dateObj.setHours(h, m, 0, 0);
+                hasTime = true;
+            }
+        }
+
+        // Saat var ama gün yoksa varsayılan: bugün
+        if (hasTime && !hasDay) {
+            dayLabel = 'Bugün';
+        }
+
+        if (!hasDay && !hasTime) {
+            return { date: null, label: null };
+        }
+
+        // Saat belirtilmişse ve geçmiş saatse, yarına at
+        if (hasTime) {
+            if (dateObj.getTime() <= now.getTime()) {
+                if (!lower.includes('yarın') && !lower.includes('bugün')) {
+                    dateObj.setDate(dateObj.getDate() + 1);
+                    if (!dayLabel) dayLabel = 'Yarın';
+                }
+            }
+        }
+
+        const dd = dateObj;
+        const hh = String(dd.getHours()).padStart(2, '0');
+        const mm = String(dd.getMinutes()).padStart(2, '0');
+
+        let label = '';
+        if (dayLabel) label += dayLabel;
+        if (hasTime) label += (label ? ' ' : '') + hh + ':' + mm;
+        if (!label) label = 'Zaman ayarlı';
+
+        // Eğer sadece gün var, saat yoksa, bildirimi kurmayacağız ama label gösteriyoruz
+        return { date: hasTime ? dateObj : null, label };
+    }
+
+    // Zamanlı görev için (uygulama açıkkken) local notification
+    function scheduleLocalNotificationForTask(task) {
+        if (!("Notification" in window)) return;
+        if (Notification.permission !== "granted") return;
+        if (!task.scheduledAt || typeof task.scheduledAt.getTime !== "function") return;
+
+        const now = Date.now();
+        const diff = task.scheduledAt.getTime() - now;
+
+        // Geçmiş veya çok uzak (24 saatten fazla) ise kurma
+        if (diff <= 0 || diff > 24 * 60 * 60 * 1000) return;
+
+        setTimeout(() => {
+            new Notification("Kafam Rahat", {
+                body: "Hatırlatma: " + task.text
+            });
+        }, diff);
     }
 
     // Özet ekranını güncelle
@@ -427,7 +502,6 @@
             summaryCommentEl.textContent =
                 'Görev eklemeye başladığında burada haftalık yorumun görünecek.';
         } else {
-            // En çok hangi alan kullanılmış?
             let topCat = null;
             let topCount = 0;
             Object.keys(counts).forEach(label => {
@@ -478,7 +552,7 @@
             title.textContent = task.text;
 
             const meta = document.createElement('div');
-            meta.className = 'mt-1 flex items-center gap-2 text-[11px] text-slate-500';
+            meta.className = 'mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500';
 
             const cat = document.createElement('span');
             cat.textContent = task.category.label;
@@ -489,6 +563,13 @@
 
             meta.appendChild(cat);
             meta.appendChild(duration);
+
+            if (task.scheduledLabel) {
+                const timeBadge = document.createElement('span');
+                timeBadge.className = 'px-2 py-[2px] rounded-full bg-sky-50 text-[10px] flex items-center gap-1 text-slate-600';
+                timeBadge.textContent = '⏰ ' + task.scheduledLabel;
+                meta.appendChild(timeBadge);
+            }
 
             const actions = document.createElement('div');
             actions.className = 'mt-2 flex items-center gap-2 text-[11px]';
@@ -542,12 +623,22 @@
             if (len < 25) durationLabel = '2 dk';
             else if (len > 60) durationLabel = '15 dk+';
 
-            tasks.push({
+            const parsed = parseDateTimeFromText(t);
+
+            const task = {
                 text: t,
                 category,
                 durationLabel,
-                createdAt: new Date().toISOString()
-            });
+                createdAt: new Date().toISOString(),
+                scheduledAt: parsed.date,
+                scheduledLabel: parsed.label
+            };
+
+            tasks.push(task);
+            // Zamanı net olanlar için (uygulama açıkkken) local notification
+            if (task.scheduledAt) {
+                scheduleLocalNotificationForTask(task);
+            }
         });
 
         renderTasks();
@@ -673,7 +764,7 @@
 
     // Başlangıçta örnek görev ekle
     if (settings.sampleTasks) {
-        addTasksFromText("Eve giderken süt al. Ali'nin spor çantasını hazırla ve dişçiyi ara");
+        addTasksFromText("Yarın 19.30'da süt al. Ali'nin spor çantasını hazırla ve bugün 21:00 dişçiyi ara");
     } else {
         renderTasks();
     }
