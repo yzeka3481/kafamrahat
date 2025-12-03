@@ -28,19 +28,26 @@ self.addEventListener("fetch", event => {
   );
 });
 
-// Push geldiğinde bildirim göster (sunucu tarafı push gerektirir)
+// Push geldiğinde bildirim göster
 self.addEventListener("push", event => {
-  const data = event.data ? event.data.json() : {};
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { title: "Kafam Rahat", body: "Yeni bir hatırlatman var." };
+  }
+
   const title = data.title || "Kafam Rahat";
   const options = {
     body: data.body || "Yeni bir hatırlatman var.",
     icon: "/kafamrahat/icon-192.png",
     badge: "/kafamrahat/icon-192.png"
   };
+
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-// Bildirime tıklama (örnek)
+// Bildirime tıklama
 self.addEventListener("notificationclick", event => {
   event.notification.close();
   event.waitUntil(
