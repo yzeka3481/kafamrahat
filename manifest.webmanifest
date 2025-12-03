@@ -1,0 +1,22 @@
+{
+  "name": "Kafam Rahat",
+  "short_name": "Kafam Rahat",
+  "description": "Zihinsel yük asistanı",
+  "start_url": "/kafamrahat/",
+  "scope": "/kafamrahat/",
+  "display": "standalone",
+  "background_color": "#e5e7eb",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "/kafamrahat/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/kafamrahat/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
