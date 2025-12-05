@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seyahat Cüzdanı - Tüm Ekranlar (Tek Sayfa)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-50">
+  <div class="max-w-md mx-auto min-h-screen flex flex-col">
+    <!-- EKRANLAR KONTEYNERİ -->
+    <div id="screens" class="flex-1 flex flex-col">
+      <!-- ÖZET / ANA SAYFA -->
+      <section id="screen-summary" class="screen active flex-1 flex flex-col">
+        <!-- ÜST BAR + HERO -->
+        <header class="pt-8 px-4 pb-4 bg-gradient-to-b from-slate-900 to-slate-950">
+          <!-- Uygulama başlığı + tema seçici -->
+          <div class="flex items-start justify-between mb-5">
+            <div class="flex items-center gap-3">
+              <!-- Logo -->
+              <div class="w-10 h-10 rounded-2xl bg-sky-500/15 border border-sky-400/40 flex items-center justify-center shadow-sm">
+                <span class="text-xl">🧳</span>
+              </div>
+              <div>
+                <h1 class="text-lg font-semibold tracking-tight">Seyahat Cüzdanı</h1>
+                <p class="text-[11px] text-slate-400">Tüm yolculukların tek ekranda</p>
+              </div>
+            </div>
+
+            <!-- Tema seçici (görsel) -->
+            <button class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-700 text-[10px] text-slate-300">
+              <span class="flex items-center gap-1">
+                <span class="text-[13px]">🌙</span>
+                <span>Koyu</span>
+              </span>
+              <span class="w-8 h-4 rounded-full bg-slate-800 flex items-center px-0.5">
+                <span class="w-3 h-3 rounded-full bg-sky-400 shadow"></span>
+              </span>
+            </button>
+          </div>
+
+          <!-- HERO KART -->
+          <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500 via-cyan-400 to-emerald-400 px-4 py-4 shadow-xl">
+            <div class="flex items-start justify-between mb-4">
+              <div class="space-y-1">
+                <p class="text-[11px] tracking-[0.18em] uppercase text-slate-900/70 font-semibold">
+                  BALKANLAR YAZ ROTASI
+                </p>
+                <p class="text-sm font-semibold text-slate-950 flex items-center gap-1.5">
+                  <span class="text-[13px]">📍</span>
+                  Budva, Karadağ
+                </p>
+                <p class="text-[11px] text-slate-900/80 flex items-center gap-1.5">
+                  <span class="text-[12px]">🛣️</span>
+                  Başlangıçtan beri: <span class="font-semibold text-slate-950">1.240 km</span>
+                </p>
+              </div>
+
+              <div class="text-right">
+                <div class="inline-flex flex-col items-end rounded-2xl bg-slate-900/10 border border-white/50 px-3 py-2">
+                  <span class="text-[10px] uppercase tracking-[0.16em] text-slate-900/70 font-semibold">
+                    Toplam Harcama
+                  </span>
+                  <span class="text-base leading-none font-bold text-slate-950">
+                    32.450 ₺
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] text-slate-900/80 mt-1">
+              <div class="flex items-center gap-2">
+                <span class="text-[12px]">🕒</span>
+                <span>04–13 Ağustos 2025</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Aktif seyahat</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- ANA İÇERİK -->
+        <main class="flex-1 bg-slate-950 px-4 pb-20 pt-4 space-y-4">
+          <!-- Özet kartları -->
+          <section class="grid grid-cols-2 gap-3">
+            <div class="rounded-2xl bg-slate-900/80 border border-slate-800 px-3 py-3 flex flex-col justify-between">
+              <div>
+                <p class="text-[10px] text-slate-400 mb-1.5">Bugünün harcaması</p>
+                <p class="text-lg font-semibold leading-none">1.240 ₺</p>
+              </div>
+              <p class="text-[10px] text-emerald-400 mt-2">
+                +3 yeni kayıt
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-slate-900/80 border border-slate-800 px-3 py-3 flex flex-col justify-between">
+              <div>
+                <p class="text-[10px] text-slate-400 mb-1.5">Yaklaşan rezervasyon</p>
+                <p class="text-[12px] font-semibold leading-tight">
+                  Sarajevo City Hotel
+                </p>
+              </div>
+              <p class="text-[10px] text-sky-400 mt-2">
+                Yarın • 21:00 check-in
+              </p>
+            </div>
+          </section>
+
+          <!-- Bugünün harcamaları listesi -->
+          <section class="rounded-3xl bg-slate-900/70 border border-slate-800 p-3 mb-2">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-[12px] font-semibold text-slate-100 tracking-tight">
+                Bugünün harcamaları
+              </h3>
+            <span class="text-[10px] text-slate-400">Toplam: 1.240 ₺</span>
+            </div>
+
+            <div class="divide-y divide-slate-800/80">
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-slate-800/90 flex items-center justify-center text-[15px]">
+                    🍝
+                  </div>
+                  <div>
+                    <p class="text-[12px]">Akşam yemeği</p>
+                    <p class="text-[10px] text-slate-400">Budva Old Town • 2 kişi</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[12px] font-medium">820 ₺</p>
+                  <p class="text-[10px] text-slate-500">Nakit</p>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-slate-800/90 flex items-center justify-center text-[15px]">
+                    ☕
+                  </div>
+                  <div>
+                    <p class="text-[12px]">Kahve & dondurma</p>
+                    <p class="text-[10px] text-slate-400">Sahil yürüyüş yolu</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[12px] font-medium">210 ₺</p>
+                  <p class="text-[10px] text-slate-500">Kart</p>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-slate-800/90 flex items-center justify-center text-[15px]">
+                    ⛽
+                  </div>
+                  <div>
+                    <p class="text-[12px]">Yakıt dolumu</p>
+                    <p class="text-[10px] text-slate-400">Budva çıkışı • 42 lt</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[12px] font-medium">210 ₺</p>
+                  <p class="text-[10px] text-slate-500">Kart</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </section>
+
+      <!-- HARCAMA SAYFASI -->
+      <section id="screen-expense" class="screen flex-1 flex flex-col">
+        <header class="pt-6 px-4 pb-3 bg-slate-950 border-b border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-500 uppercase tracking-[0.18em]">Harcama</span>
+              <h1 class="text-base font-semibold tracking-tight">Seyahat Cüzdanı</h1>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] text-slate-400">
+              <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-700">
+                Balkanlar Yaz Rotası
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px]">
+            <div class="flex items-center gap-2 text-slate-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Bugün: Budva, Karadağ</span>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] text-slate-400">Bugünün harcaması</p>
+              <p class="text-sm font-semibold text-slate-50">1.240 ₺</p>
+            </div>
+          </div>
+        </header>
+
+        <main class="flex-1 bg-slate-950 px-4 pb-24 pt-4 space-y-4 relative">
+          <!-- Filtreler -->
+          <section class="rounded-2xl bg-slate-900/80 border border-slate-800 px-3 py-3">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-[11px] text-slate-300 font-medium">Filtreler</p>
+              <button class="text-[10px] text-slate-400 underline">Sıfırla</button>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button class="px-2.5 py-1.5 rounded-full bg-slate-800 text-[10px] text-slate-100 border border-slate-700">
+                Bugün
+              </button>
+              <button class="px-2.5 py-1.5 rounded-full bg-slate-900 text-[10px] text-slate-300 border border-slate-700/70">
+                Son 7 gün
+              </button>
+              <button class="px-2.5 py-1.5 rounded-full bg-slate-900 text-[10px] text-slate-300 border border-slate-700/70 flex items-center gap-1">
+                <span>Şehir</span>
+                <span class="text-[10px] text-slate-400">Budva</span>
+              </button>
+              <button class="px-2.5 py-1.5 rounded-full bg-slate-900 text-[10px] text-slate-300 border border-slate-700/70 flex items-center gap-1">
+                <span>Ödeme</span>
+                <span class="text-[10px] text-slate-400">Kart</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Harcama listesi -->
+          <section class="rounded-3xl bg-slate-900/70 border border-slate-800 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-[11px] text-slate-400">Bugün • 8 Ağustos 2025</p>
+              <p class="text-[11px] text-slate-300">Toplam: 1.240 ₺</p>
+            </div>
+
+            <div class="divide-y divide-slate-800/80">
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-slate-800/90 flex items-center justify-center text-[15px]">
+                    🍝
+                  </div>
+                  <div>
+                    <p class="text-[12px]">Akşam yemeği</p>
+                    <p class="text-[10px] text-slate-400">Budva Old Town • 2 kişi</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[12px] font-medium">820 ₺</p>
+                  <p class="text-[10px] text-emerald-400">Nakit</p>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-slate-800/90 flex items-center justify-center text-[15px]">
+                    ☕
+                  </div>
+                  <div>
+                    <p class="text-[12px]">Kahve & dondurma</p>
+                    <p class="text-[10px] text-slate-400">Sahil yürüyüş yolu</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[12px] font-medium">210 ₺</p>
+                  <p class="text-[10px] text-sky-400">Kart</p>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-slate-800/90 flex items-center justify-center text-[15px]">
+                    ⛽
+                  </div>
+                  <div>
+                    <p class="text-[12px]">Yakıt dolumu</p>
+                    <p class="text-[10px] text-slate-400">Budva çıkışı • 42 lt</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-[12px] font-medium">210 ₺</p>
+                  <p class="text-[10px] text-sky-400">Kart</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- + Floating button -->
+          <button id="btnOpenExpensePopup" class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg border border-sky-300 fixed right-6 bottom-20 max-w-md mx-auto">
+            <span class="text-2xl leading-none">+</span>
+          </button>
+
+          <!-- Popup -->
+          <div id="expensePopup" class="fixed inset-0 bg-black/70 flex items-end justify-center px-4 pb-16 hidden">
+            <div class="w-full max-w-md rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div>
+                  <h2 class="text-[13px] font-semibold text-slate-50">Yeni harcama ekle</h2>
+                  <p class="text-[10px] text-slate-400">Balkanlar Yaz Rotası • Budva</p>
+                </div>
+                <button id="btnCloseExpensePopup" class="w-7 h-7 rounded-full bg-slate-900 flex items-center justify-center text-slate-400 text-xs">
+                  ✕
+                </button>
+              </div>
+
+              <div class="space-y-2.5 max-h-[60vh] overflow-y-auto pt-1">
+                <!-- Tarih -->
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Tarih</label>
+                  <input type="date" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-[12px] text-slate-50 focus:outline-none focus:ring-1 focus:ring-sky-500" value="2025-08-08" />
+                </div>
+
+                <!-- Tutar -->
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Tutar</label>
+                  <div class="flex items-center gap-2">
+                    <input type="number" inputmode="decimal" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500" placeholder="Örn: 450" />
+                    <select class="bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-[11px] text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                      <option>₺</option>
+                      <option>€</option>
+                      <option>$</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Kategori + Ödeme tipi -->
+                <div class="flex gap-2">
+                  <div class="flex-1">
+                    <label class="block text-[11px] text-slate-400 mb-1">Kategori</label>
+                    <select class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-[12px] text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                      <option>Yemek</option>
+                      <option>Kahve & Atıştırmalık</option>
+                      <option>Ulaşım</option>
+                      <option>Konaklama</option>
+                      <option>Diğer</option>
+                    </select>
+                  </div>
+                  <div class="flex-1">
+                    <label class="block text-[11px] text-slate-400 mb-1">Ödeme tipi</label>
+                    <select class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-[12px] text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                      <option>Kart</option>
+                      <option>Nakit</option>
+                      <option>Diğer</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Şehir + Mekan -->
+                <div class="flex gap-2">
+                  <div class="flex-1">
+                    <label class="block text-[11px] text-slate-400 mb-1">Şehir</label>
+                    <input type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500" placeholder="Örn: Budva" />
+                  </div>
+                  <div class="flex-1">
+                    <label class="block text-[11px] text-slate-400 mb-1">Yer / Mekan</label>
+                    <input type="text" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500" placeholder="Örn: Old Town restoran" />
+                  </div>
+                </div>
+
+                <!-- Kişi sayısı -->
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Kişi sayısı</label>
+                  <input type="number" min="1" class="w-24 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-slate-50 focus:outline-none focus:ring-1 focus:ring-sky-500" value="2" />
+                  <p class="text-[10px] text-slate-500 mt-1">Bu harcamanın kaç kişi için geçerli olduğunu belirt.</p>
+                </div>
+
+                <!-- Fotoğraf ekleme -->
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Fotoğraf ekle (fiş / menü / mekan)</label>
+                  <label class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-[11px] text-slate-300 cursor-pointer">
+                    <div class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-[14px]">
+                      📷
+                    </div>
+                    <div class="flex flex-col">
+                      <span>Galeriden veya kameradan ekle</span>
+                      <span class="text-[10px] text-slate-500">Max 1 fotoğraf, ~5 MB</span>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden" />
+                  </label>
+                </div>
+
+                <!-- Check kutuları -->
+                <div class="flex flex-col gap-1.5">
+                  <label class="inline-flex items-center gap-2 text-[11px] text-slate-300">
+                    <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                    <span>Bu harcama <span class="font-semibold">bireysel</span> (sadece bana ait)</span>
+                  </label>
+                  <label class="inline-flex items-center gap-2 text-[11px] text-slate-300">
+                    <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                    <span>Bu harcama <span class="font-semibold">yakıt</span> harcaması</span>
+                  </label>
+                </div>
+
+                <!-- Not -->
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Not (isteğe bağlı)</label>
+                  <textarea rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500" placeholder="Örn: Deniz manzaralı, servis hızlıydı."></textarea>
+                </div>
+
+                <!-- Kaydet -->
+                <div class="pt-1">
+                  <button class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-semibold rounded-xl py-2.5 transition shadow-sm">
+                    Harcamayı Kaydet
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </section>
+
+      <!-- CHECKLIST SAYFASI -->
+      <section id="screen-checklist" class="screen flex-1 flex flex-col">
+        <header class="pt-6 px-4 pb-3 bg-slate-950 border-b border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-500 uppercase tracking-[0.18em]">Checklist</span>
+              <h1 class="text-base font-semibold tracking-tight">Seyahat Cüzdanı</h1>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] text-slate-400">
+              <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-700 max-w-[140px] truncate">
+                Balkanlar Yaz Rotası
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px]">
+            <div class="flex items-center gap-2 text-slate-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Toplam 24 madde • 7 eksik</span>
+            </div>
+            <button class="text-[10px] text-slate-300 underline">
+              Tümünü sıfırla
+            </button>
+          </div>
+
+          <div class="mt-3 flex items-center gap-2">
+            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-500/10 border border-sky-400/60 text-[11px] text-sky-100">
+              <span class="text-[12px]">➕</span>
+              <span>Yeni kategori</span>
+            </button>
+            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-700 text-[11px] text-slate-200">
+              <span class="text-[12px]">✏️</span>
+              <span>Madde ekle</span>
+            </button>
+          </div>
+        </header>
+
+        <main class="flex-1 bg-slate-950 px-4 pb-24 pt-4 space-y-4">
+          <!-- Günlük ihtiyaçlar -->
+          <section class="rounded-3xl bg-slate-900/80 border border-slate-800 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-xl bg-slate-800 flex items-center justify-center text-[13px]">🧼</span>
+                <div>
+                  <p class="text-[12px] font-semibold text-slate-100">Günlük ihtiyaçlar</p>
+                  <p class="text-[10px] text-slate-400">6 madde • 2 eksik</p>
+                </div>
+              </div>
+              <button class="text-[10px] text-slate-400 underline">
+                Kategori düzenle
+              </button>
+            </div>
+
+            <div class="mt-1 space-y-1.5">
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" checked class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Diş fırçası & macunu</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" checked class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Şampuan & duş jeli (seyahat boy)</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Deodorant</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Islak mendil & kağıt mendil</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" checked class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Krem & dudak nemlendirici</span>
+              </label>
+
+              <button class="mt-1 inline-flex items-center gap-1.5 text-[11px] text-sky-300">
+                <span class="w-4 h-4 rounded-full border border-sky-400 flex items-center justify-center text-[12px]">+</span>
+                <span>Bu kategoriye madde ekle</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Dokümanlar -->
+          <section class="rounded-3xl bg-slate-900/80 border border-slate-800 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-xl bg-slate-800 flex items-center justify-center text-[13px]">📄</span>
+                <div>
+                  <p class="text-[12px] font-semibold text-slate-100">Dokümanlar</p>
+                  <p class="text-[10px] text-slate-400">5 madde • 1 eksik</p>
+                </div>
+              </div>
+              <button class="text-[10px] text-slate-400 underline">
+                Kategori düzenle
+              </button>
+            </div>
+
+            <div class="mt-1 space-y-1.5">
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" checked class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Pasaportlar</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" checked class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Kimlik kartları</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Ehliyet</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" checked class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Araç ruhsatı & sigorta</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Otel / Uçuş çıktıları (opsiyonel)</span>
+              </label>
+
+              <button class="mt-1 inline-flex items-center gap-1.5 text-[11px] text-sky-300">
+                <span class="w-4 h-4 rounded-full border border-sky-400 flex items-center justify-center text-[12px]">+</span>
+                <span>Bu kategoriye madde ekle</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Teknoloji -->
+          <section class="rounded-3xl bg-slate-900/80 border border-slate-800 p-3">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-xl bg-slate-800 flex items-center justify-center text-[13px]">📷</span>
+                <div>
+                  <p class="text-[12px] font-semibold text-slate-100">Teknoloji</p>
+                  <p class="text-[10px] text-slate-400">7 madde • 4 eksik</p>
+                </div>
+              </div>
+              <button class="text-[10px] text-slate-400 underline">
+                Kategori düzenle
+              </button>
+            </div>
+
+            <div class="mt-1 space-y-1.5">
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" checked class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Fotoğraf makinesi</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Yedek bataryalar</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Telefon şarj cihazı</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Araç şarjı / USB adaptör</span>
+              </label>
+              <label class="flex items-center gap-2 text-[12px] text-slate-100">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-slate-600 bg-slate-900 text-sky-500" />
+                <span>Powerbank</span>
+              </label>
+
+              <button class="mt-1 inline-flex items-center gap-1.5 text-[11px] text-sky-300">
+                <span class="w-4 h-4 rounded-full border border-sky-400 flex items-center justify-center text-[12px]">+</span>
+                <span>Bu kategoriye madde ekle</span>
+              </button>
+            </div>
+          </section>
+        </main>
+      </section>
+
+      <!-- DİĞER / ARAÇLAR SAYFASI -->
+      <section id="screen-other" class="screen flex-1 flex flex-col">
+        <header class="pt-6 px-4 pb-3 bg-slate-950 border-b border-slate-800">
+          <div class="flex items-center justify-between">
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-500 uppercase tracking-[0.18em]">Diğer</span>
+              <h1 class="text-base font-semibold tracking-tight">Seyahat Cüzdanı</h1>
+            </div>
+            <div class="flex flex-col items-end text-[11px] text-slate-400">
+              <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-700 max-w-[160px] truncate">
+                Balkanlar Yaz Rotası
+              </span>
+              <span class="text-[10px] text-slate-500 mt-0.5">Araçlar & özetler</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="flex-1 bg-slate-950 px-4 pb-24 pt-3 space-y-3">
+          <!-- GRUP: PLANLAMA & KAYIT -->
+          <section class="rounded-2xl bg-slate-900/80 border border-slate-800">
+            <button class="w-full flex items-center justify-between px-3 py-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-xl bg-slate-800 flex items-center justify-center text-[13px]">📝</span>
+                <span class="text-[12px] font-semibold text-slate-100">Planlama & kayıt</span>
+              </div>
+              <span class="text-[16px] text-slate-500">⌄</span>
+            </button>
+            <div class="border-t border-slate-800/80">
+              <button class="w-full flex items-center justify-between px-3 py-2.5 text-left">
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-xl bg-emerald-500/15 border border-emerald-400/50 flex items-center justify-center text-[15px]">🎫</span>
+                  <div>
+                    <p class="text-[12px] text-slate-50">Rezervasyonlar & biletlerim</p>
+                    <p class="text-[10px] text-slate-400">Otel, uçuş, otobüs, araç kiralama</p>
+                  </div>
+                </div>
+                <span class="text-[14px] text-slate-500">›</span>
+              </button>
+              <button class="w-full flex items-center justify-between px-3 py-2.5 text-left border-t border-slate-800/80">
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-xl bg-sky-500/15 border border-sky-400/50 flex items-center justify-center text-[15px]">📊</span>
+                  <div>
+                    <p class="text-[12px] text-slate-50">Seyahat özeti</p>
+                    <p class="text-[10px] text-slate-400">Bütçe, şehirler, konaklama, km</p>
+                  </div>
+                </div>
+                <span class="text-[14px] text-slate-500">›</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- GRUP: ÇEVREMDEKİLER & ACİL DURUM -->
+          <section class="rounded-2xl bg-slate-900/80 border border-slate-800">
+            <button class="w-full flex items-center justify-between px-3 py-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-xl bg-slate-800 flex items-center justify-center text-[13px]">📍</span>
+                <span class="text-[12px] font-semibold text-slate-100">Çevremdekiler & acil durum</span>
+              </div>
+              <span class="text-[16px] text-slate-500">⌄</span>
+            </button>
+            <div class="border-t border-slate-800/80">
+              <button class="w-full flex items-center justify-between px-3 py-2.5 text-left">
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-xl bg-amber-500/15 border border-amber-400/50 flex items-center justify-center text-[15px]">🗺️</span>
+                  <div>
+                    <p class="text-[12px] text-slate-50">Çevremdekiler (gezi & yeme-içme)</p>
+                    <p class="text-[10px] text-slate-400">Gezilecek yerler, cafe, oteller</p>
+                  </div>
+                </div>
+                <span class="text-[14px] text-slate-500">›</span>
+              </button>
+              <button class="w-full flex items-center justify-between px-3 py-2.5 text-left border-t border-slate-800/80">
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-xl bg-red-500/15 border border-red-400/50 flex items-center justify-center text-[15px]">🚑</span>
+                  <div>
+                    <p class="text-[12px] text-slate-50">Acil durum noktaları</p>
+                    <p class="text-[10px] text-slate-400">Hastane, eczane, polis</p>
+                  </div>
+                </div>
+                <span class="text-[14px] text-slate-500">›</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- GRUP: HARİTA & UYGULAMA KISAYOLLARI -->
+          <section class="rounded-2xl bg-slate-900/80 border border-slate-800">
+            <button class="w-full flex items-center justify-between px-3 py-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-xl bg-slate-800 flex items-center justify-center text-[13px]">🧭</span>
+                <span class="text-[12px] font-semibold text-slate-100">Harita & uygulama kısayolları</span>
+              </div>
+              <span class="text-[16px] text-slate-500">⌄</span>
+            </button>
+            <div class="border-t border-slate-800/80">
+              <button class="w-full flex items-center justify-between px-3 py-2.5 text-left">
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-xl bg-emerald-500/15 border border-emerald-400/50 flex items-center justify-center text-[15px]">📌</span>
+                  <div>
+                    <p class="text-[12px] text-slate-50">Google Maps / Moovit / Uber</p>
+                    <p class="text-[10px] text-slate-400">Konumu doğrudan uygulamalara gönder</p>
+                  </div>
+                </div>
+                <span class="text-[14px] text-slate-500">›</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- GRUP: ROTA & UÇUŞ TAKİBİ -->
+          <section class="rounded-2xl bg-slate-900/80 border border-slate-800">
+            <button class="w-full flex items-center justify-between px-3 py-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-xl bg-slate-800 flex items-center justify-center text-[13px]">✈️</span>
+                <span class="text-[12px] font-semibold text-slate-100">Rota & uçuş takibi</span>
+              </div>
+              <span class="text-[16px] text-slate-500">⌄</span>
+            </button>
+            <div class="border-t border-slate-800/80">
+              <button class="w-full flex items-center justify-between px-3 py-2.5 text-left">
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-xl bg-purple-500/15 border border-purple-400/50 flex items-center justify-center text-[15px]">📍</span>
+                  <div>
+                    <p class="text-[12px] text-slate-50">Gezi rotam (harcamalardan)</p>
+                    <p class="text-[10px] text-slate-400">Harita & zaman çizelgesi</p>
+                  </div>
+                </div>
+                <span class="text-[14px] text-slate-500">›</span>
+              </button>
+              <button class="w-full flex items-center justify-between px-3 py-2.5 text-left border-t border-slate-800/80">
+                <div class="flex items-center gap-2">
+                  <span class="w-7 h-7 rounded-xl bg-sky-500/15 border border-sky-400/50 flex items-center justify-center text-[15px]">🛰️</span>
+                  <div>
+                    <p class="text-[12px] text-slate-50">Uçuş takibi</p>
+                    <p class="text-[10px] text-slate-400">FlightRadar & Google Flights</p>
+                  </div>
+                </div>
+                <span class="text-[14px] text-slate-500">›</span>
+              </button>
+            </div>
+          </section>
+        </main>
+      </section>
+    </div>
+
+    <!-- ALT MENÜ -->
+    <nav class="bg-slate-950/95 border-t border-slate-800/80 backdrop-blur">
+      <div class="flex items-center justify-around h-14 text-[11px]">
+        <button data-screen="summary" class="nav-btn flex flex-col items-center justify-center text-sky-400">
+          <span class="text-lg mb-0.5">🏠</span>
+          <span>Özet</span>
+        </button>
+        <button data-screen="expense" class="nav-btn flex flex-col items-center justify-center text-slate-400">
+          <span class="text-lg mb-0.5">📒</span>
+          <span>Harcama</span>
+        </button>
+        <button data-screen="checklist" class="nav-btn flex flex-col items-center justify-center text-slate-400">
+          <span class="text-lg mb-0.5">✅</span>
+          <span>Checklist</span>
+        </button>
+        <button data-screen="other" class="nav-btn flex flex-col items-center justify-center text-slate-400">
+          <span class="text-lg mb-0.5">⋯</span>
+          <span>Diğer</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- BASİT JS: EKRAN DEĞİŞTİRME & POPUP -->
+  <script>
+    // Alt menüde ekran geçişleri
+    const screens = {
+      summary: document.getElementById('screen-summary'),
+      expense: document.getElementById('screen-expense'),
+      checklist: document.getElementById('screen-checklist'),
+      other: document.getElementById('screen-other'),
+    };
+
+    const navButtons = document.querySelectorAll('.nav-btn');
+
+    function showScreen(name) {
+      Object.keys(screens).forEach(key => {
+        if (key === name) {
+          screens[key].classList.add('active');
+        } else {
+          screens[key].classList.remove('active');
+        }
+      });
+
+      navButtons.forEach(btn => {
+        if (btn.getAttribute('data-screen') === name) {
+          btn.classList.remove('text-slate-400');
+          btn.classList.add('text-sky-400');
+        } else {
+          btn.classList.remove('text-sky-400');
+          btn.classList.add('text-slate-400');
+        }
+      });
+    }
+
+    navButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-screen');
+        showScreen(target);
+      });
+    });
+
+    // Harcama popup aç/kapat
+    const btnOpenExpensePopup = document.getElementById('btnOpenExpensePopup');
+    const btnCloseExpensePopup = document.getElementById('btnCloseExpensePopup');
+    const expensePopup = document.getElementById('expensePopup');
+
+    if (btnOpenExpensePopup && btnCloseExpensePopup && expensePopup) {
+      btnOpenExpensePopup.addEventListener('click', () => {
+        expensePopup.classList.remove('hidden');
+      });
+      btnCloseExpensePopup.addEventListener('click', () => {
+        expensePopup.classList.add('hidden');
+      });
+
+      // Popup arka planına tıklayınca kapansın (kartın dışı)
+      expensePopup.addEventListener('click', (e) => {
+        if (e.target === expensePopup) {
+          expensePopup.classList.add('hidden');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
