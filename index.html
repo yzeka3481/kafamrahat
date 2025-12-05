@@ -111,7 +111,7 @@ html, body {
   const K={EXP:'travel_expenses',LIST:'travel_checklist',BUD:'travel_budget', PREF:'travel_pref', NOTES:'travel_notes', RES:'travel_reservations'}; 
   const AVAILABLE_CURRENCIES = ['TRY', 'EUR', 'USD', 'GBP', 'JPY', 'CAD', 'AUD']; 
   
-  // YENİ FOTOĞRAF SABİTLERİ
+  // FOTOĞRAF SABİTLERİ
   const MAX_IMAGES = 3; 
   const MAX_IMAGE_WIDTH = 800; 
   
@@ -127,14 +127,14 @@ html, body {
   let BASE_CURRENCY = 'TRY'; 
   let rateLastUpdated = 'Statik (Başlangıç)'; 
   
-  // YENİ SABİT: HARCAMA TİPİ
+  // HARCAMA TİPİ (Ödeme Tipi)
   const EXPENSE_TYPES = [
       { id: 'card', l: 'Kart' },
       { id: 'cash', l: 'Nakit' },
       { id: 'other', l: 'Diğer' }
   ];
   
-  // YENİ SABİT: REZERVASYON TİPLERİ
+  // REZERVASYON TİPLERİ (Kullanılmasa da veri uyumluluğu için tutuldu)
   const RESERVATION_TYPES = [
       {id: 'flight', l: 'Uçak Bileti', i: '✈️', color: 'from-blue-600 to-sky-500'},
       {id: 'hotel', l: 'Otel/Konaklama', i: '🏨', color: 'from-emerald-600 to-teal-500'},
@@ -144,7 +144,7 @@ html, body {
   ];
 
 
-  // YENİ SABİT: BİREYSEL/ORTAK FİLTRE TİPLERİ
+  // BİREYSEL/ORTAK FİLTRE TİPLERİ
   const INDIVIDUAL_FILTERS = [
       { id: '', l: 'Tüm Harcamalar' },
       { id: 'individual', l: 'Bireysel' },
@@ -395,6 +395,7 @@ html, body {
     calendar: mkSvg('<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>', 4),
     currency: mkSvg('<circle cx="12" cy="12" r="10"/><path d="M12 18V6"/><path d="M9 9h6"/><path d="M9 15h6"]/>'),
     reserve: mkSvg('<rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="7" cy="7" r="4"/><path d="M14 7h6a2 2 0 0 1 2 2v2M2 9v2M12 15h0"/>', 4),
+    // Hava durumu ikonları kaldırıldı, artık kullanılmayacak
   };
   
   // Menü ikonlarının estetik gradient renkleri
@@ -420,7 +421,7 @@ html, body {
   // Varsayılan Check List Kategorileri ve Maddeleri
   const DEF_CATS=[{id:'docs',l:'Belgeler',i:'📄'},{id:'clth',l:'Giyim',i:'👕'},{id:'elec',l:'Elektronik',i:'🔌'},{id:'hlth',l:'Sağlık',i:'💊'},{id:'otr',l:'Diğer',i:'⭐'}];
   
-  // DÜZELTME: Check List maddelerine date alanı eklendi
+  // Check List maddeleri
   const DEF_ITEMS = [
     {cat:'docs', val:'Pasaport', date:''}, {cat:'docs', val:'Kimlik / Ehliyet', date:''}, {cat:'docs', val:'Uçak Biletleri', date:''}, {cat:'docs', val:'Otel Rezervasyonları', date:''}, {cat:'docs', val:'Seyahat Sigortası', date:''},
     {cat:'docs', val:'Uçuş Bilgileri Kontrolü (Kapı/Saat)', date:''},
@@ -451,16 +452,16 @@ html, body {
     isIndividual: false, 
   });
   
-  // YENİ FONKSİYON: Boş Rezervasyon Formu
+  // Rezervasyon Formu (Kullanılmayacak, sadece uyumluluk için tutuldu)
   const getEmptyResForm = () => ({
       id: null,
       trip: '',
       type: RESERVATION_TYPES[0].id,
-      name: '', // Rezervasyon adı (örn: Hilton Oteli, Pegasus PC1234)
-      location: '', // Şehir/Ülke
+      name: '', 
+      location: '', 
       startDate: new Date().toISOString().slice(0,10),
-      endDate: '', // Uçak/Oteller için
-      code: '', // Rezervasyon/PNR kodu
+      endDate: '', 
+      code: '', 
       cost: '',
       cur: BASE_CURRENCY,
       notes: '',
@@ -478,11 +479,12 @@ html, body {
         console.error("Zaman dilimi tespiti başarısız oldu:", e);
     }
     
-    let e=[], c={cats:[...DEF_CATS],items:[]}, r=[], prefTZ = initialTZ; // r[] (Rezervasyonlar) eklendi
+    let e=[], c={cats:[...DEF_CATS],items:[]}, r=[], prefTZ = initialTZ; 
     let criticalNotes = []; 
     let selectedNoteTrip = ''; 
     let preferredBaseCurrency = 'TRY'; 
-
+    
+    // Verileri localStorage'dan yükle
     try{e=JSON.parse(localStorage.getItem(K.EXP)||'[]');}catch(err){}
     try{const l=JSON.parse(localStorage.getItem(K.LIST)); 
         if(l){
@@ -491,7 +493,7 @@ html, body {
             if(c.cats.length === 0) c.cats = [...DEF_CATS]; 
         }
     }catch(err){}
-    // YENİ: Rezervasyonları yükle
+    // Rezervasyonları yükle (Kaldırılması istendi, ancak veriyi sıfırlamadan okuyalım)
     try{r=JSON.parse(localStorage.getItem(K.RES)||'[]');}catch(err){r = [];}
     
     try{prefTZ=localStorage.parse(localStorage.getItem(K.PREF+'_tz')||initialTZ);}catch(err){}
@@ -500,11 +502,11 @@ html, body {
 
     BASE_CURRENCY = preferredBaseCurrency; 
     
-    // Check List Item Geçişi: date alanı kaldırılmadı, ancak boş string olarak varsayılacak.
+    // Check List Item Geçişi
     if(!c.items || c.items.length === 0) {
         c.items = DEF_ITEMS.map(i => ({id: genId(), cat: i.cat, val: i.val, done: false, date: i.date || ''}));
     } else {
-        c.items = c.items.map(i => ({...i, date: i.date || ''})); // Varolan kayıtlara date alanını ekleyelim (geriye dönük uyumluluk)
+        c.items = c.items.map(i => ({...i, date: i.date || ''})); 
     }
     
     // Harcama Veri geçişi
@@ -516,6 +518,7 @@ html, body {
             startKm: item.startKm || '',
             endKm: item.endKm || '', 
             fuelAmount: item.fuelAmount || '',
+            // type alanı eklendi
             type: item.type || EXPENSE_TYPES[0].id, 
             isIndividual: item.isIndividual !== undefined ? item.isIndividual : false, 
         };
@@ -524,7 +527,7 @@ html, body {
         return updated;
     });
     
-    // Rezervasyon Veri geçişi
+    // Rezervasyon Veri geçişi (Veri tutulmaya devam ediliyor, ancak uygulama içinde kullanılmıyor)
     r = r.map(item => ({
         ...item,
         type: item.type || RESERVATION_TYPES[0].id,
@@ -532,7 +535,7 @@ html, body {
         notes: item.notes || '',
     }));
 
-    const allTrips = [...new Set((e || []).map(x=>x.trip).filter(Boolean).concat((r || []).map(x=>x.trip).filter(Boolean)))].sort(); // Rezervasyonlardan da seyahat adı al
+    const allTrips = [...new Set((e || []).map(x=>x.trip).filter(Boolean).concat((r || []).map(x=>x.trip).filter(Boolean)))].sort(); 
     if(allTrips.length > 0) {
         selectedNoteTrip = allTrips[0];
     } else {
@@ -542,7 +545,7 @@ html, body {
     state={
         exp:e,
         chk:c,
-        res:r, // Yeni: Rezervasyonlar
+        res:r, // Rezervasyonlar tutulmaya devam ediliyor
         view:'list',
         tab:'sum', 
         tripFilter:'',
@@ -552,19 +555,22 @@ html, body {
         typeFilter:'', 
         indFilter:'', 
         selExp:null,
-        selRes:null, // Yeni: Seçili Rezervasyon
-        modals:{detail:false,chart:false,data:false, tzSelect: false, resForm: false, resDetail: false}, // resForm eklendi
+        selRes:null, // Seçili Rezervasyon (Artık kullanılmayacak)
+        modals:{detail:false,chart:false,data:false, tzSelect: false, resForm: false, resDetail: false}, 
         form:getEmptyForm(),
-        resForm:getEmptyResForm(), // Yeni: Rezervasyon formu state'i
+        resForm:getEmptyResForm(), // Rezervasyon formu state'i (Artık kullanılmayacak)
         expandedCities:{},
         lightbox:null,
         err:'',
         draggedItemId: null, 
         targetTimezone: prefTZ, 
         currentTime: formatTime(prefTZ).time,
+        // HAVA DURUMU VE KONUM İLE İLGİLİ STATE KALDIRILDI
         location: null, 
         locationLoading: false,
         locationName: 'Bilinmiyor', 
+        // weather: weatherData, // KALDIRILDI
+
         helpersAccordion: {
             critical: false, 
             places: false, 
@@ -573,7 +579,7 @@ html, body {
             flightCheck: false,
             route: false, 
             report: false,
-            reservations: false, // YENİ: Rezervasyon akordiyonu
+            reservations: false, // Artık kullanılmayacak
         },
         criticalNotes: criticalNotes, 
         selectedNoteTrip: selectedNoteTrip, 
@@ -593,10 +599,11 @@ html, body {
   function save(){
     localStorage.setItem(K.EXP,JSON.stringify(state.exp));
     localStorage.setItem(K.LIST,JSON.stringify(state.chk));
-    localStorage.setItem(K.RES,JSON.stringify(state.res)); // Rezervasyonları kaydet
+    localStorage.setItem(K.RES,JSON.stringify(state.res)); // Rezervasyonları kaydetmeye devam et
     localStorage.setItem(K.PREF+'_tz', state.targetTimezone); 
     localStorage.setItem(K.NOTES, JSON.stringify(state.criticalNotes));
     localStorage.setItem(K.PREF+'_base_cur', state.baseCurrency);
+    // localStorage.setItem(K.PREF+'_weather', JSON.stringify(state.weather)); // KALDIRILDI
   };
   
   // --- RESİM YENİDEN BOYUTLANDIRMA VE BASE64'E DÖNÜŞTÜRME YARDIMCISI ---
@@ -642,56 +649,8 @@ html, body {
       });
   };
 
-  // --- KONUM YÖNETİMİ ---
-  const handleGeolocation = () => {
-    if (state.locationLoading || state.location) return;
-
-    if (!navigator.geolocation) {
-        setState({ 
-            err: 'Tarayıcınız Konum Servislerini desteklemiyor.', 
-            locationLoading: false, 
-            location: null,
-            locationName: 'Bilinmiyor'
-        });
-        return;
-    }
-
-    setState({ locationLoading: true, err: '', locationName: 'Alınıyor...' });
-
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const name = "Konum Başarıyla Alındı";
-
-            setState({
-                location: { 
-                    lat: position.coords.latitude, 
-                    lon: position.coords.longitude 
-                },
-                locationLoading: false,
-                locationName: name,
-                err: ''
-            });
-        },
-        (error) => {
-            let message = 'Konum bilgisi alınamadı.';
-            if (error.code === error.PERMISSION_DENIED) {
-                message = 'Konum erişimi reddedildi. İzin vermeyi deneyin.';
-            } else if (error.code === error.POSITION_UNAVAILABLE) {
-                message = 'Konum bilgisi mevcut değil.';
-            } else if (error.code === error.TIMEOUT) {
-                message = 'Konum bilgisi zaman aşımına uğradı.';
-            }
-            
-            setState({ 
-                err: message, 
-                locationLoading: false, 
-                location: null,
-                locationName: 'Bilinmiyor'
-            });
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
-  };
+  // --- HAVA DURUMU ÇEKİMİ SİMÜLASYONU VE KONUM YÖNETİMİ KALDIRILDI ---
+  // Fonksiyonlar kaldırıldığı için, bu kısım da boş bırakılacaktır.
 
   // --- YARDIMCI FONKSİYON: Rota Oluşturma Linki (MEKAN BAZLI) ---
   const getRouteUrl = (tripName) => {
@@ -742,243 +701,30 @@ html, body {
       `;
   };
   
-  // YENİ FONKSİYON: REZERVASYON LİSTESİNİ RENDER ET
+  // REZERVASYON LİSTESİNİ RENDER ET (Kaldırılması istendiği için boş döndürülüyor)
   function renderReservationList() {
-      const allReservations = state.res
-          .filter(r => state.tripFilter ? r.trip === state.tripFilter : true) // Trip filtresi ekle
-          .sort((a, b) => (a.startDate || '').localeCompare(b.startDate));
-      
-      if (!allReservations.length) {
-          return `<div class="text-center py-8 text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">Kayıtlı rezervasyon bulunamadı.</div>`;
-      }
-      
-      return `
-          <div class="space-y-3">
-              ${allReservations.map(r => {
-                  const type = RESERVATION_TYPES.find(t => t.id === r.type) || RESERVATION_TYPES[0];
-                  
-                  // Tarihleri hesapla
-                  const startDate = fmtDate(r.startDate);
-                  const endDate = r.endDate ? fmtDate(r.endDate) : '';
-                  const dateText = endDate && startDate !== endDate ? `${startDate} - ${endDate}` : startDate;
-                  
-                  // Fiyat
-                  const costText = r.cost ? `${fmtNum(r.cost)} ${r.cur}` : 'Ücret: -';
-                  
-                  return `
-                      <div data-act="res-detail" data-id="${r.id}" class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 flex justify-between items-start gap-3 cursor-pointer hover:bg-slate-800 transition">
-                          <!-- Sol: İkon, Başlık, Lokasyon -->
-                          <div class="flex items-start gap-3 flex-1 min-w-0">
-                              <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br ${type.color} text-xl shadow-md flex-shrink-0">${type.i}</div>
-                              <div class="flex-1 min-w-0">
-                                  <div class="text-sm font-bold text-white line-clamp-1 ${r.completed ? 'line-through opacity-50' : ''}">${esc(r.name)}</div>
-                                  <div class="text-xs text-slate-400 mt-0.5 line-clamp-1">${esc(r.location)} · ${esc(r.trip)}</div>
-                              </div>
-                          </div>
-                          
-                          <!-- Sağ: Tarih ve Fiyat -->
-                          <div class="text-right flex-shrink-0">
-                              <div class="text-xs font-bold text-slate-200">${dateText}</div>
-                              <div class="text-[10px] font-medium text-slate-500 mt-0.5">${costText}</div>
-                          </div>
-                      </div>
-                  `;
-              }).join('')}
-          </div>
-      `;
+      return `<div class="text-center py-8 text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">Kayıtlı rezervasyon bulunamadı.</div>`;
   }
   
-  // YENİ FONKSİYON: REZERVASYON MODALI (Form)
+  // REZERVASYON MODALI (Form) (Kaldırılması istendiği için boş döndürülüyor)
   function renderResForm() {
-      const f = state.resForm;
-      const allTrips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean).concat(state.res.map(x=>x.trip).filter(Boolean)))].sort();
-      const resTypes = RESERVATION_TYPES;
-      
-      const isFlight = f.type === 'flight';
-      const isMultiDay = f.type === 'hotel' || f.type === 'flight'; // Uçak ve Otel için bitiş tarihi zorunlu
-      
-      return `
-        <div class="form-modal-overlay">
-          <div class="bg-slate-900 w-full max-w-lg md:rounded-xl rounded-t-xl form-content-box p-4 border border-slate-800 shadow-2xl self-start mt-0 md:mt-4 mb-4">
-            <div class="flex justify-between items-center mb-4 sticky top-0 bg-slate-900 pt-1 pb-3 z-10 border-b border-slate-800 -mx-4 px-4">
-              <h2 class="font-bold text-lg text-white">${f.id ? 'Rezervasyonu Düzenle' : 'Yeni Rezervasyon'}</h2>
-              <button data-act="cancel-res" class="text-slate-400 hover:text-white transition">${ICONS.x}</button>
-            </div>
-            
-            <div class="space-y-3">
-              
-              <!-- REZERVASYON TİPİ -->
-              <div>
-                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Rezervasyon Tipi</label>
-                 <div class="flex gap-2 overflow-x-auto pb-2 scrl">
-                   ${resTypes.map(t=>`
-                     <button type="button" data-act="set-res-type" data-val="${t.id}" class="flex-shrink-0 flex flex-col items-center justify-center w-20 h-16 rounded-lg border transition ${f.type===t.id ? 'bg-blue-600/20 border-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-500'}">
-                     <span class="text-xl mb-1">${t.i}</span><span class="text-[9px] font-bold">${t.l}</span>
-                     </button>`).join('')}
-                 </div>
-              </div>
-
-              <!-- REZERVASYON ADI -->
-              <div>
-                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Rezervasyon Adı / Başlığı</label>
-                <input id="i-res-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="${isFlight ? 'Uçuş Şirketi ve No (THY TK123)' : 'Otel Adı / Etkinlik Adı'}" value="${esc(f.name)}">
-              </div>
-
-              <!-- SEYAHAT ve LOKASYON -->
-              <div class="grid grid-cols-2 gap-3">
-                 <div>
-                   <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Seyahat</label>
-                   <div class="relative">
-                      <input id="i-res-trip" list="dl-res-trip" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500 transition" placeholder="Seyahat Seç veya Yaz" value="${esc(f.trip)}">
-                      <datalist id="dl-res-trip">${allTrips.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
-                   </div>
-                 </div>
-                 <div>
-                   <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Konum (Şehir/Ülke)</label>
-                   <input id="i-res-location" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="Örn: Roma, İtalya" value="${esc(f.location)}">
-                 </div>
-              </div>
-              
-              <!-- TARİH ARALIĞI -->
-              <div class="grid grid-cols-2 gap-3">
-                 <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-500 uppercase">${isMultiDay ? 'Başlangıç Tarihi' : 'Tarih'}</label>
-                    <input id="i-res-start-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none" value="${f.startDate}">
-                 </div>
-                 <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-500 uppercase">${isMultiDay ? 'Bitiş Tarihi' : 'Opsiyonel Tarih'}</label>
-                    <input id="i-res-end-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none" value="${f.endDate}">
-                 </div>
-              </div>
-
-              <!-- KOD ve Tutar -->
-              <div class="grid grid-cols-2 gap-3">
-                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">${isFlight ? 'PNR/KOD' : 'Kod/Link'}</label>
-                    <input id="i-res-code" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="${isFlight ? 'ABCDEF' : 'Web Linki / Kodu'}" value="${esc(f.code)}">
-                 </div>
-                 <div class="relative">
-                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Maliyet</label>
-                    <input id="i-res-cost" type="text" inputmode="decimal" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono" placeholder="0.00" value="${esc(f.cost)}">
-                    <select id="i-res-cur" class="absolute right-1 top-[28px] bottom-1 bg-slate-700 text-slate-200 rounded-md text-xs px-2 outline-none border-l border-slate-600 cursor-pointer">
-                       ${AVAILABLE_CURRENCIES.map(c=>`<option value="${c}" ${f.cur===c?'selected':''}>${c}</option>`).join('')}
-                    </select>
-                 </div>
-              </div>
-              
-              <!-- NOTLAR -->
-              <textarea id="i-res-notes" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none resize-none" placeholder="Ekstra Notlar (Check-in saati, koltuk no, vb.)">${esc(f.notes)}</textarea>
-
-              <button type="button" data-act="save-res" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow-lg shadow-blue-500/30 transition">Kaydet</button>
-            </div>
-          </div>
-        </div>
-      `;
+      return '';
   }
   
-  // YENİ FONKSİYON: REZERVASYON DETAY MODALI
+  // REZERVASYON DETAY MODALI (Kaldırılması istendiği için boş döndürülüyor)
   function renderResDetailModal() {
-      const r = state.res.find(res => res.id === state.selRes);
-      if (!r) return '';
-      
-      const type = RESERVATION_TYPES.find(t => t.id === r.type) || RESERVATION_TYPES[0];
-      
-      const startDate = fmtDate(r.startDate);
-      const endDate = r.endDate ? fmtDate(r.endDate) : '';
-      const dateText = endDate && startDate !== endDate ? `${startDate} - ${endDate}` : startDate;
-      
-      const costText = r.cost ? `${fmtNum(r.cost)} ${r.cur}` : 'Ücretsiz / Bilinmiyor';
-      const codeText = r.code ? esc(r.code) : '-';
-      
-      const badgeCls = 'flex items-center gap-1.5 bg-white/10 px-2 py-0.5 rounded-full border border-white/20 backdrop-blur-md text-white text-xs font-bold shadow-sm';
-
-      return `
-        <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center p-0 md:p-4 animate-[fadeIn_0.2s] mt-4" data-act="close-mod" data-val="resDetailOverlay">
-          <div class="bg-slate-900 w-full max-w-md md:rounded-xl rounded-t-xl overflow-hidden shadow-2xl relative border border-slate-800" data-act="noop">
-             
-             <!-- SABİT GRADIENT BAŞLIK -->
-             <div class="relative p-4 pb-10 overflow-hidden bg-gradient-to-r ${type.color} fixed-gradient-header">
-                <div class="absolute inset-0 backdrop-blur-[2px]"></div>
-                
-                <div class="relative z-10 flex justify-between items-start mb-2">
-                  <div class="flex items-center gap-2">
-                     <!-- TİP VE DURUM -->
-                     <div class="${badgeCls}">
-                        <span>${type.i}</span><span class="text-xs font-bold uppercase">${type.l}</span>
-                     </div>
-                     <div class="${badgeCls} ${r.completed ? 'bg-emerald-600/50 border-emerald-500/50' : 'bg-red-600/50 border-red-500/50'}">
-                        ${r.completed ? 'Tamamlandı' : 'Bekliyor'}
-                     </div>
-                  </div>
-                  <button data-act="close-mod" data-val="resDetail" class="bg-black/20 hover:bg-black/40 text-white rounded-full p-1.5 transition backdrop-blur-md">${ICONS.x}</button>
-                </div>
-
-                <div class="relative z-10 mt-1">
-                   <h2 class="text-xl font-bold text-white mb-1 leading-tight drop-shadow-md">${esc(r.name)}</h2>
-                   
-                   <div class="flex items-center gap-2 text-white/80 text-xs font-medium">
-                      <span class="bg-black/20 px-2 py-0.5 rounded-full text-[10px]">${esc(r.location)}</span>
-                      <span class="w-1 h-1 rounded-full bg-white/60"></span>
-                      <span>${dateText}</span>
-                   </div>
-                   
-                   <div class="relative z-10 mt-4 flex justify-between items-end">
-                       <div class="inline-block">
-                           <div class="text-[10px] text-white/80 font-medium">Seyahat</div>
-                           <div class="text-sm font-bold text-white">${esc(r.trip||'Genel')}</div>
-                       </div>
-                       <div class="text-right inline-block">
-                           <div class="text-[10px] text-white/80">Maliyet</div>
-                           <div class="text-xl font-bold text-white tracking-tight text-center">${costText}</div>
-                       </div>
-                   </div>
-                </div>
-             </div>
-
-             <!-- Body -->
-             <div class="bg-slate-900 p-4 space-y-3 overflow-y-auto max-h-[70vh]">
-               
-               <!-- KOD/LİNK -->
-               <div class="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50">
-                 <div class="text-xs font-bold text-slate-500 mb-1 uppercase">${type.id === 'flight' ? 'PNR/Uçuş Kodu' : 'Rezervasyon Kodu/Link'}</div>
-                 <p class="text-sm text-blue-400 whitespace-pre-wrap leading-relaxed">${codeText}</p>
-                 ${r.code && (r.code.startsWith('http') || r.code.startsWith('www')) ? `
-                    <a href="${r.code.startsWith('http') ? r.code : `http://${r.code}`}" target="_blank" class="text-xs text-blue-300 hover:text-blue-200 mt-1 block">Linki Aç</a>
-                 ` : ''}
-               </div>
-
-               <!-- NOTLAR -->
-               <div class="bg-slate-800/30 rounded-lg p-3 border border-slate-700/50 min-h-[50px]">
-                 <div class="text-xs font-bold text-slate-500 mb-1 uppercase">Notlar</div>
-                 <p class="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">${esc(r.notes) || '<span class="italic text-slate-600">Ekstra not yok.</span>'}</p>
-               </div>
-
-               <div class="flex gap-3 pt-2">
-                 <button data-act="del-res-detail" class="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-red-600/10 to-rose-700/10 text-red-400 border border-red-500/20 hover:from-red-600 hover:to-rose-700 hover:text-white transition flex items-center justify-center gap-1.5">
-                   ${ICONS.trash.replace('w-4 h-4', 'w-3.5 h-3.5')} Sil
-                 </button>
-                 <button data-act="edit-res" class="flex-1 py-2.5 rounded-lg font-bold text-sm bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition flex items-center justify-center gap-1.5">
-                   ${ICONS.edit.replace('w-4 h-4', 'w-3.5 h-3.5')} Düzenle
-                 </button>
-                 <button data-act="toggle-res-complete" class="flex-1 py-2.5 rounded-lg font-bold text-sm ${r.completed ? 'bg-emerald-600/80 text-white' : 'bg-slate-600/80 text-slate-200'} border border-slate-500/50 hover:opacity-80 transition">
-                   ${r.completed ? 'Beklemede' : 'Tamamla'}
-                 </button>
-               </div>
-             </div>
-          </div>
-        </div>`;
+      return '';
   }
 
-  // YENİ FONKSİYON: UÇUŞLAR VE REZERVASYONLAR AKORDİYONU
+  // UÇUŞLAR VE REZERVASYONLAR AKORDİYONU (İçeriği boş/pasif hale getirildi)
   function renderReservationsAccordion() {
-      // Akordiyon başlığını dinamik hale getirelim
       const reservationHeader = `
           <div class="w-full flex justify-between items-center pb-3">
               <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
                  ${ICONS.reserve.replace('w-4 h-4', 'w-4 h-4')} Aktif Rezervasyonlar
               </h4>
-              <button data-act="new-res" class="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1">
-                 ${ICONS.plus.replace('w-4 h-4', 'w-3.5 h-3.5')} Ekle
+              <button data-act="new-res" class="bg-blue-600/50 text-white/50 p-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-not-allowed">
+                 ${ICONS.plus.replace('w-4 h-4', 'w-3.5 h-3.5')} Ekle (Devre Dışı)
               </button>
           </div>
           ${renderReservationList()}
@@ -999,9 +745,9 @@ html, body {
       `;
 
       return `
-          <!-- YENİ REZERVASYON AKORDİYONU -->
-          ${accordionItem('reservations', ICONS.reserve.replace('w-4 h-4', 'w-4 h-4'), 'Uçuşlar ve Rezervasyonlar', `
-              <div class="space-y-4 pt-3">
+          <!-- REZERVASYON AKORDİYONU (Artık sadece görüntüleniyor, işlem yapmıyor) -->
+          ${accordionItem('reservations', ICONS.reserve.replace('w-4 h-4', 'w-4 h-4'), 'Uçuşlar ve Rezervasyonlar (Devre Dışı)', `
+              <div class="space-y-4 pt-3 opacity-60 pointer-events-none">
                   ${reservationHeader}
                   <div class="pt-2 border-t border-slate-700/50">
                      ${flightCheckContent}
@@ -1011,7 +757,7 @@ html, body {
       `;
   }
   
-  // YENİ FONKSİYON: RAPOR AKORDİYON İÇERİĞİ
+  // RAPOR AKORDİYON İÇERİĞİ
   function renderReportContent() {
       const allTrips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean).concat(state.res.map(x=>x.trip).filter(Boolean)))].sort();
       let selectedTrip = state.selectedReportTrip;
@@ -1145,7 +891,7 @@ html, body {
                        <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
                        </div>
                   </div>
-                  <!-- YENİ: RAPOR PARA BİRİMİ SEÇİMİ -->
+                  <!-- RAPOR PARA BİRİMİ SEÇİMİ -->
                   <div>
                      <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Rapor Para Birimi</label>
                      <div class="relative">
@@ -1214,7 +960,7 @@ html, body {
       `;
   }
   
-  // YENİ FONKSİYON: Rota Planlayıcı İçeriğini Oluştur (MEKAN BAZLI)
+  // Rota Planlayıcı İçeriğini Oluştur
   function renderRoutePlanner() {
       const selectedTrip = state.routeTrip || state.tripFilter; 
 
@@ -1268,7 +1014,7 @@ html, body {
       `;
   }
   
-  // YENİ FONKSİYON: ÖZET SAYFASI (SUM TAB)
+  // ÖZET SAYFASI (SUM TAB) - Sadeleştirildi
   function renderSummary() {
       const baseCur = state.baseCurrency; 
       const today = new Date().toISOString().slice(0, 10);
@@ -1284,43 +1030,6 @@ html, body {
           todayTotal += convertToBase(x.amt, x.cur, baseCur);
       });
       
-      // YAKLAŞAN REZERVASYONLAR
-      const now = new Date();
-      const nextReservation = state.res
-          .filter(r => !r.completed && new Date(r.startDate) >= now)
-          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
-          
-      const nextChecklistItem = state.chk.items
-          .filter(i => !i.done && i.date && new Date(i.date) >= now)
-          .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
-          
-      let nextPlan = null;
-      if (nextReservation && nextChecklistItem) {
-          nextPlan = new Date(nextReservation.startDate) < new Date(nextChecklistItem.date) ? 
-              { type: 'res', item: nextReservation } : 
-              { type: 'chk', item: nextChecklistItem };
-      } else if (nextReservation) {
-          nextPlan = { type: 'res', item: nextReservation };
-      } else if (nextChecklistItem) {
-          nextPlan = { type: 'chk', item: nextChecklistItem };
-      }
-
-      let resText = 'Yaklaşan Plan Yok';
-      if (nextPlan) {
-          const item = nextPlan.item;
-          const isRes = nextPlan.type === 'res';
-          const date = isRes ? item.startDate : item.date;
-          const diff = new Date(date).getTime() - new Date().getTime();
-          const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-          const name = isRes ? `${esc(item.type)}: ${esc(item.name)}` : `${esc(item.val)} (${esc(item.cat)})`;
-
-          if (daysLeft < 7) {
-              resText = `Çok Yakın! ${fmtDate(date)}: ${name}`;
-          } else {
-              resText = `${fmtDate(date)}: ${name}`;
-          }
-      }
-
       // Son 3 Harcama
       const latestExpenses = [...state.exp]
           .sort((a, b) => (b.date || '').localeCompare(a.date) || (b.id.localeCompare(a.id)))
@@ -1366,41 +1075,22 @@ html, body {
                </div>
             </div>
             
-            <!-- 2. BUGÜNÜN HARCAMASI ve YAKLAŞAN PLAN Kartları (Yanyana 2 Box) -->
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                
-                <!-- BUGÜNÜN HARCAMASI -->
-                <div class="bg-gradient-to-br from-indigo-700/70 to-blue-600/70 border border-indigo-500/50 rounded-xl p-4 shadow-lg h-36">
-                    <div class="flex items-center gap-2 text-sm text-white/80 font-semibold mb-2">
-                        ${ICONS.calculate.replace('w-4 h-4', 'w-4 h-4')} BUGÜNÜN HARCAMASI
-                    </div>
-                    <div class="text-3xl font-extrabold text-white leading-none mt-2">
-                        ${fmtNum(todayTotal)}
-                    </div>
-                    <div class="text-sm font-medium text-white/70">${baseCur}</div>
-                    
-                    <div class="text-[10px] text-white/50 mt-3">
-                        ${todayExpenses.length} kayıt
-                    </div>
+            <!-- 2. GÜNLÜK HARCAMA KARTI (Hava durumu ve takvim kaldırıldı) -->
+            <div class="bg-gradient-to-br from-indigo-700/70 to-blue-600/70 border border-indigo-500/50 rounded-xl p-4 shadow-lg">
+                <div class="flex items-center gap-2 text-sm text-white/80 font-semibold mb-2">
+                    ${ICONS.calculate.replace('w-4 h-4', 'w-4 h-4')} BUGÜNÜN HARCAMASI
                 </div>
-
-                <!-- YAKLAŞAN REZERVASYON -->
-                <div class="bg-gradient-to-br from-purple-700/70 to-rose-600/70 border border-purple-500/50 rounded-xl p-4 shadow-lg h-36 flex flex-col justify-between">
-                    <div class="flex items-center gap-2 text-sm text-white/80 font-semibold mb-2">
-                         ${ICONS.calendar.replace('w-4 h-4', 'w-4 h-4')} YAKLAŞAN PLAN
-                    </div>
-                    <div>
-                        <div class="text-lg font-bold text-white line-clamp-2 leading-tight">
-                            ${resText.split(':').slice(1).join(':').trim() || resText}
-                        </div>
-                        <div class="text-xs font-medium ${nextPlan && Math.ceil((new Date(nextPlan.item.date || nextPlan.item.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) < 7 ? 'text-yellow-300' : 'text-white/70'} mt-1">
-                            ${nextPlan ? fmtDate(nextPlan.item.date || nextPlan.item.startDate) + (Math.ceil((new Date(nextPlan.item.date || nextPlan.item.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) < 7 ? ` (${Math.ceil((new Date(nextPlan.item.date || nextPlan.item.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Gün Kaldı)` : '') : 'Mevcut Değil'}
-                        </div>
-                    </div>
+                <div class="text-3xl font-extrabold text-white leading-none mt-2">
+                    ${fmtNum(todayTotal)}
+                </div>
+                <div class="text-sm font-medium text-white/70">${baseCur}</div>
+                
+                <div class="text-[10px] text-white/50 mt-3">
+                    ${todayExpenses.length} kayıt
                 </div>
             </div>
-            
-            <!-- Son 3 Harcama Listesi -->
+
+            <!-- 3. Son 3 Harcama Listesi -->
             <h3 class="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2">
                 ${ICONS.wallet.replace('w-4 h-4', 'w-4 h-4')} Son 3 Harcama
             </h3>
@@ -1437,10 +1127,9 @@ html, body {
 
   function renderHeader(){
     const timeInfo = formatTime(state.targetTimezone);
-    const loc = state.location;
-    const isReady = loc && loc.lat && loc.lon;
-    const locationName = state.locationLoading ? 'Alınıyor...' : state.locationName;
-    const locIcon = isReady ? ICONS.location.replace('w-4 h-4', 'w-4 h-4') : ICONS.compass.replace('w-4 h-4', 'w-4 h-4');
+    
+    // Konum ve Hava Durumu İkonu kaldırıldı
+    const locIcon = ICONS.compass.replace('w-4 h-4', 'w-4 h-4');
 
     return `
       <div class="glass-panel rounded-xl p-3 mb-4 flex flex-col md:flex-row items-center justify-between shadow-lg gap-3 bg-slate-900/80">
@@ -1461,11 +1150,11 @@ html, body {
         
         <div class="flex items-center gap-2 w-full md:w-auto justify-end mt-2 md:mt-0">
            
-           <!-- KONUM BİLGİSİ İKONU -->
-           <button data-act="get-location" class="flex items-center bg-slate-800/80 hover:bg-slate-700/80 transition rounded-lg p-1 border border-slate-700 justify-center cursor-pointer min-w-10" title="${locationName}">
+           <!-- KONUM BİLGİSİ İKONU (Sadece Yer Tutucu) -->
+           <div class="flex items-center bg-slate-800/80 rounded-lg p-1 border border-slate-700 justify-center cursor-default min-w-10" title="Konum Kapalı">
                <span class="text-xs text-slate-400 mr-1">${locIcon}</span>
-               <span class="text-[9px] text-white/80 font-bold hidden sm:inline-block">${isReady ? 'Konum OK' : 'Konum Al'}</span>
-           </button>
+               <span class="text-[9px] text-white/80 font-bold hidden sm:inline-block">Konum Kapalı</span>
+           </div>
 
            <!-- YEREL SAAT GÖSTERİMİ (Tıklanabilir) -->
            <button data-act="open-tz-modal" class="flex items-center bg-slate-800/80 hover:bg-slate-700/80 transition rounded-lg p-1 border border-slate-700 min-w-[100px] justify-center cursor-pointer">
@@ -1749,8 +1438,7 @@ html, body {
           const its = state.chk.items.filter(i => i.cat === c.id)
             .sort((a, b) => {
                 // Tarihsiz maddeler en başta, tarihli maddeler tarihe göre sıralanır.
-                // Not: Kullanıcının isteği üzerine tarih alanı kaldırıldı. Ancak listede eski tarihli kayıtlar yer alıyorsa, mantık aynı kalır.
-                const dateA = new Date(a.date || '1970-01-01'); // Varsayılan tarihli maddeler başta
+                const dateA = new Date(a.date || '1970-01-01'); 
                 const dateB = new Date(b.date || '1970-01-01');
                 if (dateA < dateB) return -1;
                 if (dateA > dateB) return 1;
@@ -1807,21 +1495,22 @@ html, body {
     `;
   }
   
-  // YENİ FONKSİYON: DİĞER SEKME İÇERİĞİ
+  // DİĞER SEKME İÇERİĞİ
   function renderOtherTab() {
       
       const loc = state.location;
-      const isReady = loc && loc.lat && loc.lon;
-      const locationQuery = isReady ? `@${loc.lat},${loc.lon},15z` : '';
+      // Konum bazlı özellikler kaldırıldığı için burayı basitleştirelim.
+      const isReady = false; // Konum özelliği kapatıldı
+      const locationQuery = '';
       const baseSearchUrl = 'https://www.google.com/maps/search/';
-      const disabledClass = !isReady ? 'opacity-40 pointer-events-none' : '';
+      const disabledClass = 'opacity-40 pointer-events-none';
 
-      const touristPlacesUrl = `${baseSearchUrl}Turistik+Yerler/${locationQuery}`;
-      const cafeRestaurantUrl = `${baseSearchUrl}yüksek+puanlı+cafe+restoran/${locationQuery}`;
-      const hotelUrl = `${baseSearchUrl}otel+konaklama/${locationQuery}`;
-      const hospitalUrl = `${baseSearchUrl}Hastane/${locationQuery}`;
-      const pharmacyUrl = `${baseSearchUrl}Eczane/${locationQuery}`;
-      const policeUrl = `${baseSearchUrl}Polis+Karakolu/${locationQuery}`; 
+      const touristPlacesUrl = `${baseSearchUrl}Turistik+Yerler`;
+      const cafeRestaurantUrl = `${baseSearchUrl}yüksek+puanlı+cafe+restoran`;
+      const hotelUrl = `${baseSearchUrl}otel+konaklama`;
+      const hospitalUrl = `${baseSearchUrl}Hastane`;
+      const pharmacyUrl = `${baseSearchUrl}Eczane`;
+      const policeUrl = `${baseSearchUrl}Polis+Karakolu`; 
 
       const allTrips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean).concat(state.res.map(x=>x.trip).filter(Boolean)))].sort();
       if (!allTrips.includes('Genel')) {
@@ -1843,8 +1532,12 @@ html, body {
       return `
           <div class="space-y-4 pb-24">
               
-              <!-- YENİ REZERVASYON AKORDİYONU -->
-              ${renderReservationsAccordion()}
+              <!-- REZERVASYON AKORDİYONU (Artık devre dışı) -->
+              ${accordionItem('reservations', ICONS.reserve.replace('w-4 h-4', 'w-4 h-4'), 'Uçuşlar ve Rezervasyonlar (Devre Dışı)', `
+                  <div class="p-4 pt-3 opacity-60 pointer-events-none">
+                      <p class="text-sm text-slate-500 italic">Bu özellik devre dışıdır, ancak mevcut rezervasyon kayıtlarınız saklanmaktadır.</p>
+                  </div>
+              `)}
 
               <!-- SEYAHAT ÖZET RAPORU -->
               ${accordionItem('report', ICONS.report, 'Seyahat Özet Raporu', renderReportContent())}
@@ -1906,14 +1599,15 @@ html, body {
                   </div>
               `)}
 
-              <!-- KONUM BAZLI YARDIMCILAR -->
-              <h3 class="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2">
-                 ${ICONS.compass} Konum Bazlı Yardımcılar
+              <!-- KONUM BAZLI YARDIMCILAR (Devre Dışı) -->
+              <h3 class="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2 opacity-50">
+                 ${ICONS.compass} Konum Bazlı Yardımcılar (Devre Dışı)
               </h3>
               
               <!-- YERLER -->
               <div class="${disabledClass}">
-                  ${accordionItem('places', ICONS.location, 'Yakındaki Yerler', `
+                  ${accordionItem('places', ICONS.location, 'Yakındaki Yerler (Konum Kapalı)', `
+                      <p class="text-sm text-slate-500 italic pt-3">Konum bilgisi kapalı olduğu için, aramalar genel Google Haritalar'da yapılacaktır.</p>
                       <div class="grid grid-cols-3 gap-3 pt-3">
                           <a href="${touristPlacesUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
                               ${ICONS.mapPin.replace('w-4 h-4', 'w-6 h-6')}
@@ -1933,7 +1627,8 @@ html, body {
               
               <!-- SAĞLIK -->
               <div class="${disabledClass}">
-                  ${accordionItem('health', ICONS.hospital, 'Sağlık ve Güvenlik', `
+                  ${accordionItem('health', ICONS.hospital, 'Sağlık ve Güvenlik (Konum Kapalı)', `
+                       <p class="text-sm text-slate-500 italic pt-3">Konum bilgisi kapalı olduğu için, aramalar genel Google Haritalar'da yapılacaktır.</p>
                       <div class="grid grid-cols-3 gap-3 pt-3">
                           <a href="${hospitalUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
                               ${ICONS.hospital.replace('w-4 h-4', 'w-6 h-6')}
@@ -2069,7 +1764,7 @@ html, body {
                </div>
             </div>
             
-            <!-- TARİH VE ÖDEME TİPİ ALANLARI -->
+            <!-- TARİH VE ÖDEME TİPİ ALANLARI (MOBİL KAYMA DÜZELTME) -->
             <div class="grid grid-cols-2 gap-3">
                 <!-- TARİH -->
                 <div class="input-group">
@@ -2339,14 +2034,12 @@ html, body {
         </div>`;
     }
     
-    // YENİ REZERVASYON FORMU MODALI
+    // Rezervasyon Modal ve Form çağrıları kaldırıldı
     if(type === 'res-form'){
-        return renderResForm();
+        return '';
     }
-    
-    // YENİ REZERVASYON DETAY MODALI
     if(type === 'res-detail'){
-        return renderResDetailModal();
+        return '';
     }
     
     
@@ -2449,9 +2142,9 @@ html, body {
         if(state.modals.detail) h+=renderModal('detail');
         if(state.modals.chart) h+=renderModal('chart');
         
-        // YENİ MODALLAR
-        if(state.modals.resForm) h+=renderModal('res-form');
-        if(state.modals.resDetail) h+=renderModal('res-detail');
+        // Kaldırılan Modallar
+        // if(state.modals.resForm) h+=renderModal('res-form');
+        // if(state.modals.resDetail) h+=renderModal('res-detail');
 
         if(state.lightbox) h+=`<div class="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-2 backdrop-blur-xl" data-act="close-lb"><img src="${state.lightbox}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"></div>`;
 
@@ -2470,20 +2163,12 @@ html, body {
             if (typeSelect) typeSelect.value = state.form.type;
         }
         
-        // Rezervasyon Formu alanlarının değerini manuel olarak ayarlama
-        if(state.modals.resForm && state.resForm.startDate) {
-            const startDateInput = document.getElementById('i-res-start-date');
-            if (startDateInput) startDateInput.value = state.resForm.startDate;
-        }
-        if(state.modals.resForm && state.resForm.endDate) {
-            const endDateInput = document.getElementById('i-res-end-date');
-            if (endDateInput) endDateInput.value = state.resForm.endDate;
-        }
+        // Rezervasyon Formu alanlarının değerini manuel olarak ayarlanması kaldırıldı
         
     } catch(e) { console.error(e); }
   }
   
-  // DRAG AND DROP HANDLERS (Kaldırıldı)
+  // DRAG AND DROP HANDLERS
   window.handleDragStart = (e) => { e.preventDefault(); };
   window.handleDragOver = (e) => { e.preventDefault(); };
   window.handleDrop = (e) => { e.preventDefault(); };
@@ -2498,22 +2183,23 @@ html, body {
             renderApp();
             return;
         }
-        // Rezervasyon formu kapatma
-        if(state.modals.resForm && e.target.classList.contains('form-modal-overlay')) {
-            state.modals.resForm = false;
-            state.err = '';
-            renderApp();
-            return;
-        }
+        // Rezervasyon formu kapatma kaldırıldı
+        // if(state.modals.resForm && e.target.classList.contains('form-modal-overlay')) {
+        //     state.modals.resForm = false;
+        //     state.err = '';
+        //     renderApp();
+        //     return;
+        // }
         return;
     }
     
     const act=t.dataset.act, val=t.dataset.val, id=t.dataset.id;
     
-    if(act === 'get-location'){
-        handleGeolocation();
-        return; 
-    }
+    // Konum ve Hava durumu aksiyonları kaldırıldı
+    // if(act === 'get-location-weather') {
+    //     handleGeolocation(true); 
+    //     return;
+    // }
     
     if(act === 'tog-accordion'){
         const currentStatus = state.helpersAccordion[val];
@@ -2532,9 +2218,10 @@ html, body {
                      state.selectedReportTrip = 'Genel';
                  }
             }
-            if (['places', 'health'].includes(val) && !state.location) {
-                handleGeolocation();
-            }
+            // Konum bazlı aksiyonlar kaldırıldı
+            // if (['places', 'health'].includes(val) && !state.location) {
+            //     handleGeolocation();
+            // }
         }
 
         setState({ helpersAccordion: newAccordionState });
@@ -2545,9 +2232,10 @@ html, body {
         if(val === 'sum' || val === 'exp' || val === 'chk' || val === 'other') {
             state.tab=val; 
             state.search = '';
-            if (val === 'other') {
-                handleGeolocation();
-            }
+            // Konum/hava durumu çağrıları kaldırıldı
+            // if (val === 'other' || val === 'sum') {
+            //     handleGeolocation(true); 
+            // }
         } 
         renderApp();
     }
@@ -2564,19 +2252,19 @@ html, body {
         renderApp();
     }
     
-    // YENİ: Rezervasyon Ekleme/İptal Etme
-    if(act === 'new-res'){
-        state.resForm = getEmptyResForm();
-        if(state.tripFilter) state.resForm.trip = state.tripFilter;
-        state.modals.resForm = true;
-        state.err = '';
-        renderApp();
-    }
-    if(act === 'cancel-res'){
-        state.modals.resForm = false;
-        state.err = '';
-        renderApp();
-    }
+    // Rezervasyon Ekleme/İptal Etme aksiyonları kaldırıldı
+    // if(act === 'new-res'){
+    //     state.resForm = getEmptyResForm();
+    //     if(state.tripFilter) state.resForm.trip = state.tripFilter;
+    //     state.modals.resForm = true;
+    //     state.err = '';
+    //     renderApp();
+    // }
+    // if(act === 'cancel-res'){
+    //     state.modals.resForm = false;
+    //     state.err = '';
+    //     renderApp();
+    // }
     
     // Not İşlemleri
     if (act === 'add-note') {
@@ -2596,8 +2284,8 @@ html, body {
         }
     }
     if (act === 'del-note') {
-        e.stopPropagation(); // Güvenlik: Tıklama yayılımını durdur
-        e.preventDefault(); // Varsayılan davranışı engelle
+        e.stopPropagation(); 
+        e.preventDefault(); 
         state.criticalNotes = state.criticalNotes.filter(n => n.id !== id);
         save();
         renderApp();
@@ -2606,13 +2294,13 @@ html, body {
     // KRİTİK: TÜM HARCAMALARI SİLME
     if(act==='clean-all-exp'){
         e.preventDefault(); 
-        e.stopPropagation(); // Event yayılımını durdur (Gereksiz tıklamaları engeller)
+        e.stopPropagation(); 
         if(confirm('DİKKAT! TÜM harcama kayıtları (Tüm seyahatler, tüm şehirler) kalıcı olarak silinecektir. Emin misiniz?')){
             state.exp=[]; 
             save(); 
             renderApp();
         }
-        return; // İşlem tamamlandı
+        return; 
     }
     
     // KRİTİK: DETAY MODALINDAN TEK HARCAMAYI SİLME
@@ -2625,7 +2313,7 @@ html, body {
             save(); 
             renderApp();
         }
-        return; // İşlem tamamlandı
+        return; 
     }
     
     // KRİTİK: ŞEHİR BAŞLIĞINDAN TÜM ŞEHİR HARCAMALARINI SİLME
@@ -2639,7 +2327,7 @@ html, body {
           save();
           renderApp();
       }
-      return; // İşlem tamamlandı
+      return; 
     }
 
     // Checklist İşlemleri
@@ -2663,7 +2351,7 @@ html, body {
            state.chk.items = state.chk.items.filter(x => x.id !== id);
            save(); renderApp();
         }
-        return; // İşlem tamamlandı
+        return; 
     }
     
     // GÜNCELLENMİŞ: add-chk-single
@@ -2674,10 +2362,9 @@ html, body {
         const rawItems = itemInput ? itemInput.value : '';
         
         if(rawItems && catId){
-            // Virgülle ayır, her birini temizle ve boş olmayanları listeye ekle
             rawItems.split(',').forEach(part => {
                 const clean = part.trim();
-                if(clean) state.chk.items.push({id:genId(), cat:catId, val:clean, done:false, date:''}); // Tarih alanı boş kalacak
+                if(clean) state.chk.items.push({id:genId(), cat:catId, val:clean, done:false, date:''}); 
             });
             if(itemInput) itemInput.value = ''; 
             save(); renderApp();
@@ -2688,7 +2375,6 @@ html, body {
     }
     
     if(act==='tog-chk-cat'){
-        // del-chk-cat-confirm butonuna basıldığında toggle'ı engelle
         if(e.target.closest('[data-act="del-chk-cat-confirm"]')) return;
         state.openChkCats[val]=!state.openChkCats[val]; 
         renderApp();
@@ -2714,8 +2400,8 @@ html, body {
     }
     
     if(act === 'del-chk-cat-confirm') {
-         e.preventDefault(); // Varsayılan davranışı engelle
-         e.stopPropagation(); // Güvenlik: Tıklama yayılımını durdur
+         e.preventDefault(); 
+         e.stopPropagation(); 
          if (id && confirm('Bu kategori ve İÇİNDEKİ TÜM MADDELER silinecek. Onaylıyor musun?')) {
              state.chk.cats = state.chk.cats.filter(c => c.id !== id);
              state.chk.items = state.chk.items.filter(i => i.cat !== id);
@@ -2723,7 +2409,7 @@ html, body {
              save();
              renderApp();
          }
-         return; // İşlem tamamlandı
+         return; 
      }
     
     // Harcama Formu İşlemleri
@@ -2743,8 +2429,8 @@ html, body {
     }
     
     if(act==='del-img'){
-        e.stopPropagation(); // Güvenlik: Tıklama yayılımını durdur
-        e.preventDefault(); // KRİTİK DÜZELTME: Varsayılan davranışı engelle
+        e.stopPropagation(); 
+        e.preventDefault(); 
         state.form.imgs.splice(val,1); 
         renderApp();
     } 
@@ -2754,6 +2440,11 @@ html, body {
        
        const isIndividualInput = document.getElementById('i-isIndividual');
        f.isIndividual = isIndividualInput ? isIndividualInput.checked : false; 
+       
+       // Yeni: Ödeme Tipi set edildi
+       const typeInput = document.getElementById('i-type');
+       f.type = typeInput ? typeInput.value : EXPENSE_TYPES[0].id;
+
        const isFuelActive = f.cat === 'fuel';
        f.isFuel = isFuelActive;
 
@@ -2798,91 +2489,16 @@ html, body {
        renderApp();
     }
     
-    // Rezervasyon Formu İşlemleri
-    if(act === 'set-res-type'){
-        state.resForm.type = val;
-        renderApp();
-    }
-    if(act === 'save-res'){
-        const f = state.resForm;
-        
-        // KRİTİK DÜZELTME: Kaydetmeden önce tüm form değerlerini DOM'dan çek.
-        // Bu, input eventlerinin tetiklenmeme (örn: select) veya gecikme sorunlarını çözer.
-        // Değerleri doğrudan formdan alıyoruz.
-        f.name = document.getElementById('i-res-name').value;
-        f.trip = document.getElementById('i-res-trip').value;
-        f.location = document.getElementById('i-res-location').value;
-        f.startDate = document.getElementById('i-res-start-date').value;
-        f.endDate = document.getElementById('i-res-end-date').value;
-        f.code = document.getElementById('i-res-code').value;
-        f.cost = document.getElementById('i-res-cost').value;
-        f.cur = document.getElementById('i-res-cur').value;
-        f.notes = document.getElementById('i-res-notes').value;
-        
-        // Maliyet alanını temizle ve state'e kaydet (input eventinde bu işlem yapılmadığı için)
-        f.cost = f.cost.replace(',','.').replace(/[^0-9.]/g,'');
-        
-        if(!f.name || !f.location || !f.startDate || !f.trip){
-             state.err = 'Rezervasyon Adı, Konum, Tarih ve Seyahat alanları zorunludur.'; 
-             renderApp(); 
-             return; 
-        }
-        
-        // Tarih kontrolü
-        if (f.endDate && new Date(f.endDate) < new Date(f.startDate)) {
-            state.err = 'Bitiş tarihi başlangıç tarihinden küçük olamaz.'; 
-            renderApp(); 
-            return; 
-        }
-        
-        const rec = {...f, 
-            id: f.id || genId(),
-            trip: titleCase(f.trip),
-            name: titleCase(f.name),
-            location: titleCase(f.location),
-            cost: f.cost, // Temizlenmiş hali zaten f.cost'a yazıldı
-        };
-        
-        if(f.id) state.res=state.res.map(x=>x.id===f.id?rec:x); else state.res=[...state.res,rec];
-        
-        save();
-        state.err = '';
-        state.modals.resForm = false;
-        state.helpersAccordion.reservations = true;
-        renderApp();
-    }
-    
-    // Rezervasyon Listesi İşlemleri
-    if(act === 'res-detail'){state.selRes=id; state.modals.resDetail=true; renderApp();}
-    if(act === 'del-res-detail'){
-        e.stopPropagation(); // Güvenlik: Tıklama yayılımını durdur
-        e.preventDefault(); // KRİTİK DÜZELTME: Varsayılan davranışı engelle
-        if(state.selRes && confirm('Bu rezervasyon kalıcı olarak silinsin mi?')){
-            state.res = state.res.filter(x => x.id !== state.selRes);
-            save(); 
-            state.modals.resDetail = false; 
-            renderApp();
-        }
-        return;
-    }
-    if(act === 'edit-res'){
-        const r = state.res.find(res => res.id === state.selRes); 
-        if(r){
-            state.resForm = {...r};
-            state.modals.resDetail = false;
-            state.modals.resForm = true;
-            renderApp();
-        }
-    }
-    if(act === 'toggle-res-complete'){
-        state.res = state.res.map(r => r.id === state.selRes ? {...r, completed: !r.completed} : r);
-        save();
-        renderApp(); // Detay modalini güncelle
-    }
+    // Rezervasyon Formu İşlemleri kaldırıldı
+
+    // Rezervasyon Listesi İşlemleri kaldırıldı
+    // if(act === 'res-detail'){state.selRes=id; state.modals.resDetail=true; renderApp();}
+    // if(act === 'del-res-detail'){...}
+    // if(act === 'edit-res'){...}
+    // if(act === 'toggle-res-complete'){...}
     
     // Liste
     if(act==='tog-city'){
-        // KRİTİK KONTROL: Eğer tıklanan element del-city butonu veya içindeki bir element ise, toggle işlemini yapma.
         if(e.target.closest('[data-act="del-city"]')) return; 
         state.expandedCities[val]=!state.expandedCities[val]; renderApp();
     }
@@ -2892,7 +2508,8 @@ html, body {
     if(act==='close-mod'){
       if(val === 'tzSelect') state.modals.tzSelect = false;
       else if(val === 'chart') {state.modals.chart = false; setTimeout(renderApp, 100);}
-      else if(val === 'resDetail') {state.modals.resDetail = false;}
+      // Rezervasyon detayı kapatma kaldırıldı
+      // else if(val === 'resDetail') {state.modals.resDetail = false;}
       else state.modals={detail:false,chart:false,data:false}; 
       renderApp();
     }
@@ -2952,7 +2569,7 @@ html, body {
         state.exp=d.exp||[];
         state.chk=d.chk||state.chk;
         state.criticalNotes=d.notes||[];
-        state.res=d.res||[]; // Rezervasyonları yükle
+        state.res=d.res||[]; 
         state.baseCurrency = d.baseCur || 'TRY'; 
         BASE_CURRENCY = state.baseCurrency; 
         save();
@@ -3094,7 +2711,7 @@ html, body {
     }
 
     // Harcama formu inputları
-    if(t.closest('.form-modal-overlay') && !t.closest('[data-act="save-res"]')) { // Sadece harcama formu alanları
+    if(t.closest('.form-modal-overlay')) { 
         const fExp=state.form; 
         let shouldRender = false; 
 
@@ -3108,7 +2725,7 @@ html, body {
             case 'i-cur': fExp.cur = t.value; shouldRender = true; break; 
             case 'i-ppl': fExp.ppl = t.value; break; 
             case 'i-date': fExp.date = t.value; shouldRender = true; break; 
-            case 'i-type': fExp.type = t.value; break; 
+            case 'i-type': fExp.type = t.value; break; // Ödeme tipi güncellendi
             case 'i-desc': fExp.desc = t.value; break;
             case 'i-start-km': fExp.startKm = t.value.replace(/[^0-9]/g, ''); break; 
             case 'i-end-km': fExp.endKm = t.value.replace(/[^0-9]/g, ''); break; 
@@ -3122,30 +2739,6 @@ html, body {
             renderApp();
         }
     } 
-    
-    // Rezervasyon formu inputları ARTİK BURADA DEĞİL. SAVE ANINDA DOM'DAN OKUNUYOR.
-    if(state.modals.resForm) {
-        const fRes = state.resForm;
-        let shouldRender = false;
-        
-        switch(t.id) {
-            case 'i-res-name': fRes.name = t.value; break;
-            case 'i-res-trip': fRes.trip = t.value; break;
-            case 'i-res-location': fRes.location = t.value; break;
-            case 'i-res-code': fRes.code = t.value; break;
-            case 'i-res-cost': fRes.cost = t.value.replace(',','.').replace(/[^0-9.]/g,''); break;
-            case 'i-res-notes': fRes.notes = t.value; break;
-            // Tarih ve Kur alanı input'tan renderApp() çağırmalı ki güncel değerler formda görünsün
-            case 'i-res-start-date': fRes.startDate = t.value; shouldRender = true; break;
-            case 'i-res-end-date': fRes.endDate = t.value; shouldRender = true; break;
-            case 'i-res-cur': fRes.cur = t.value; shouldRender = true; break;
-            default: return;
-        }
-        
-        if (shouldRender) {
-            renderApp();
-        }
-    }
   });
   
   // Saati her saniye güncelleyen ana fonksiyon
@@ -3166,6 +2759,7 @@ html, body {
   window.onload = function() {
       initState(); 
       fetchAndApplyRates().then(() => {
+          // Hava durumu ve konum çağrısı kaldırıldı
           startClock(); 
       });
   };
