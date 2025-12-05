@@ -71,6 +71,28 @@ html, body {
 .city-header-gradient {
     background: linear-gradient(90deg, #1e293b 0%, #1f2937 80%, rgba(30, 41, 59, 0) 100%);
 }
+
+/* YENİ: Ana menü butonu stili */
+.menu-btn-base {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.2rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s;
+    border-width: 1px;
+}
+.menu-btn-icon-box {
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+}
 </style>
 </head>
 <body class="min-h-screen bg-[#0F111A] text-slate-200 flex justify-center p-4 selection:bg-blue-500/30">
@@ -370,6 +392,15 @@ html, body {
     // Yeni İkon: Para Birimi
     currency: mkSvg('<circle cx="12" cy="12" r="10"/><path d="M12 18V6"/><path d="M9 9h6"/><path d="M9 15h6"/>')
   };
+  
+  // YENİ: Menü ikonlarının estetik gradient renkleri
+  const MENU_ICON_COLORS = {
+      sum: 'from-blue-500 to-indigo-500', 
+      exp: 'from-fuchsia-500 to-purple-500', 
+      chk: 'from-emerald-500 to-teal-500', 
+      other: 'from-amber-500 to-orange-500',
+  };
+
 
   // Harcama Kategorileri (Renkler daha mat ve uyumlu hale getirildi)
   const CATS={
@@ -518,7 +549,8 @@ html, body {
         newCriticalNote: '', 
         selectedReportTrip: selectedNoteTrip, 
         chartCurrency: preferredBaseCurrency, 
-        baseCurrency: preferredBaseCurrency, // Yeni: Temel Para Birimi State'i
+        baseCurrency: preferredBaseCurrency, 
+        reportCurrency: preferredBaseCurrency, // YENİ: Rapor Para Birimi State'i
     };
     
     // Check List Kategorileri: Açık/Kapalı Durumu
@@ -670,6 +702,12 @@ html, body {
       
       const tripOptions = allTrips.map(t=>`<option value="${esc(t)}" ${selectedTrip===t?'selected':''}>${esc(t)}</option>`).join('');
 
+      const reportCur = state.reportCurrency; 
+      const currencyOptions = AVAILABLE_CURRENCIES.map(c => 
+          `<option value="${c}" ${c === reportCur ? 'selected' : ''}>${c}</option>`
+      ).join('');
+
+
       if (!tripExpenses.length) {
           return `
               <div class="space-y-4 pt-3">
@@ -691,46 +729,58 @@ html, body {
           `;
       }
       
-      // 1. Toplam Harcama (Para Cinsi Bazında)
+      // 1. Toplam Harcama (Para Cinsi Bazında - BASE CUR)
+      let totalInReportCur = 0;
+      tripExpenses.forEach(x => {
+          totalInReportCur += convertToBase(x.amt, x.cur, reportCur);
+      });
+      
+      // Orijinal Para Birimi Özetleri
       const totalsByCurrency = {};
       tripExpenses.forEach(x => {
-          const cur = x.cur || state.baseCurrency; 
+          const cur = x.cur || BASE_CURRENCY; 
           const amt = Number(x.amt) || 0;
           totalsByCurrency[cur] = (totalsByCurrency[cur] || 0) + amt;
       });
-      const totalSummary = Object.entries(totalsByCurrency)
+      const originalSummary = Object.entries(totalsByCurrency)
           .sort((a, b) => b[1] - a[1]) // En yüksek tutardan başla
           .map(([cur, amt]) => `<span class="bg-violet-700/50 px-3 py-1 rounded-full text-sm font-bold">${fmtNum(amt)} <span class="text-xs font-normal">${cur}</span></span>`)
           .join('');
 
-      // 2. En Çok Harcama Yapılan 3 Kategori
-      const categoryData = getChartDataset(tripExpenses);
-      const topCategories = Object.entries(categoryData.perCat || {})
-          .sort(([, a], [, b]) => b - a) // Düzeltme: Burada eksik olan ']' parantezi eklendi.
+      // 2. En Çok Harcama Yapılan 3 Kategori (Report Cur Bazında)
+      const categoryDataReport = {};
+      tripExpenses.forEach(x => {
+          const cat = x.cat || 'other';
+          // Harcamayı RAPOR para birimine dönüştür
+          const amtInReportCur = convertToBase(x.amt, x.cur, reportCur);
+          categoryDataReport[cat] = (categoryDataReport[cat] || 0) + amtInReportCur;
+      });
+      
+      const topCategories = Object.entries(categoryDataReport)
+          .sort(([, a], [, b]) => b - a) 
           .slice(0, 3)
           .map(([catId, amt], index) => {
               const catInfo = CATS[catId] || CATS.other;
-              // Rapor için kur bilgisi, chart'ın kullandığı kuru kullanır
               return `
                   <div class="flex items-center justify-between p-3 rounded-lg border border-slate-700/50 bg-slate-800/50">
                       <span class="text-sm font-medium text-slate-200 flex items-center gap-2">
                           ${catInfo.i} ${esc(catInfo.l)}
                       </span>
-                      <span class="font-bold text-white">${fmtNum(amt)} ${categoryData.currency}</span>
+                      <span class="font-bold text-white">${fmtNum(amt)} ${reportCur}</span>
                   </div>
               `;
           }).join('');
 
-      // 3. En Çok Para Bırakılan 3 Şehir/Mekan
+      // 3. En Çok Para Bırakılan 3 Şehir/Mekan (Report Cur Bazında)
       const cityPlaceTotals = {};
       tripExpenses.forEach(x => {
           const key = `${x.city} / ${x.place}`;
-          // Harcamayı BASE_CURRENCY'ye dönüştürerek tutarlılık sağla
-          const amtInBase = convertToBase(x.amt, x.cur, state.baseCurrency);
-          cityPlaceTotals[key] = (cityPlaceTotals[key] || 0) + amtInBase;
+          // Harcamayı RAPOR para birimine dönüştür
+          const amtInReportCur = convertToBase(x.amt, x.cur, reportCur);
+          cityPlaceTotals[key] = (cityPlaceTotals[key] || 0) + amtInReportCur;
       });
       const topLocations = Object.entries(cityPlaceTotals)
-          .sort(([, a], [, b]) => b - a) // Düzeltme: Burada eksik olan ']' parantezi eklendi.
+          .sort(([, a], [, b]) => b - a) 
           .slice(0, 3)
           .map(([key, amt], index) => {
               const [city, place] = key.split(' / ');
@@ -739,8 +789,7 @@ html, body {
                       <span class="text-sm font-medium text-slate-200">
                           <span class="font-bold text-white">${esc(place)}</span> <span class="text-slate-400">(${esc(city)})</span>
                       </span>
-                      <!-- Toplamı ana kurda göster -->
-                      <span class="font-bold text-white">${fmtNum(amt)} ${state.baseCurrency}</span> 
+                      <span class="font-bold text-white">${fmtNum(amt)} ${reportCur}</span> 
                   </div>
               `;
           }).join('');
@@ -770,37 +819,49 @@ html, body {
       return `
           <div class="space-y-4 pt-3">
               
-              <!-- SEYAHAT SEÇİMİ -->
-              <div>
-                 <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Raporlanacak Seyahat Seçimi</label>
-                 <div class="relative">
-                   <select data-act="set-report-trip" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
+              <!-- SEYAHAT SEÇİMİ VE RAPOR PARA BİRİMİ (YANYANA) -->
+              <div class="grid grid-cols-2 gap-3">
+                  <div>
+                     <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Seyahat</label>
+                     <div class="relative">
+                       <select data-act="set-report-trip" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
                          ${tripOptions}
                        </select>
                        <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
-                   <div class="text-[10px] text-slate-500 mt-1">Bu rapor, harcamaları ${state.baseCurrency} kuruna dönüştürerek mekan toplamlarını gösterir.</div>
-                 </div>
+                     </div>
+                  </div>
+                  <!-- YENİ: RAPOR PARA BİRİMİ SEÇİMİ (İSTEK 5) -->
+                  <div>
+                     <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Rapor Para Birimi</label>
+                     <div class="relative">
+                       <select data-act="set-report-currency" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
+                         ${currencyOptions}
+                       </select>
+                       <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
+                     </div>
+                  </div>
               </div>
+
 
               <div class="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-700/50 rounded-xl p-4">
                   <h3 class="text-lg font-bold text-white mb-2">${selectedTrip} Seyahat Özeti</h3>
-                  <p class="text-xs text-slate-400">Veriler, seçilen seyahat için filtrelenmiştir. Toplam ${tripExpenses.length} harcama kaydı.</p>
+                  <div class="text-[10px] text-slate-400">Toplam Harcama: <span class="font-bold text-white">${fmtNum(totalInReportCur)} ${reportCur}</span>'a dönüştürülmüştür. (${tripExpenses.length} kayıt)</div>
               </div>
 
-              <!-- 1. Toplam Harcama -->
+              <!-- 1. Toplam Harcama (Orijinal Kurlar) -->
               <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
                   <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
-                     ${ICONS.wallet.replace('w-4 h-4', 'w-4 h-4')} Para Birimi Bazında Toplam Harcama
+                     ${ICONS.wallet.replace('w-4 h-4', 'w-4 h-4')} Orijinal Para Birimi Bazında Toplam Harcama
                   </h4>
                   <div class="flex flex-wrap gap-2">
-                      ${totalSummary || '<span class="text-slate-500">Harcama Yok</span>'}
+                      ${originalSummary || '<span class="text-slate-500">Harcama Yok</span>'}
                   </div>
               </div>
 
               <!-- 2. En Çok Harcama Yapılan 3 Kategori -->
               <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
                   <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
-                     ${ICONS.chart.replace('w-4 h-4', 'w-4 h-4')} En Çok Harcanan Kategoriler (${categoryData.currency})
+                     ${ICONS.chart.replace('w-4 h-4', 'w-4 h-4')} En Çok Harcanan Kategoriler (${reportCur})
                   </h4>
                   <div class="space-y-2">
                     ${topCategories || '<p class="text-sm text-slate-500 italic">Kategori harcaması bulunamadı.</p>'}
@@ -810,7 +871,7 @@ html, body {
               <!-- 3. En Çok Para Bırakılan 3 Şehir/Mekan -->
               <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
                   <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
-                     ${ICONS.location.replace('w-4 h-4', 'w-4 h-4')} En Çok Para Bırakılan 3 Mekan (${state.baseCurrency})
+                     ${ICONS.location.replace('w-4 h-4', 'w-4 h-4')} En Çok Para Bırakılan 3 Mekan (${reportCur})
                   </h4>
                   <div class="space-y-2">
                     ${topLocations || '<p class="text-sm text-slate-500 italic">Mekan harcaması bulunamadı.</p>'}
@@ -838,17 +899,6 @@ html, body {
       `;
   }
   
-  // --- YARDIMCILAR SEKME RENDER FONKSİYONU ---
-  function renderHelpers() {
-    // Tüm konumla ilgili akordiyonlar bu fonksiyondan kaldırıldı. 
-    // Yalnızca "Diğer" (other) sekmesinde görünen akordiyonlar render edilir.
-
-    // Not: Bu fonksiyon renderOtherTab içinde çağrılmıyor. renderOtherTab kendi içeriğini oluşturuyor.
-    // Bu fonksiyon sadece eski yapıyı korumak için bırakılmıştı, artık kullanılmıyor. 
-    // Tüm yardımcılar, Diğer sekmesinin içinde renderOtherTab tarafından çağrılır.
-    return ``;
-  }
-
   // YENİ FONKSİYON: Rota Planlayıcı İçeriğini Oluştur (MEKAN BAZLI)
   function renderRoutePlanner() {
       const selectedTrip = state.routeTrip || state.tripFilter; 
@@ -1214,25 +1264,41 @@ html, body {
 
   function renderTabs(){
     const t = state.tab;
-    // İSTEK 3: Menü başlıkları küçültüldü (text-xs)
-    const btnCls = "flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 border";
-    // Mavi-Lacivert tonlarında, daha profesyonel aktif renkler
-    const active = "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/30";
-    const passive = "bg-transparent text-slate-500 border-transparent hover:bg-slate-800/50 hover:text-slate-300";
+    // İSTEK 1: Menü başlıkları küçültüldü ve dikey ikon/isim düzeni uygulandı.
+    const btnCls = "menu-btn-base border-transparent hover:bg-slate-800/50 hover:text-slate-300";
+    const activeCls = "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/30";
+    const passiveCls = "bg-transparent text-slate-500 border-transparent";
     
+    const tabs = [
+        {id: 'sum', label: 'ÖZET', icon: ICONS.home, color: MENU_ICON_COLORS.sum},
+        {id: 'exp', label: 'HARCAMA', icon: ICONS.wallet, color: MENU_ICON_COLORS.exp},
+        {id: 'chk', label: 'CHECK LIST', icon: ICONS.briefcase, color: MENU_ICON_COLORS.chk},
+        {id: 'other', label: 'DİĞER', icon: ICONS.more, color: MENU_ICON_COLORS.other},
+    ];
+
     return `
-      <!-- TAB SAYISI 4'E ÇIKARILDI -->
       <div class="glass-panel p-1 rounded-xl mb-4 flex gap-1 overflow-x-auto scrl">
-        <button data-act="tab" data-val="sum" class="${btnCls} ${t==='sum'?active:passive}">${ICONS.home} ÖZET</button>
-        <button data-act="tab" data-val="exp" class="${btnCls} ${t==='exp'?active:passive}">${ICONS.wallet} HARCAMA</button>
-        <button data-act="tab" data-val="chk" class="${btnCls} ${t==='chk'?active:passive}">${ICONS.briefcase} CHECK LIST</button>
-        <button data-act="tab" data-val="other" class="${btnCls} ${t==='other'?active:passive}">${ICONS.more} DİĞER</button>
+        ${tabs.map(tab => {
+            const isActive = t === tab.id;
+            const statusClass = isActive ? activeCls : passiveCls;
+            const iconColor = isActive ? '' : 'text-white';
+            
+            return `
+                <button data-act="tab" data-val="${tab.id}" class="${btnCls} ${statusClass}">
+                    <div class="menu-btn-icon-box bg-gradient-to-br ${tab.color} text-white shadow-lg shadow-black/30">
+                        ${tab.icon.replace('w-4 h-4', 'w-5 h-5')}
+                    </div>
+                    <span class="text-[9px] font-extrabold uppercase leading-none">${tab.label}</span>
+                </button>
+            `;
+        }).join('')}
       </div>
     `;
   }
 
   function renderFilters(){
-    // YENİLEME: Filtreler dikey hizalandı ve bireysel/ortak ve ödeme tipi filtreleri eklendi.
+    // İSTEK 3: Harcamalar ekranında mobil uyumlu filtre düzeni
+    // Filtreler dikey hizalandı ve bireysel/ortak ve ödeme tipi filtreleri eklendi.
     return `
       <div class="flex flex-col sm:flex-row gap-2 mb-3">
          
@@ -1252,21 +1318,24 @@ html, body {
               <div class="absolute right-3 top-2.5 text-slate-500 pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
            </div>
 
-           <!-- Harcama Tipi Filtresi (Kart/Nakit) -->
-           <div class="relative w-full sm:w-32 flex-shrink-0">
-              <select data-act="flt-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 outline-none appearance-none cursor-pointer">
-                <option value="">Ödeme Tipi</option>
-                ${EXPENSE_TYPES.map(t=>`<option value="${t.id}" ${state.typeFilter===t.id?'selected':''}>${t.l}</option>`).join('')}
-              </select>
-              <div class="absolute right-3 top-2.5 text-slate-500 pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
-           </div>
+           <!-- ÖDEME TİPİ VE BİREYSEL/ORTAK YANYANA (MOBİL İÇİN) -->
+           <div class="flex gap-2 w-full sm:w-auto">
+             <!-- Harcama Tipi Filtresi (Kart/Nakit) -->
+             <div class="relative flex-1 min-w-[50%] sm:w-32">
+                <select data-act="flt-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 outline-none appearance-none cursor-pointer">
+                  <option value="">Ödeme Tipi</option>
+                  ${EXPENSE_TYPES.map(t=>`<option value="${t.id}" ${state.typeFilter===t.id?'selected':''}>${t.l}</option>`).join('')}
+                </select>
+                <div class="absolute right-3 top-2.5 text-slate-500 pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
+             </div>
 
-           <!-- Bireysel/Ortak Filtresi -->
-           <div class="relative w-full sm:w-40 flex-shrink-0">
-              <select data-act="flt-ind" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 outline-none appearance-none cursor-pointer">
-                ${INDIVIDUAL_FILTERS.map(f=>`<option value="${f.id}" ${state.indFilter===f.id?'selected':''}>${f.l}</option>`).join('')}
-              </select>
-              <div class="absolute right-3 top-2.5 text-slate-500 pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
+             <!-- Bireysel/Ortak Filtresi -->
+             <div class="relative flex-1 min-w-[50%] sm:w-40">
+                <select data-act="flt-ind" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 outline-none appearance-none cursor-pointer">
+                  ${INDIVIDUAL_FILTERS.map(f=>`<option value="${f.id}" ${state.indFilter===f.id?'selected':''}>${f.l}</option>`).join('')}
+                </select>
+                <div class="absolute right-3 top-2.5 text-slate-500 pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
+             </div>
            </div>
            
          ` : ''}
@@ -1424,8 +1493,8 @@ html, body {
               
               ${isOpen ? `
               
-              <!-- MADDE EKLEME KUTUSU (İSTEK 6) -->
-              <div class="p-3 pt-0 border-t border-slate-700/50">
+              <!-- MADDE EKLEME KUTUSU (İSTEK 4: Boşluk eklendi) -->
+              <div class="p-3 pt-0 border-t border-slate-700/50 mt-2"> 
                   <div class="flex gap-2 p-2 bg-slate-900/50 rounded-lg border border-slate-800">
                       <input id="new-chk-item-${c.id}" data-cat-id="${c.id}" placeholder="${esc(c.l)} için yeni madde/plan..." class="flex-1 bg-transparent border-none px-1 text-xs w-full outline-none text-slate-200 placeholder-slate-600">
                       <!-- Tarih kaldırıldı -->
@@ -1736,7 +1805,7 @@ html, body {
                </div>
             </div>
             
-            <!-- TARİH VE ÖDEME TİPİ YAN YANA -->
+            <!-- TARİH VE ÖDEME TİPİ YAN YANA (İSTEK 2: Düzeltme) -->
             <div class="grid grid-cols-2 gap-3">
                 <div>
                    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Tarih</label>
@@ -2525,6 +2594,14 @@ html, body {
         state.helpersAccordion.report = true; 
         renderApp();
     }
+    
+    // YENİ: RAPOR PARA BİRİMİ SEÇİMİ
+    if(t.dataset.act==='set-report-currency'){
+        state.reportCurrency = t.value;
+        state.helpersAccordion.report = true; 
+        renderApp();
+    }
+
 
     // FOTOĞRAF YÜKLEME İŞLEYİCİSİ
     if(t.dataset.act==='img-upload'){
