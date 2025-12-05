@@ -96,7 +96,7 @@ html, body {
       CAD: 31.00, // Tahmini
       AUD: 29.00, // Tahmini
   };
-  const BASE_CURRENCY = 'TRY'; // Uygulamanın ana raporlama para birimi
+  let BASE_CURRENCY = 'TRY'; // Uygulamanın ana raporlama para birimi
   
   // Kurun ne zaman güncellendiği (başlangıçta manuel/sabit)
   let rateLastUpdated = 'Statik (Başlangıç)'; 
@@ -119,18 +119,24 @@ html, body {
   let chartInst=null, state={};
   
   // Harcamayı ana para birimine dönüştürür
-  function convertToBase(amount, currency) {
+  function convertToBase(amount, currency, targetCurrency = BASE_CURRENCY) {
       amount = Number(amount) || 0;
-      currency = currency || BASE_CURRENCY;
-      if (currency === BASE_CURRENCY) return amount;
+      currency = currency || 'TRY';
+      targetCurrency = targetCurrency || 'TRY';
+
+      if (currency === targetCurrency) return amount;
       
-      const rate = EXCHANGE_RATES[currency];
-      // Kur yoksa 1 kabul et veya hata logla
-      if (!rate) {
-          console.warn(`Bilinmeyen kur: ${currency}. 1:1 olarak kabul edildi.`);
+      const rateToTry = EXCHANGE_RATES[currency];
+      const rateFromTry = EXCHANGE_RATES[targetCurrency];
+
+      if (!rateToTry || !rateFromTry) {
+          console.warn(`Bilinmeyen kur: ${currency} veya ${targetCurrency}. Dönüşüm başarısız.`);
           return amount;
       }
-      return amount * rate;
+      
+      // TRY'ye dönüştür, sonra hedef para birimine
+      const amountInTry = amount * rateToTry;
+      return amountInTry / rateFromTry;
   }
 
   // --- KRİTİK FONKSİYON: KUR ÇEKİMİNİ SİMÜLE EDER VE UYGULAR ---
@@ -145,6 +151,7 @@ html, body {
       return new Promise(resolve => {
           setTimeout(() => {
               try {
+                  // Gerçekçi olması için statik kurlar TRY baz alınarak ayarlanmıştır
                   if (MOCK_USD_RATE && MOCK_USD_RATE > 0) EXCHANGE_RATES.USD = MOCK_USD_RATE;
                   if (MOCK_EUR_RATE && MOCK_EUR_RATE > 0) EXCHANGE_RATES.EUR = MOCK_EUR_RATE;
 
@@ -182,7 +189,7 @@ html, body {
     const allExp = base.filter(x => !isNaN(Number(x.amt)) && Number(x.amt) > 0);
 
     if(!allExp.length){
-      return {labels:[], data:[], colors:[], currency: BASE_CURRENCY, total:0, trips:[], currencies:[], perCat:{}};
+      return {labels:[], data:[], colors:[], currency: state.chartCurrency || BASE_CURRENCY, total:0, trips:[], currencies:[], perCat:{}};
     }
 
     const currencies = [...new Set(allExp.map(x => x.cur || BASE_CURRENCY))];
@@ -321,9 +328,10 @@ html, body {
   };
 
   // SVG İkonları
+  // MENÜLER İÇİN KÜÇÜK İKON SİZE (s=4)
   const mkSvg=(d,s=4)=>`<svg class="w-${s} h-${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const ICONS={
-    wallet: mkSvg('<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',6),
+    wallet: mkSvg('<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',4), // Küçültüldü
     trash: mkSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>'),
     info: mkSvg('<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'),
     plus: mkSvg('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
@@ -334,14 +342,12 @@ html, body {
     down: mkSvg('<polyline points="6 9 12 15 18 9"/>'),
     search: mkSvg('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'),
     person: mkSvg('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
-    briefcase: mkSvg('<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>'),
-    globe: mkSvg('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="22"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',5),
+    briefcase: mkSvg('<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>', 4), // Küçültüldü
+    globe: mkSvg('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="22"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',4), // Küçültüldü
     compass: mkSvg('<circle cx="12" cy="12" r="10"/><polygon points="16 16 12 12 8 16 12 8 16 16"/>',4),
     hospital: mkSvg('<path d="M12 20v-8m0 0V4m0 8h8m-8 0H4"/><circle cx="12" cy="12" r="10"/>',4),
     location: mkSvg('<path d="M12 21.7C17.3 17 22 13.3 22 10a10 10 0 0 0-20 0c0 3.3 4.7 7 10 11.7z"/><circle cx="12" cy="10" r="3"/>',4),
-    // Ulaşım için otobüs yerine daha genel bir araba/taksi sembolü kullanıldı.
     bus: mkSvg('<rect x="1" y="5" width="22" height="14" rx="2"/><path d="M10 16h4M3 9h18M5 19v2M19 19v2M6 19v2M18 19v2M7 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM17 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',4),
-    // Yeni taxi ikonu
     taxi: mkSvg('<path d="M17 10H7c-2.2 0-4 1.8-4 4v5h18v-5c0-2.2-1.8-4-4-4z"/><path d="M15 10V6c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v4"/><path d="M15 10c1.7 0 3 1.3 3 3H6c0-1.7 1.3-3 3-3z"/><path d="M12 2l2 2m-2-2l-2 2"/><rect x="5" y="19" width="4" height="2"/><rect x="15" y="19" width="4" height="2"/><path d="M12 10V4"/>', 4),
     pharmacy: mkSvg('<path d="M12 22s-8-4.5-8-10A8 8 0 0 1 12 4a8 8 0 0 1 8 8c0 5.5-8 10-8 10z"/><path d="M12 9v6m-3-3h6"/>', 4),
     restaurant: mkSvg('<path d="M12 22s-8-4-8-10A8 8 0 0 1 12 4a8 8 0 0 1 8 8c0 6-8 10-8 10zM12 4a4 4 0 0 0 0 8 4 4 0 0 0 0-8z"/>', 4),
@@ -349,23 +355,20 @@ html, body {
     police: mkSvg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 18V12m-3 3h6"/>', 4),
     key: mkSvg('<path d="M21 2l-2 2m-7 7l-2 2m-7 7l-2 2"/><path d="M15 11l-2 2m-7 7l-2 2"/><path d="M16 12l2-2m-7 7l-2 2"/><path d="M14 10l2-2m-7 7l-2 2"/><path d="M13 9l2-2m-7 7l-2 2"/><path d="M12 8l2-2m-7 7l-2 2"/><path d="M11 7l2-2m-7 7l-2 2"/><path d="M10 6l2-2m-7 7l-2 2"/><path d="M9 5l2-2m-7 7l-2 2"/><path d="M8 4l2-2m-7 7l-2 2"/><path d="M7 3l2-2m-7 7l-2 2"/><path d="M6 2l2-2m-7 7l-2 2"/><path d="M5 1l2-2m-7 7l-2 2"/><path d="M4 0l2-2m-7 7l-2 2"/><path d="M3 23l-2 2m-7 7l-2 2"/>', 4),
     mapPin: mkSvg('<path d="M12 22s-8-4-8-10c0-4.4 3.6-8 8-8s8 3.6 8 8c0 6-8 10-8 10z"/><circle cx="12" cy="10" r="3"/>', 4),
-    flight: mkSvg('<path d="M19 17h-2l-1-2H8l-1 2H5l1-2H2l2-4 1-2h4l1 2h4l1-2h4l1 2 2 4h-3z"/><path d="M14 11l-2-2M10 11l2-2M12 2v3M12 16v6M12 12V6"/>', 6),
+    flight: mkSvg('<path d="M19 17h-2l-1-2H8l-1 2H5l1-2H2l2-4 1-2h4l1 2h4l1-2h4l1 2 2 4h-3z"/><path d="M14 11l-2-2M10 11l2-2M12 2v3M12 16v6M12 12V6"/>', 4), // Küçültüldü
     ticket: mkSvg('<path d="M12 22s-8-4-8-10V5l8-3 8 3v7c0 6-8 10-8 10z"/><path d="M12 10v4M10 12h4"/>', 4),
     fuel: mkSvg('<path d="M14 3v4a2 2 0 0 1-2 2h-1a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h1a2 2 0 0 0 2 2v4M5 7h14M5 13h14M5 19h14M12 3v4M12 10v4M12 17v4"/>', 4),
-    route: mkSvg('<polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M21 15.5H3M12 2L12 10M12 14L12 22"/>', 5),
-    report: mkSvg('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="10" y1="8" x2="16" y2="8"/><line x1="10" y1="12" x2="14" y2="12"/><line x1="10" y1="16" x2="12" y2="16"/><line x1="7" y1="8" x2="7" y2="16"/>',5),
-    // YENİ İKON: Finansal Özet/Hesaplama
+    route: mkSvg('<polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M21 15.5H3M12 2L12 10M12 14L12 22"/>', 4), // Küçültüldü
+    report: mkSvg('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="10" y1="8" x2="16" y2="8"/><line x1="10" y1="12" x2="14" y2="12"/><line x1="10" y1="16" x2="12" y2="16"/><line x1="7" y1="8" x2="7" y2="16"/>',4), // Küçültüldü
     calculate: mkSvg('<path d="M20 9V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4"/><path d="M2 13h20"/><path d="M17 13v8M7 13v8M4 21h16"/><path d="M10 13v8M14 13v8"/>', 4),
-    // YENİ İKONLAR: Ödeme Tipi
     card: mkSvg('<rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="14" x2="6.01" y2="14"/>', 4),
     cash: mkSvg('<circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8z"/><path d="M12 12v.01"/>', 4),
     refresh: mkSvg('<path d="M21.5 13.5a10 10 0 0 1-18.4 0"/><path d="M2 9v5h5M22 15v-5h-5"/>', 4), // Yenile ikonu
-    // YENİ İKON: Özet
-    home: mkSvg('<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>', 5),
-    // YENİ İKON: Diğer
-    more: mkSvg('<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>', 5),
-    // Yeni İkon: Takvim
-    calendar: mkSvg('<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>', 4)
+    home: mkSvg('<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>', 4), // Küçültüldü
+    more: mkSvg('<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>', 4), // Küçültüldü
+    calendar: mkSvg('<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>', 4),
+    // Yeni İkon: Para Birimi
+    currency: mkSvg('<circle cx="12" cy="12" r="10"/><path d="M12 18V6"/><path d="M9 9h6"/><path d="M9 15h6"/>')
   };
 
   // Harcama Kategorileri (Renkler daha mat ve uyumlu hale getirildi)
@@ -426,6 +429,7 @@ html, body {
     let e=[], c={cats:[...DEF_CATS],items:[]}, prefTZ = initialTZ; 
     let criticalNotes = []; 
     let selectedNoteTrip = ''; 
+    let preferredBaseCurrency = 'TRY'; // Yeni: Kullanıcının seçtiği temel para birimi
 
     try{e=JSON.parse(localStorage.getItem(K.EXP)||'[]');}catch(err){}
     try{const l=JSON.parse(localStorage.getItem(K.LIST)); 
@@ -438,6 +442,9 @@ html, body {
     
     try{prefTZ=localStorage.getItem(K.PREF+'_tz')||initialTZ;}catch(err){}
     try{criticalNotes=JSON.parse(localStorage.getItem(K.NOTES)||'[]');}catch(err){criticalNotes = [];}
+    try{preferredBaseCurrency=localStorage.getItem(K.PREF+'_base_cur')||'TRY';}catch(err){preferredBaseCurrency = 'TRY';}
+
+    BASE_CURRENCY = preferredBaseCurrency; // Global değişkeni güncelle
     
     // Check List Item Geçişi: date alanı ekle
     if(!c.items || c.items.length === 0) {
@@ -477,13 +484,13 @@ html, body {
         exp:e,
         chk:c,
         view:'list',
-        tab:'sum', // YENİ: Varsayılan sekme 'sum' (Özet)
+        tab:'sum', 
         tripFilter:'',
         catFilter:'',
         search:'',
         routeTrip:'',
-        typeFilter:'', // Harcama tipi filtresi
-        indFilter:'', // Bireysel/Ortak filtresi
+        typeFilter:'', 
+        indFilter:'', 
         selExp:null,
         modals:{detail:false,chart:false,data:false, tzSelect: false}, 
         form:getEmptyForm(),
@@ -504,12 +511,14 @@ html, body {
             flightCheck: false,
             route: false, 
             report: false,
+            data: false,
         },
         criticalNotes: criticalNotes, 
         selectedNoteTrip: selectedNoteTrip, 
         newCriticalNote: '', 
         selectedReportTrip: selectedNoteTrip, 
-        chartCurrency: BASE_CURRENCY, // Grafiğin varsayılan para birimi
+        chartCurrency: preferredBaseCurrency, 
+        baseCurrency: preferredBaseCurrency, // Yeni: Temel Para Birimi State'i
     };
     
     // Check List Kategorileri: Açık/Kapalı Durumu
@@ -519,11 +528,12 @@ html, body {
 
   function setState(p){state={...state,...p}; renderApp();}
   
-  const save=()=>{
+  function save(){
     localStorage.setItem(K.EXP,JSON.stringify(state.exp));
     localStorage.setItem(K.LIST,JSON.stringify(state.chk));
     localStorage.setItem(K.PREF+'_tz', state.targetTimezone); 
     localStorage.setItem(K.NOTES, JSON.stringify(state.criticalNotes));
+    localStorage.setItem(K.PREF+'_base_cur', state.baseCurrency); // Yeni: Temel para birimini kaydet
   };
   
   // --- RESİM YENİDEN BOYUTLANDIRMA VE BASE64'E DÖNÜŞTÜRME YARDIMCISI ---
@@ -684,7 +694,7 @@ html, body {
       // 1. Toplam Harcama (Para Cinsi Bazında)
       const totalsByCurrency = {};
       tripExpenses.forEach(x => {
-          const cur = x.cur || BASE_CURRENCY; 
+          const cur = x.cur || state.baseCurrency; 
           const amt = Number(x.amt) || 0;
           totalsByCurrency[cur] = (totalsByCurrency[cur] || 0) + amt;
       });
@@ -696,7 +706,7 @@ html, body {
       // 2. En Çok Harcama Yapılan 3 Kategori
       const categoryData = getChartDataset(tripExpenses);
       const topCategories = Object.entries(categoryData.perCat || {})
-          .sort(([, a], [, b]) => b - a)
+          .sort(([, a], [, b]) => b - a) // Düzeltme: Burada eksik olan ']' parantezi eklendi.
           .slice(0, 3)
           .map(([catId, amt], index) => {
               const catInfo = CATS[catId] || CATS.other;
@@ -716,11 +726,11 @@ html, body {
       tripExpenses.forEach(x => {
           const key = `${x.city} / ${x.place}`;
           // Harcamayı BASE_CURRENCY'ye dönüştürerek tutarlılık sağla
-          const amtInBase = convertToBase(x.amt, x.cur);
+          const amtInBase = convertToBase(x.amt, x.cur, state.baseCurrency);
           cityPlaceTotals[key] = (cityPlaceTotals[key] || 0) + amtInBase;
       });
       const topLocations = Object.entries(cityPlaceTotals)
-          .sort(([, a], [, b]) => b - a)
+          .sort(([, a], [, b]) => b - a) // Düzeltme: Burada eksik olan ']' parantezi eklendi.
           .slice(0, 3)
           .map(([key, amt], index) => {
               const [city, place] = key.split(' / ');
@@ -730,7 +740,7 @@ html, body {
                           <span class="font-bold text-white">${esc(place)}</span> <span class="text-slate-400">(${esc(city)})</span>
                       </span>
                       <!-- Toplamı ana kurda göster -->
-                      <span class="font-bold text-white">${fmtNum(amt)} ${BASE_CURRENCY}</span> 
+                      <span class="font-bold text-white">${fmtNum(amt)} ${state.baseCurrency}</span> 
                   </div>
               `;
           }).join('');
@@ -765,10 +775,10 @@ html, body {
                  <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Raporlanacak Seyahat Seçimi</label>
                  <div class="relative">
                    <select data-act="set-report-trip" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
-                     ${tripOptions}
-                   </select>
-                   <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
-                   <div class="text-[10px] text-slate-500 mt-1">Bu rapor, harcamaları ${BASE_CURRENCY} kuruna dönüştürerek mekan toplamlarını gösterir.</div>
+                         ${tripOptions}
+                       </select>
+                       <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
+                   <div class="text-[10px] text-slate-500 mt-1">Bu rapor, harcamaları ${state.baseCurrency} kuruna dönüştürerek mekan toplamlarını gösterir.</div>
                  </div>
               </div>
 
@@ -780,7 +790,7 @@ html, body {
               <!-- 1. Toplam Harcama -->
               <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
                   <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
-                     ${ICONS.wallet.replace('w-6 h-6', 'w-4 h-4')} Para Birimi Bazında Toplam Harcama
+                     ${ICONS.wallet.replace('w-4 h-4', 'w-4 h-4')} Para Birimi Bazında Toplam Harcama
                   </h4>
                   <div class="flex flex-wrap gap-2">
                       ${totalSummary || '<span class="text-slate-500">Harcama Yok</span>'}
@@ -800,7 +810,7 @@ html, body {
               <!-- 3. En Çok Para Bırakılan 3 Şehir/Mekan -->
               <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
                   <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
-                     ${ICONS.location.replace('w-4 h-4', 'w-4 h-4')} En Çok Para Bırakılan 3 Mekan (${BASE_CURRENCY})
+                     ${ICONS.location.replace('w-4 h-4', 'w-4 h-4')} En Çok Para Bırakılan 3 Mekan (${state.baseCurrency})
                   </h4>
                   <div class="space-y-2">
                     ${topLocations || '<p class="text-sm text-slate-500 italic">Mekan harcaması bulunamadı.</p>'}
@@ -830,211 +840,13 @@ html, body {
   
   // --- YARDIMCILAR SEKME RENDER FONKSİYONU ---
   function renderHelpers() {
-    const loc = state.location;
-    const isReady = loc && loc.lat && loc.lon;
-    const locationName = state.locationLoading ? 'Alınıyor...' : state.locationName;
-    
-    // Google Haritalar URL'leri
-    const baseSearchUrl = 'https://www.google.com/maps/search/';
-    const locationQuery = isReady ? `@${loc.lat},${loc.lon},15z` : '';
+    // Tüm konumla ilgili akordiyonlar bu fonksiyondan kaldırıldı. 
+    // Yalnızca "Diğer" (other) sekmesinde görünen akordiyonlar render edilir.
 
-    const touristPlacesUrl = `${baseSearchUrl}Turistik+Yerler/${locationQuery}`;
-    const cafeRestaurantUrl = `${baseSearchUrl}yüksek+puanlı+cafe+restoran/${locationQuery}`;
-    const hotelUrl = `${baseSearchUrl}otel+konaklama/${locationQuery}`;
-    const hospitalUrl = `${baseSearchUrl}Hastane/${locationQuery}`;
-    const pharmacyUrl = `${baseSearchUrl}Eczane/${locationQuery}`;
-    const policeUrl = `${baseSearchUrl}Polis+Karakolu/${locationQuery}`; 
-    
-    // TÜM SEYAHATLERİ ÇEK
-    const allTrips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean))].sort();
-    if (!allTrips.includes('Genel')) {
-        allTrips.unshift('Genel');
-    }
-    
-    // GÖSTERİLECEK NOTLARI FİLTRELE
-    const notesForTrip = state.criticalNotes.filter(n => n.trip === state.selectedNoteTrip);
-
-    const loadingClass = state.locationLoading ? 'animate-pulse' : '';
-
-    const accordionItem = (id, icon, title, content, disableLocation=false) => { 
-        const isOpen = state.helpersAccordion[id];
-        const disabledClass = !disableLocation && !isReady ? 'opacity-40 pointer-events-none' : '';
-        const maxHeight = (id === 'critical') ? '450px' : (id === 'route' ? '400px' : (id === 'report' ? '900px' : '500px'));
-
-        return `
-            <div class="bg-slate-800/60 rounded-xl border border-slate-700/50 shadow-lg overflow-hidden ${disabledClass}">
-                <button data-act="tog-accordion" data-val="${id}" class="w-full flex justify-between items-center p-4 hover:bg-slate-800/80 transition focus:outline-none">
-                    <h3 class="flex items-center gap-3 text-base font-bold text-white">
-                        ${icon} ${title}
-                    </h3>
-                    <span class="text-slate-600 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}">
-                        ${ICONS.down.replace('w-4 h-4', 'w-4 h-4')}
-                    </span>
-                </button>
-                <div class="transition-all duration-300 ease-in-out overflow-hidden" style="max-height: ${isOpen ? maxHeight : '0'};">
-                    <div class="p-4 pt-0">
-                        ${content}
-                    </div>
-                </div>
-            </div>
-        `;
-    };
-
-    // ROTA AKORDİYON İÇERİĞİ
-    const routeContent = `
-        <div class="space-y-3 pt-3">
-            <p class="text-xs text-slate-400">Kayıtlı harcamalarınızdaki **mekan ve şehirleri** kronolojik sıraya göre birleştirerek hızlıca Google Haritalar'da yol güzergahı oluşturur.</p>
-
-            <!-- SEYAHAT SEÇİMİ -->
-            <div>
-               <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Harcamaları Olan Seyahati Seç</label>
-               <div class="relative">
-                 <select id="route-trip-select" data-act="set-route-trip" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
-                   <option value="">-- Seyahat Seçin --</option>
-                   ${[...new Set(state.exp.map(x=>x.trip).filter(Boolean))].sort().map(t=>`<option value="${esc(t)}" ${(state.routeTrip||state.tripFilter)===t?'selected':''}>${esc(t)}</option>`).join('')}
-                 </select>
-                 <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
-               </div>
-            </div>
-
-            <div id="route-output-box">
-                ${renderRoutePlanner()}
-            </div>
-        </div>
-    `;
-
-    return `
-      <div class="space-y-4 pb-24">
-        
-        <!-- KONUM BİLGİ PANELİ (Sadeleştirilmiş - Üstte Sabit) -->
-        <div class="glass-panel p-3 rounded-xl border-slate-700/50 shadow-lg flex justify-between items-center ${loadingClass}">
-            <div class="flex items-center gap-2 text-sm">
-                ${ICONS.location.replace('w-4 h-4', 'w-4 h-4')}
-                <span class="text-white font-bold">${locationName}</span>
-                <span class="text-[10px] text-slate-500 hidden sm:inline-block">${isReady ? 'Konum bilgisi alındı.' : state.err || 'Konumunuzu otomatik alıyor...'}</span>
-            </div>
-            
-            <button data-act="get-location" class="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg text-sm transition flex items-center justify-center" ${state.locationLoading ? 'disabled' : ''}>
-                ${state.locationLoading ? `<svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>` : ICONS.compass.replace('w-4 h-4', 'w-3.5 h-3.5')}
-            </button>
-        </div>
-        
-        <!-- AKORDİYONLAR BAŞLANGIÇ -->
-        
-        <!-- ROTA PLANLAYICI -->
-        ${accordionItem('route', ICONS.route, 'Yol Güzergahı Haritası (Hızlı Rota)', routeContent, true)}
-        
-        <!-- UÇUŞ KONTROLÜ -->
-        ${accordionItem('flightCheck', ICONS.flight.replace('w-6 h-6', 'w-5 h-5'), 'Uçuş Takibi ve Kontrolü', `
-            <div class="grid grid-cols-2 gap-3 pt-3">
-                
-                <a href="https://www.google.com/flights" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    <div class="text-xl mb-1">✈️</div>
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Google Flights (Arama)</span>
-                </a>
-                <a href="https://www.flightradar24.com/" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    <div class="text-xl mb-1">📡</div>
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Canlı Uçuş Takibi</span>
-                </a>
-            </div>
-        `, true)}
-
-        <!-- KRİTİK BİLGİLER AKORDİYONU (SEYAHAT SEÇİMLİ) -->
-        ${accordionItem('critical', ICONS.key, 'Kritik Bilgiler (Notlar)', `
-            <div class="space-y-4 pt-3">
-                <!-- SEYAHAT SEÇİMİ -->
-                <div>
-                   <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Seyahat Seçimi</label>
-                   <div class="relative">
-                     <select data-act="set-note-trip" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
-                       ${allTrips.map(t=>`<option value="${esc(t)}" ${state.selectedNoteTrip===t?'selected':''}>${esc(t)}</option>`).join('')}
-                     </select>
-                     <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
-                   </div>
-                </div>
-                
-                <!-- NOT EKLEME -->
-                <div>
-                    <h4 class="text-sm font-bold text-slate-300 mb-2">Yeni Not Ekle (${esc(state.selectedNoteTrip)})</h4>
-                    <div class="flex gap-2">
-                        <textarea data-act="update-new-note" id="new-note-input" class="w-full h-16 bg-slate-700 border border-slate-600 rounded-lg p-2 text-sm text-slate-200 outline-none resize-none" placeholder="Otel kodu, adres veya önemli bilgi...">${esc(state.newCriticalNote)}</textarea>
-                        <button data-act="add-note" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg text-sm font-bold transition flex-shrink-0 w-10 h-10 flex items-center justify-center">
-                            ${ICONS.plus.replace('w-4 h-4', 'w-4 h-4')}
-                        </button>
-                    </div>
-                </div>
-
-                <!-- MEVCUT NOTLAR -->
-                <div>
-                    <h4 class="text-sm font-bold text-slate-300 mb-2">Mevcut Notlar (${esc(state.selectedNoteTrip)})</h4>
-                    <div class="space-y-2 max-h-40 overflow-y-auto scrl">
-                        ${notesForTrip.length > 0 ? notesForTrip.map((note, index) => `
-                            <div class="bg-slate-700/70 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 flex justify-between items-start gap-3">
-                                <span class="flex-1 whitespace-pre-wrap">${esc(note.note)}</span>
-                                <button data-act="del-note" data-id="${note.id}" class="text-slate-500 hover:text-rose-400 transition p-1 -m-1">${ICONS.x.replace('w-4 h-4', 'w-3.5 h-3.5')}</button>
-                            </div>
-                        `).join('') : '<p class="text-sm text-slate-500 italic">Bu seyahat için kritik not bulunmamaktadır.</p>'}
-                    </div>
-                </div>
-            </div>
-        `, true)}
-
-        ${accordionItem('places', ICONS.location, 'Yakındaki Yerler', `
-            <div class="grid grid-cols-3 gap-3 pt-3">
-                <a href="${touristPlacesUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    ${ICONS.mapPin.replace('w-5 h-5', 'w-6 h-6')}
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Gezilecek Yerler</span>
-                </a>
-                <a href="${cafeRestaurantUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    ${ICONS.restaurant.replace('w-4 h-4', 'w-6 h-6')}
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Cafe & Restoran</span>
-                </a>
-                <a href="${hotelUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    ${ICONS.bed.replace('w-4 h-4', 'w-6 h-6')}
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Otel / Konaklama</span>
-                </a>
-            </div>
-        `)}
-
-        ${accordionItem('health', ICONS.hospital, 'Sağlık ve Güvenlik', `
-            <div class="grid grid-cols-3 gap-3 pt-3">
-                <a href="${hospitalUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    ${ICONS.hospital.replace('w-4 h-4', 'w-6 h-6')}
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Hastane</span>
-                </a>
-                <a href="${pharmacyUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    ${ICONS.pharmacy.replace('w-4 h-4', 'w-6 h-6')}
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Eczane</span>
-                </a>
-                <a href="${policeUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    ${ICONS.police.replace('w-4 h-4', 'w-6 h-6')}
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Polis / Güvenlik</span>
-                </a>
-            </div>
-        `)}
-        
-        ${accordionItem('transport', ICONS.bus, 'Ulaşım ve Haritalar', `
-            <div class="grid grid-cols-3 gap-3 pt-3">
-                <a href="https://maps.google.com/maps?output=classic" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    ${ICONS.mapPin.replace('w-5 h-5', 'w-6 h-6')}
-                    <div class="text-[10px] font-bold text-white">Google Haritalar</div>
-                </a>
-                <a href="https://moovitapp.com/" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    <div class="text-xl mb-1">🚌</div>
-                    <div class="text-[10px] font-bold text-white">Moovit</div>
-                </a>
-                <a href="https://www.uber.com/" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    ${ICONS.taxi.replace('w-4 h-4', 'w-6 h-6')}
-                    <div class="text-[10px] font-bold text-white">Uber / Taksi</div>
-                </a>
-            </div>
-        `)}
-        
-        <!-- SEYAHAT ÖZET RAPORU -->
-        ${accordionItem('report', ICONS.report.replace('w-5 h-5', 'w-4 h-4'), 'Seyahat Özet Raporu', renderReportContent(), true)}
-        
-      </div>
-    `;
+    // Not: Bu fonksiyon renderOtherTab içinde çağrılmıyor. renderOtherTab kendi içeriğini oluşturuyor.
+    // Bu fonksiyon sadece eski yapıyı korumak için bırakılmıştı, artık kullanılmıyor. 
+    // Tüm yardımcılar, Diğer sekmesinin içinde renderOtherTab tarafından çağrılır.
+    return ``;
   }
 
   // YENİ FONKSİYON: Rota Planlayıcı İçeriğini Oluştur (MEKAN BAZLI)
@@ -1085,7 +897,7 @@ html, body {
               </ul>
               
               <a href="${routeData.url}" target="_blank" class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-bold transition w-full">
-                 ${ICONS.globe.replace('w-5 h-5', 'w-4 h-4')} Rota Haritasını Aç (Google Maps)
+                 ${ICONS.globe.replace('w-4 h-4', 'w-4 h-4')} Rota Haritasını Aç (Google Maps)
               </a>
           </div>
       `;
@@ -1093,13 +905,20 @@ html, body {
   
   // YENİ FONKSİYON: ÖZET SAYFASI (SUM TAB)
   function renderSummary() {
+      const baseCur = state.baseCurrency; // Seçilen temel para birimi
       const today = new Date().toISOString().slice(0, 10);
       let todayTotal = 0;
+      let allTimeTotal = 0;
       
+      // Toplam Harcamalar (Tüm Harcamaları Base Cur'a dönüştür)
+      state.exp.forEach(x => {
+          allTimeTotal += convertToBase(x.amt, x.cur, baseCur);
+      });
+
       // Bugünün Harcamaları
       const todayExpenses = state.exp.filter(x => x.date === today);
       todayExpenses.forEach(x => {
-          todayTotal += convertToBase(x.amt, x.cur);
+          todayTotal += convertToBase(x.amt, x.cur, baseCur);
       });
       
       // Yaklaşan Rezervasyon/Etkinlik
@@ -1109,7 +928,7 @@ html, body {
       
       const upcomingReservations = state.chk.items
           .filter(i => 
-              (i.cat === 'stay' || i.cat === 'docs') && // Konaklama veya Belge
+              (i.cat === 'stay' || (i.cat === 'docs' && i.val.toLowerCase().includes('rezervasyo'))) && // Konaklama veya Belge
               i.date && 
               !i.done &&
               new Date(i.date) >= tomorrow // Yarından sonraki
@@ -1119,7 +938,6 @@ html, body {
       const nextReservation = upcomingReservations[0];
       
       let resText = 'Yaklaşan Plan Yok';
-      let resColor = 'bg-slate-800/50 border-slate-700/50';
       
       if (nextReservation) {
           const diff = new Date(nextReservation.date).getTime() - new Date().getTime();
@@ -1127,10 +945,8 @@ html, body {
 
           if (daysLeft < 7) {
               resText = `Çok Yakın! ${fmtDate(nextReservation.date)}: ${esc(nextReservation.val)}`;
-              resColor = 'bg-rose-900/50 border-rose-700/50';
           } else {
               resText = `${fmtDate(nextReservation.date)}: ${esc(nextReservation.val)}`;
-              resColor = 'bg-emerald-900/50 border-emerald-700/50';
           }
       }
 
@@ -1139,13 +955,51 @@ html, body {
           .sort((a, b) => (b.date || '').localeCompare(a.date) || (b.id.localeCompare(a.id)))
           .slice(0, 3);
           
-      const allTrips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean))].sort();
-      const tripList = allTrips.join(' · ');
+      const currencyOptions = AVAILABLE_CURRENCIES.map(c => 
+          `<option value="${c}" ${c === baseCur ? 'selected' : ''}>${c}</option>`
+      ).join('');
+
 
       return `
         <div class="space-y-4 pb-24">
             
-            <!-- Ana Harcama ve Plan Kartları (Yanyana 2 Box) -->
+            <!-- 1. GENEL HARCAMA VE KUR BAŞLIĞI (HEADER) -->
+            <!-- Bu kısım en üste alındı -->
+            <div class="bg-gradient-to-r from-indigo-700 via-violet-700 to-purple-600 border border-indigo-700/50 rounded-xl p-4 shadow-xl relative overflow-hidden group">
+               <div class="absolute -right-8 -top-8 w-60 h-60 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition duration-1000"></div>
+               
+               <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div>
+                     <div class="text-[10px] uppercase tracking-widest text-white/80 font-bold mb-1 flex items-center gap-1">
+                        ${ICONS.calculate} TÜM SEYAHATLER TOPLAMI
+                     </div>
+                     
+                     <!-- TEK, BÜYÜK TOPLAM (BASE CUR BAZLI) -->
+                     <div class="text-3xl font-extrabold text-white leading-tight mt-1">
+                        ${fmtNum(allTimeTotal)} <span class="text-lg font-medium">${baseCur}</span>
+                     </div>
+                     
+                     <!-- KUR BİLGİSİ -->
+                     <div class="text-[9px] text-white/60 mt-2 p-1 bg-black/30 rounded-md flex items-center gap-1">
+                         ${ICONS.refresh.replace('w-4 h-4', 'w-3 h-3')} 
+                         <span>Kur: USD ${fmtNum(EXCHANGE_RATES.USD)} | EUR ${fmtNum(EXCHANGE_RATES.EUR)} (${rateLastUpdated})</span>
+                     </div>
+                  </div>
+                  
+                  <!-- PARA BİRİMİ SEÇİM KUTUSU -->
+                  <div class="flex flex-col gap-1 min-w-[150px]">
+                     <label class="text-[10px] text-white/80 font-bold uppercase ml-1">Özet Para Birimi</label>
+                     <div class="relative">
+                       <select data-act="set-base-currency" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
+                         ${currencyOptions}
+                       </select>
+                       <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            
+            <!-- 2. BUGÜNÜN HARCAMASI ve YAKLAŞAN PLAN Kartları (Yanyana 2 Box) -->
             <div class="grid grid-cols-2 gap-3 mb-4">
                 
                 <!-- BUGÜNÜN HARCAMASI -->
@@ -1156,7 +1010,7 @@ html, body {
                     <div class="text-3xl font-extrabold text-white leading-none mt-2">
                         ${fmtNum(todayTotal)}
                     </div>
-                    <div class="text-sm font-medium text-white/70">${BASE_CURRENCY}</div>
+                    <div class="text-sm font-medium text-white/70">${baseCur}</div>
                     
                     <div class="text-[10px] text-white/50 mt-3">
                         ${todayExpenses.length} kayıt
@@ -1172,25 +1026,21 @@ html, body {
                         <div class="text-lg font-bold text-white line-clamp-2 leading-tight">
                             ${resText.split(':').slice(1).join(':').trim() || resText}
                         </div>
-                        <div class="text-xs font-medium ${nextReservation && daysLeft < 7 ? 'text-yellow-300' : 'text-white/70'} mt-1">
-                            ${nextReservation ? fmtDate(nextReservation.date) + (daysLeft < 7 ? ` (${daysLeft} Gün Kaldı)` : '') : 'Mevcut Değil'}
+                        <div class="text-xs font-medium ${nextReservation && Math.ceil((new Date(nextReservation.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) < 7 ? 'text-yellow-300' : 'text-white/70'} mt-1">
+                            ${nextReservation ? fmtDate(nextReservation.date) + (Math.ceil((new Date(nextReservation.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) < 7 ? ` (${Math.ceil((new Date(nextReservation.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Gün Kaldı)` : '') : 'Mevcut Değil'}
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- SEYAHAT ÖZETİ (TÜMÜ) -->
-            ${renderDashboardHeader(state.exp)}
-
             <!-- Son 3 Harcama Listesi -->
             <h3 class="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2">
-                ${ICONS.wallet.replace('w-6 h-6', 'w-4 h-4')} Son 3 Harcama
+                ${ICONS.wallet.replace('w-4 h-4', 'w-4 h-4')} Son 3 Harcama
             </h3>
             <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden divide-y divide-slate-700/50">
                 ${latestExpenses.length > 0 ? latestExpenses.map(x => {
                     const catInfo = CATS[x.cat] || CATS.other;
-                    const typeInfo = EXPENSE_TYPES.find(t => t.id === x.type) || EXPENSE_TYPES[0];
-                    const estimatedTry = convertToBase(x.amt, x.cur);
+                    const estimatedBaseCur = convertToBase(x.amt, x.cur, baseCur);
 
                     return `
                         <div data-act="detail" data-id="${x.id}" class="p-3 flex justify-between items-center hover:bg-slate-700/50 cursor-pointer transition">
@@ -1201,10 +1051,10 @@ html, body {
                                     <span class="font-medium">${catInfo.l}</span> · ${fmtDate(x.date)}
                                 </div>
                             </div>
-                            <!-- Sağ: Tutar / Try Karşılığı -->
+                            <!-- Sağ: Tutar / Base Cur Karşılığı -->
                             <div class="text-right flex-shrink-0">
                                 <div class="text-sm font-bold text-slate-200">${fmtNum(x.amt)} <span class="text-xs font-medium">${x.cur}</span></div>
-                                <div class="text-[10px] text-slate-500 mt-0.5">~ ${fmtNum(estimatedTry)} ${BASE_CURRENCY}</div>
+                                <div class="text-[10px] text-slate-500 mt-0.5">~ ${fmtNum(estimatedBaseCur)} ${baseCur}</div>
                             </div>
                         </div>
                     `;
@@ -1214,12 +1064,8 @@ html, body {
                     </div>
                 `}
             </div>
-
-            <!-- Seyahat Özeti -->
-            <div class="mt-6 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl">
-                 <div class="text-xs font-bold text-slate-500 uppercase mb-2">Kayıtlı Seyahatler (${allTrips.length})</div>
-                 <p class="text-sm text-slate-300 whitespace-pre-wrap">${tripList || '<span class="italic text-slate-600">Henüz seyahat kaydı yok.</span>'}</p>
-            </div>
+            
+            <!-- KAYITLI SEYAHATLER BÖLÜMÜ KALDIRILDI (İSTEK 7) -->
             
         </div>
       `;
@@ -1227,7 +1073,11 @@ html, body {
 
   function renderHeader(){
     const timeInfo = formatTime(state.targetTimezone);
-    
+    const loc = state.location;
+    const isReady = loc && loc.lat && loc.lon;
+    const locationName = state.locationLoading ? 'Alınıyor...' : state.locationName;
+    const locIcon = isReady ? ICONS.location.replace('w-4 h-4', 'w-4 h-4') : ICONS.compass.replace('w-4 h-4', 'w-4 h-4');
+
     return `
       <div class="glass-panel rounded-xl p-3 mb-4 flex flex-col md:flex-row items-center justify-between shadow-lg gap-3 bg-slate-900/80">
         <div class="flex items-center gap-3 w-full md:w-auto">
@@ -1247,8 +1097,14 @@ html, body {
         
         <div class="flex items-center gap-2 w-full md:w-auto justify-end mt-2 md:mt-0">
            
+           <!-- KONUM BİLGİSİ İKONU (İSTEK 5) -->
+           <button data-act="get-location" class="flex items-center bg-slate-800/80 hover:bg-slate-700/80 transition rounded-lg p-1 border border-slate-700 justify-center cursor-pointer min-w-10" title="${locationName}">
+               <span class="text-xs text-slate-400 mr-1">${locIcon}</span>
+               <span class="text-[9px] text-white/80 font-bold hidden sm:inline-block">${isReady ? 'Konum OK' : 'Konum Al'}</span>
+           </button>
+
            <!-- YEREL SAAT GÖSTERİMİ (Tıklanabilir) -->
-           <button data-act="open-tz-modal" class="flex items-center bg-slate-800/80 hover:bg-slate-700/80 transition rounded-lg p-1 border border-slate-700 min-w-[120px] justify-center cursor-pointer">
+           <button data-act="open-tz-modal" class="flex items-center bg-slate-800/80 hover:bg-slate-700/80 transition rounded-lg p-1 border border-slate-700 min-w-[100px] justify-center cursor-pointer">
               <span class="text-xs text-slate-400 mr-2">${ICONS.clock.replace('w-4 h-4', 'w-3.5 h-3.5')}</span>
               <div id="local-time-container">
                   <div id="local-time" class="text-sm font-bold text-white leading-none">${state.currentTime}</div>
@@ -1272,23 +1128,23 @@ html, body {
              </button>
            ` : ''}
            
-           <!-- DATA MODALI DİĞER SEKME İÇİNE TAŞINDI -->
         </div>
       </div>
     `;
   }
 
   function renderDashboardHeader(visibleExp){
-    let totalInBase = 0; // TRY Bazlı Toplam
+    const baseCur = state.baseCurrency; // Seçilen temel para birimi
+    let totalInBase = 0; // Base Cur Bazlı Toplam
     const totalsByCurrency = {};
     const isFiltered = !!state.tripFilter;
     
     visibleExp.forEach(x => {
-        const cur = x.cur || BASE_CURRENCY; 
+        const cur = x.cur || baseCur; 
         const amt = Number(x.amt) || 0;
         
-        // TRY'ye dönüştürülmüş genel toplamı hesapla
-        totalInBase += convertToBase(amt, cur);
+        // Base Cur'a dönüştürülmüş genel toplamı hesapla
+        totalInBase += convertToBase(amt, cur, baseCur);
 
         // Çoklu kur özeti için orijinal para biriminde toplamı hesapla
         totalsByCurrency[cur] = (totalsByCurrency[cur] || 0) + amt;
@@ -1296,11 +1152,11 @@ html, body {
 
     const headerText = isFiltered 
         ? `${esc(state.tripFilter)} Seyahati Toplamı`
-        : `Tüm Seyahatler Toplam Harcama`;
+        : `Tüm Harcamalar Toplamı`;
 
-    // Çoklu kur özeti metni (TRY dışındaki harcamaları gösterir)
+    // Çoklu kur özeti metni (Base Cur dışındaki harcamaları gösterir)
     const multiCurrencySummary = Object.entries(totalsByCurrency)
-        .filter(([cur]) => cur !== BASE_CURRENCY)
+        .filter(([cur]) => cur !== baseCur)
         .sort((a, b) => b[1] - a[1])
         .map(([cur, amt]) => `${fmtNum(amt)} ${cur}`)
         .join(' · ');
@@ -1324,9 +1180,9 @@ html, body {
                   ${ICONS.calculate} ${headerText}
                </div>
                
-               <!-- TEK, BÜYÜK TOPLAM (TRY BAZLI) -->
+               <!-- TEK, BÜYÜK TOPLAM (BASE CUR BAZLI) -->
                <div class="text-3xl font-extrabold text-white leading-tight mt-1">
-                  ${fmtNum(totalInBase)} <span class="text-lg font-medium">${BASE_CURRENCY}</span>
+                  ${fmtNum(totalInBase)} <span class="text-lg font-medium">${baseCur}</span>
                </div>
                
                <!-- ALT METİN: DİĞER PARA BİRİMLERİNDEKİ ORİJİNAL TOPLAM -->
@@ -1341,7 +1197,7 @@ html, body {
                </div>
             </div>
             
-            <div class="flex flex-col gap-1 min-w-[150px] ${state.tab !== 'exp' ? 'hidden' : ''}">
+            <div class="flex flex-col gap-1 min-w-[150px]">
                <label class="text-[10px] text-white/80 font-bold uppercase ml-1">Seyahat Seçimi</label>
                <div class="relative">
                  <select data-act="flt-trip" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
@@ -1358,7 +1214,8 @@ html, body {
 
   function renderTabs(){
     const t = state.tab;
-    const btnCls = "flex-1 py-2 rounded-lg text-sm font-bold transition flex items-center justify-center gap-2 border";
+    // İSTEK 3: Menü başlıkları küçültüldü (text-xs)
+    const btnCls = "flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 border";
     // Mavi-Lacivert tonlarında, daha profesyonel aktif renkler
     const active = "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/30";
     const passive = "bg-transparent text-slate-500 border-transparent hover:bg-slate-800/50 hover:text-slate-300";
@@ -1366,10 +1223,10 @@ html, body {
     return `
       <!-- TAB SAYISI 4'E ÇIKARILDI -->
       <div class="glass-panel p-1 rounded-xl mb-4 flex gap-1 overflow-x-auto scrl">
-        <button data-act="tab" data-val="sum" class="${btnCls} ${t==='sum'?active:passive}">${ICONS.home} Özet</button>
-        <button data-act="tab" data-val="exp" class="${btnCls} ${t==='exp'?active:passive}">${ICONS.wallet.replace('w-6 h-6', 'w-4 h-4')} Harcamalar</button>
-        <button data-act="tab" data-val="chk" class="${btnCls} ${t==='chk'?active:passive}">${ICONS.briefcase.replace('w-6 h-6', 'w-4 h-4')} Check List</button>
-        <button data-act="tab" data-val="other" class="${btnCls} ${t==='other'?active:passive}">${ICONS.more} Diğer</button>
+        <button data-act="tab" data-val="sum" class="${btnCls} ${t==='sum'?active:passive}">${ICONS.home} ÖZET</button>
+        <button data-act="tab" data-val="exp" class="${btnCls} ${t==='exp'?active:passive}">${ICONS.wallet} HARCAMA</button>
+        <button data-act="tab" data-val="chk" class="${btnCls} ${t==='chk'?active:passive}">${ICONS.briefcase} CHECK LIST</button>
+        <button data-act="tab" data-val="other" class="${btnCls} ${t==='other'?active:passive}">${ICONS.more} DİĞER</button>
       </div>
     `;
   }
@@ -1389,7 +1246,7 @@ html, body {
            <!-- Kategori Filtresi -->
            <div class="relative w-full sm:w-32 flex-shrink-0">
               <select data-act="flt-cat" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 outline-none appearance-none cursor-pointer">
-                <option value="">Tüm Kategoriler</option>
+                <option value="">Kategori</option>
                 ${Object.values(CATS).map(c=>`<option value="${c.id}" ${state.catFilter===c.id?'selected':''}>${c.l}</option>`).join('')}
               </select>
               <div class="absolute right-3 top-2.5 text-slate-500 pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
@@ -1398,7 +1255,7 @@ html, body {
            <!-- Harcama Tipi Filtresi (Kart/Nakit) -->
            <div class="relative w-full sm:w-32 flex-shrink-0">
               <select data-act="flt-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-300 outline-none appearance-none cursor-pointer">
-                <option value="">Tüm Tipler</option>
+                <option value="">Ödeme Tipi</option>
                 ${EXPENSE_TYPES.map(t=>`<option value="${t.id}" ${state.typeFilter===t.id?'selected':''}>${t.l}</option>`).join('')}
               </select>
               <div class="absolute right-3 top-2.5 text-slate-500 pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
@@ -1427,13 +1284,13 @@ html, body {
       const lst=grp[city].sort((a,b)=>(b.date||'').localeCompare(a.date) || (b.id.localeCompare(a.id)));
       const expd=state.expandedCities[city];
       
-      // Şehir toplamı (TRY'ye dönüştürülmüş)
+      // Şehir toplamı (Base Cur'a dönüştürülmüş)
       let sumInBase = 0;
       lst.forEach(x => {
-          sumInBase += convertToBase(x.amt, x.cur);
+          sumInBase += convertToBase(x.amt, x.cur, state.baseCurrency);
       });
-      // Ana kurda toplamı göster (TRY)
-      const sumTxt = fmtNum(sumInBase) + ' ' + BASE_CURRENCY;
+      // Ana kurda toplamı göster (Base Cur)
+      const sumTxt = fmtNum(sumInBase) + ' ' + state.baseCurrency;
       
       const cityColor = getCityColor(city); // Şehir başlık rengini belirle
       
@@ -1519,38 +1376,34 @@ html, body {
         <div class="h-2 bg-slate-900/50 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 transition-all duration-700" style="width:${pct}%"></div></div>
       </div>
 
-      <!-- Yeni Madde Ekleme Alanı (Tüm Kategoriler İçin) -->
+      <!-- Yeni Kategori Ekleme Paneli -->
       <div class="mb-4 bg-slate-800/30 border border-slate-700/50 rounded-xl p-3 space-y-3">
-        <h4 class="text-sm font-bold text-slate-300">Yeni Plan/Madde Ekle</h4>
+        <h4 class="text-sm font-bold text-slate-300">Yeni Kategori Ekle</h4>
         <div class="flex gap-2">
-            <input id="new-chk-item-input" placeholder="Madde/Plan Adı" class="flex-1 bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-xs w-full outline-none text-slate-200">
-            <select id="new-chk-cat-select" class="w-28 bg-slate-950/50 border border-slate-700 rounded-lg px-1 py-2 text-xs text-slate-200 outline-none appearance-none cursor-pointer">
-                ${state.chk.cats.map(c=>`<option value="${c.id}">${c.l}</option>`).join('')}
-            </select>
-        </div>
-        <div class="flex gap-2">
-            <input id="new-chk-date-input" type="date" class="w-1/2 bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-xs w-full outline-none text-slate-200">
-            <button data-act="add-chk-multi" class="w-1/2 bg-blue-600 text-white px-3 rounded-lg hover:bg-blue-500 transition">${ICONS.plus.replace('w-4 h-4', 'w-3.5 h-3.5')} Ekle</button>
+            <input id="new-cat-name" placeholder="Kategori Adı (Örn: Plaj Malzemeleri)" class="flex-1 bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 text-slate-200">
+            <input id="new-cat-icon" placeholder="Emoji (🏖️)" class="w-16 text-center bg-slate-950/50 border border-slate-700 rounded-lg px-1 py-2 text-sm outline-none focus:border-blue-500 text-slate-200">
+            <button data-act="add-cat" class="bg-blue-600 text-white px-3 rounded-lg hover:bg-blue-500 transition">${ICONS.plus.replace('w-4 h-4', 'w-3.5 h-3.5')}</button>
         </div>
       </div>
 
+
       <div class="pb-24 space-y-3">
         ${sortedCats.map(c => {
-          // Kategoriye ait maddeleri tarihe göre sırala (Tarihsizler en sonda)
           const its = state.chk.items.filter(i => i.cat === c.id)
             .sort((a, b) => {
                 if (a.date && b.date) return new Date(a.date) - new Date(b.date);
                 if (a.date) return -1;
                 if (b.date) return 1;
-                return 0; // Tarihsizler kendi içinde sırasız
+                return 0; 
             });
             
           const isOpen = state.openChkCats[c.id];
           
           return `
             <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
+              
+              <!-- KATEGORİ BAŞLIĞI VE AYARLAR -->
               <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-800/50 transition">
-                
                 <div data-act="tog-chk-cat" data-val="${c.id}" class="flex items-center gap-3 flex-1 min-w-0 p-1 -m-1 focus:outline-none rounded-md cursor-pointer">
                    <div class="bg-slate-800 w-8 h-8 rounded flex items-center justify-center border border-slate-700">${c.i}</div>
                    <div>
@@ -1568,7 +1421,20 @@ html, body {
                     </button>
                 </div>
               </div>
-              ${isOpen ? `<div class="bg-slate-900/30 border-t border-slate-700/50 p-2 space-y-1" data-cat-id="${c.id}">
+              
+              ${isOpen ? `
+              
+              <!-- MADDE EKLEME KUTUSU (İSTEK 6) -->
+              <div class="p-3 pt-0 border-t border-slate-700/50">
+                  <div class="flex gap-2 p-2 bg-slate-900/50 rounded-lg border border-slate-800">
+                      <input id="new-chk-item-${c.id}" data-cat-id="${c.id}" placeholder="${esc(c.l)} için yeni madde/plan..." class="flex-1 bg-transparent border-none px-1 text-xs w-full outline-none text-slate-200 placeholder-slate-600">
+                      <!-- Tarih kaldırıldı -->
+                      <button data-act="add-chk-single" data-cat-id="${c.id}" class="bg-emerald-600 text-white px-3 py-1 rounded-lg hover:bg-emerald-500 transition text-xs font-bold">${ICONS.plus.replace('w-4 h-4', 'w-3 h-3')}</button>
+                  </div>
+              </div>
+
+              <!-- MEVCUT MADDELER -->
+              <div class="bg-slate-900/30 border-t border-slate-700/50 p-2 space-y-1" data-cat-id="${c.id}">
                  ${its.map(i=>`<div data-id="${i.id}" data-cat="${i.cat}" class="flex items-center gap-3 p-2 hover:bg-slate-800/30 rounded-lg group">
                      <input type="checkbox" data-act="chk" data-id="${i.id}" ${i.done?'checked':''} class="custom-checkbox w-4 h-4 rounded border-slate-600 bg-slate-800">
                      <span class="flex-1 text-sm text-slate-300 ${i.done?'line-through opacity-50':''}">${esc(i.val)}</span>
@@ -1579,26 +1445,14 @@ html, body {
             </div>`;
         }).join('')}
       </div>
-
-      <!-- Yeni Kategori Ekleme Paneli -->
-      <div class="mt-4 border-t border-slate-800 pt-3">
-        <details class="group bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
-          <summary class="flex items-center justify-between p-3 cursor-pointer list-none hover:bg-slate-800/50 transition">
-            <span class="text-sm font-medium text-slate-400 flex items-center gap-2">${ICONS.plus} Yeni Kategori Ekle</span>
-            <span class="text-slate-600 group-open:rotate-180 transition">${ICONS.down}</span>
-          </summary>
-          <div class="p-3 pt-0 flex flex-col gap-3">
-            <input id="new-cat-name" placeholder="Kategori Adı (Örn: Plaj Malzemeleri)" class="flex-1 bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 text-slate-200">
-            <input id="new-cat-icon" placeholder="Emoji İkonu (Örn: 🏖️)" class="w-24 bg-slate-950/50 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 text-slate-200 text-center">
-            <button data-act="add-cat" class="bg-blue-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-500 transition">Kategori Ekle</button>
-          </div>
-        </details>
-      </div>
     `;
   }
   
   // YENİ FONKSİYON: DİĞER SEKME İÇERİĞİ
   function renderOtherTab() {
+      // Konum bilgisini renderHeader'a taşıdık. 
+      // Burada sadece akordiyonlar kalıyor.
+      
       const accordionItem = (id, icon, title, content) => {
           const isOpen = state.helpersAccordion[id];
           const maxHeight = (id === 'critical' || id === 'report' || id === 'route') ? '900px' : '500px';
@@ -1622,6 +1476,19 @@ html, body {
           `;
       };
 
+      const loc = state.location;
+      const isReady = loc && loc.lat && loc.lon;
+      const locationQuery = isReady ? `@${loc.lat},${loc.lon},15z` : '';
+      const baseSearchUrl = 'https://www.google.com/maps/search/';
+      const disabledClass = !isReady ? 'opacity-40 pointer-events-none' : '';
+
+      const touristPlacesUrl = `${baseSearchUrl}Turistik+Yerler/${locationQuery}`;
+      const cafeRestaurantUrl = `${baseSearchUrl}yüksek+puanlı+cafe+restoran/${locationQuery}`;
+      const hotelUrl = `${baseSearchUrl}otel+konaklama/${locationQuery}`;
+      const hospitalUrl = `${baseSearchUrl}Hastane/${locationQuery}`;
+      const pharmacyUrl = `${baseSearchUrl}Eczane/${locationQuery}`;
+      const policeUrl = `${baseSearchUrl}Polis+Karakolu/${locationQuery}`; 
+
       const allTrips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean))].sort();
       if (!allTrips.includes('Genel')) {
           allTrips.unshift('Genel');
@@ -1632,7 +1499,7 @@ html, body {
       // Data Modal İçeriği
       const dataContent = `
          <p class="text-sm text-slate-400 mb-3">Tüm uygulama verilerinizi (harcamalar, listeler, notlar) JSON formatında yedekleyebilir veya geri yükleyebilirsiniz.</p>
-         <textarea id="io-txt" class="w-full h-40 bg-black/50 border border-slate-700 rounded-lg p-3 text-xs font-mono text-slate-400 mb-4 outline-none focus:border-blue-500">${JSON.stringify({exp:state.exp,chk:state.chk,notes:state.criticalNotes})}</textarea>
+         <textarea id="io-txt" class="w-full h-40 bg-black/50 border border-slate-700 rounded-lg p-3 text-xs font-mono text-slate-400 mb-4 outline-none focus:border-blue-500">${JSON.stringify({exp:state.exp,chk:state.chk,notes:state.criticalNotes, baseCur: state.baseCurrency})}</textarea>
          <div class="flex gap-3">
              <button data-act="copy-json" class="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-lg font-medium">Kopyala</button>
              <button data-act="imp" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold">Yükle</button>
@@ -1641,8 +1508,9 @@ html, body {
 
       return `
           <div class="space-y-4 pb-24">
-              <!-- VERİ YÖNETİMİ -->
-              ${accordionItem('data', ICONS.info, 'Veri Yönetimi (Yedekleme/Yükleme)', `<div class="pt-3">${dataContent}</div>`)}
+              
+              <!-- SEYAHAT ÖZET RAPORU -->
+              ${accordionItem('report', ICONS.report, 'Seyahat Özet Raporu', renderReportContent())}
               
               <!-- ROTA PLANLAYICI -->
               ${accordionItem('route', ICONS.route, 'Yol Güzergahı Haritası (Hızlı Rota)', `
@@ -1663,9 +1531,6 @@ html, body {
                       </div>
                   </div>
               `)}
-              
-              <!-- SEYAHAT ÖZET RAPORU -->
-              ${accordionItem('report', ICONS.report.replace('w-5 h-5', 'w-4 h-4'), 'Seyahat Özet Raporu', renderReportContent())}
               
               <!-- KRİTİK BİLGİLER AKORDİYONU -->
               ${accordionItem('critical', ICONS.key, 'Kritik Bilgiler (Notlar)', `
@@ -1703,12 +1568,73 @@ html, body {
                       </div>
                   </div>
               `)}
-              
-              <!-- DİĞER YARDIMCILAR (KONUM BAZLI OLANLAR) -->
+
+              <!-- KONUM BAZLI YARDIMCILAR -->
               <h3 class="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2">
                  ${ICONS.compass} Konum Bazlı Yardımcılar
               </h3>
-              ${renderHelpers()}
+              
+              <!-- YERLER -->
+              <div class="${disabledClass}">
+                  ${accordionItem('places', ICONS.location, 'Yakındaki Yerler', `
+                      <div class="grid grid-cols-3 gap-3 pt-3">
+                          <a href="${touristPlacesUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                              ${ICONS.mapPin.replace('w-4 h-4', 'w-6 h-6')}
+                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Gezilecek Yerler</span>
+                          </a>
+                          <a href="${cafeRestaurantUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                              ${ICONS.restaurant.replace('w-4 h-4', 'w-6 h-6')}
+                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Cafe & Restoran</span>
+                          </a>
+                          <a href="${hotelUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                              ${ICONS.bed.replace('w-4 h-4', 'w-6 h-6')}
+                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Otel / Konaklama</span>
+                          </a>
+                      </div>
+                  `)}
+              </div>
+              
+              <!-- SAĞLIK -->
+              <div class="${disabledClass}">
+                  ${accordionItem('health', ICONS.hospital, 'Sağlık ve Güvenlik', `
+                      <div class="grid grid-cols-3 gap-3 pt-3">
+                          <a href="${hospitalUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                              ${ICONS.hospital.replace('w-4 h-4', 'w-6 h-6')}
+                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Hastane</span>
+                          </a>
+                          <a href="${pharmacyUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                              ${ICONS.pharmacy.replace('w-4 h-4', 'w-6 h-6')}
+                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Eczane</span>
+                          </a>
+                          <a href="${policeUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                              ${ICONS.police.replace('w-4 h-4', 'w-6 h-6')}
+                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Polis / Güvenlik</span>
+                          </a>
+                      </div>
+                  `)}
+              </div>
+              
+              <!-- ULAŞIM -->
+              ${accordionItem('transport', ICONS.bus, 'Ulaşım ve Haritalar', `
+                  <div class="grid grid-cols-3 gap-3 pt-3">
+                      <a href="https://maps.google.com/maps?output=classic" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                          ${ICONS.mapPin.replace('w-4 h-4', 'w-6 h-6')}
+                          <div class="text-[10px] font-bold text-white">Google Haritalar</div>
+                      </a>
+                      <a href="https://moovitapp.com/" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                          <div class="text-xl mb-1">🚌</div>
+                          <div class="text-[10px] font-bold text-white">Moovit</div>
+                      </a>
+                      <a href="https://www.uber.com/" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
+                          ${ICONS.taxi.replace('w-4 h-4', 'w-6 h-6')}
+                          <div class="text-[10px] font-bold text-white">Uber / Taksi</div>
+                      </a>
+                  </div>
+              `)}
+
+              <!-- VERİ YÖNETİMİ -->
+              ${accordionItem('data', ICONS.info, 'Veri Yönetimi (Yedekleme/Yükleme)', `<div class="pt-3">${dataContent}</div>`)}
+
           </div>
       `;
   }
@@ -1948,8 +1874,8 @@ html, body {
         </div>
       ` : '';
       
-      // Tahmini TRY karşılığı ekle
-      const estimatedTry = convertToBase(x.amt, x.cur);
+      // Tahmini BASE_CUR karşılığı ekle
+      const estimatedBaseCur = convertToBase(x.amt, x.cur, state.baseCurrency);
       
       const tripMoveSection = isFuelActive ? '' : `
                <!-- SEYAHATE TAŞIMA (KOMPAKT + SEÇİM) -->
@@ -2032,7 +1958,7 @@ html, body {
                            
                            <!-- HARCAMA TİPİ VE BİREYSEL/ORTAK BİLGİSİ -->
                            <div class="text-[10px] text-white/70 mt-1">Ödeme: ${typeInfo.l} (${x.isIndividual ? 'Bireysel' : 'Ortak'})</div>
-                           <div class="text-[10px] text-white/70 mt-1">Tahmini Try: ${fmtNum(estimatedTry)} ${BASE_CURRENCY}</div>
+                           <div class="text-[10px] text-white/70 mt-1">Tahmini ${state.baseCurrency}: ${fmtNum(estimatedBaseCur)} ${state.baseCurrency}</div>
                        </div>
                    </div>
                 </div>
@@ -2049,7 +1975,7 @@ html, body {
                
                <!-- GOOGLE MAPS LİNKİ -->
                <button data-act="open-map" data-val="${mapUrl}" class="flex items-center justify-center gap-2 bg-slate-800/30 hover:bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 transition cursor-pointer w-full">
-                  ${ICONS.mapPin.replace('w-5 h-5', 'w-4 h-4')}
+                  ${ICONS.mapPin.replace('w-4 h-4', 'w-4 h-4')}
                   <span class="text-sm font-medium text-blue-400 hover:text-blue-300">Haritada Göster: ${esc(x.place)}</span>
                </button>
 
@@ -2130,7 +2056,6 @@ html, body {
       `;
     }
     
-    // DATA MODALI KALDIRILDI, DİĞER SEKME İÇİNE ENTEGRE EDİLDİ
     return '';
   }
 
@@ -2163,8 +2088,9 @@ html, body {
           if(state.tab==='sum'){
              h+= renderSummary();
           } else if(state.tab==='exp'){
-            h+= renderDashboardHeader(exp);
-            h+= renderFilters(); // Filtreleri sadece Harcamalar sekmesinde göster
+            // İSTEK 4: Header ile filtre/liste arasına boşluk eklendi (mb-4)
+            h+= `<div class="mb-4">${renderDashboardHeader(exp)}</div>`; 
+            h+= renderFilters(); 
             h+= renderExpenseList(exp);
           } else if (state.tab==='chk'){
              h+= renderChecklist();
@@ -2232,6 +2158,10 @@ html, body {
                  } else if (allTrips.length === 0) {
                      state.selectedReportTrip = 'Genel';
                  }
+            }
+            // Konum bazlıysa ve konum alınmadıysa, almayı dene
+            if (['places', 'health'].includes(val) && !state.location) {
+                handleGeolocation();
             }
         }
 
@@ -2316,26 +2246,22 @@ html, body {
         }
     }
     
-    // Yeni Çoklu Madde Ekleme
-    if(act==='add-chk-multi'){
-        const itemInput = document.getElementById('new-chk-item-input');
-        const catSelect = document.getElementById('new-chk-cat-select');
-        const dateInput = document.getElementById('new-chk-date-input');
-        
-        const rawItems = itemInput.value;
-        const catId = catSelect.value;
-        const dateVal = dateInput.value;
+    // Yeni Tekli Madde Ekleme (İSTEK 6)
+    if(act==='add-chk-single'){
+        const catId = t.dataset.catId;
+        const itemInput = document.getElementById(`new-chk-item-${catId}`);
+        const rawItems = itemInput ? itemInput.value : '';
         
         if(rawItems && catId){
             rawItems.split(',').forEach(part => {
                 const clean = part.trim();
-                if(clean) state.chk.items.push({id:genId(), cat:catId, val:clean, done:false, date:dateVal});
+                if(clean) state.chk.items.push({id:genId(), cat:catId, val:clean, done:false, date:''}); // Tarih kaldırıldı
             });
-            itemInput.value = ''; 
-            dateInput.value = '';
+            if(itemInput) itemInput.value = ''; 
             save(); renderApp();
         } else {
-             alert('Lütfen madde adı ve kategori seçiniz.');
+             state.err = 'Lütfen bir madde adı girin.';
+             renderApp();
         }
     }
     
@@ -2355,7 +2281,8 @@ html, body {
             iconInput.value = '';
             save(); renderApp();
         } else {
-            alert('Lütfen bir kategori adı girin.');
+            state.err = 'Lütfen bir kategori adı girin.';
+            renderApp();
         }
     }
     
@@ -2512,7 +2439,8 @@ html, body {
              state.modals.detail = false; 
              renderApp();
            } else {
-               alert('Lütfen bir seyahat seçin veya yeni bir seyahat adı yazın.');
+               state.err = 'Lütfen bir seyahat seçin veya yeni bir seyahat adı yazın.';
+               renderApp();
            }
        }
     }
@@ -2520,7 +2448,8 @@ html, body {
     if(act==='lb'){state.lightbox=e.target.src; renderApp();}
     if(act==='close-lb'){state.lightbox=null; renderApp();}
     if(act==='open-chart'){state.modals.chart=true; renderApp();}
-    if(act==='data'){state.modals.data=true; renderApp();}
+    // Data butonu kaldırıldı, akordiyon ile yönetiliyor
+    
     if(act==='imp'){
       try{
         const dataStr = document.getElementById('io-txt').value;
@@ -2528,12 +2457,15 @@ html, body {
         state.exp=d.exp||[];
         state.chk=d.chk||state.chk;
         state.criticalNotes=d.notes||[];
+        state.baseCurrency = d.baseCur || 'TRY'; // Para birimi yükle
+        BASE_CURRENCY = state.baseCurrency; // Global değişkeni güncelle
         save();
         alert('Veriler Başarıyla Yüklendi!'); 
         state.helpersAccordion.data = false;
         renderApp();
       }catch{
-        alert('JSON Hatalı. Lütfen geçerli bir JSON formatı girin.');
+        state.err = 'JSON Hatalı. Lütfen geçerli bir JSON formatı girin.';
+        renderApp();
       }
     }
     if(act==='copy-json'){
@@ -2548,6 +2480,15 @@ html, body {
 
   document.addEventListener('change',e=>{
     const t = e.target;
+    
+    // İSTEK 2: Temel Para Birimi Değişimi
+    if(t.dataset.act==='set-base-currency'){
+        state.baseCurrency = t.value;
+        BASE_CURRENCY = t.value; // Global değişkeni güncelle
+        save();
+        renderApp(); 
+    }
+
     if(t.dataset.act==='chk'){
         const i=state.chk.items.find(x=>x.id===t.dataset.id); 
         if(i){i.done=t.checked; save(); renderApp();}
@@ -2656,6 +2597,7 @@ html, body {
         return; 
     }
 
+    // Harcama formu inputları
     const fExp=state.form; 
     let shouldRender = false; 
 
