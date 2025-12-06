@@ -815,7 +815,7 @@ html, body {
                 
                 <!-- Rezervasyon Tipi -->
                 <div class="input-group">
-                   <label class="block text-xs font-bold text-slate-500 uppercase">Rezervasyon Tipi</label>
+                   <label for="i-res-type" class="block text-xs font-bold text-slate-500 uppercase">Rezervasyon Tipi</label>
                    <select id="i-res-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none appearance-none cursor-pointer">
                        ${typeOptions}
                    </select>
@@ -823,7 +823,7 @@ html, body {
 
                 <!-- Seyahat Adı -->
                 <div class="input-group">
-                  <label class="block text-xs font-bold text-slate-500 uppercase">Seyahat (Zorunlu)</label>
+                  <label for="i-res-trip" class="block text-xs font-bold text-slate-500 uppercase">Seyahat (Zorunlu)</label>
                   <div class="relative">
                      <input id="i-res-trip" list="dl-trip" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500 transition" placeholder="Seyahat Seç veya Yaz" value="${esc(f.trip)}">
                      <datalist id="dl-trip">${trips.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
@@ -833,11 +833,11 @@ html, body {
                 <!-- Rezervasyon Adı ve Konum -->
                 <div class="grid grid-cols-2 gap-3">
                    <div class="input-group">
-                     <label class="block text-xs font-bold text-slate-500 uppercase">Ad (Zorunlu)</label>
+                     <label for="i-res-name" class="block text-xs font-bold text-slate-500 uppercase">Ad (Zorunlu)</label>
                      <input id="i-res-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="Otel Adı, Uçuş Numarası" value="${esc(f.name)}">
                    </div>
                    <div class="input-group">
-                     <label class="block text-xs font-bold text-slate-500 uppercase">Konum / Şehir</label>
+                     <label for="i-res-location" class="block text-xs font-bold text-slate-500 uppercase">Konum / Şehir</label>
                      <input id="i-res-location" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="Paris, Tokyo, vb." value="${esc(f.location)}">
                    </div>
                 </div>
@@ -845,11 +845,11 @@ html, body {
                 <!-- Kod ve Maliyet -->
                 <div class="grid grid-cols-2 gap-3">
                    <div class="input-group">
-                     <label class="block text-xs font-bold text-slate-500 uppercase">Rezervasyon Kodu</label>
+                     <label for="i-res-code" class="block text-xs font-bold text-slate-500 uppercase">Rezervasyon Kodu</label>
                      <input id="i-res-code" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="PPR001, THY123" value="${esc(f.code)}">
                    </div>
                    <div class="input-group relative">
-                     <label class="block text-xs font-bold text-slate-500 uppercase">Maliyet (Opsiyonel)</label>
+                     <label for="i-res-cost" class="block text-xs font-bold text-slate-500 uppercase">Maliyet (Opsiyonel)</label>
                      <input id="i-res-cost" type="text" inputmode="decimal" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono" placeholder="0.00" value="${esc(f.cost)}">
                      <select id="i-res-cur" class="absolute right-1 top-[28px] bottom-1 bg-slate-700 text-slate-200 rounded-md text-xs px-2 outline-none border-l border-slate-600 cursor-pointer">
                         ${currencyOptions}
@@ -860,18 +860,18 @@ html, body {
                 <!-- Başlangıç ve Bitiş Tarihleri -->
                 <div class="grid grid-cols-2 gap-3">
                    <div class="input-group">
-                     <label class="block text-xs font-bold text-slate-500 uppercase">Başlangıç (Zorunlu)</label>
+                     <label for="i-res-start-date" class="block text-xs font-bold text-slate-500 uppercase">Başlangıç (Zorunlu)</label>
                      <input id="i-res-start-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none" value="${f.startDate}">
                    </div>
                    <div class="input-group">
-                     <label class="block text-xs font-bold text-slate-500 uppercase">Bitiş (Opsiyonel)</label>
+                     <label for="i-res-end-date" class="block text-xs font-bold text-slate-500 uppercase">Bitiş (Opsiyonel)</label>
                      <input id="i-res-end-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none" value="${f.endDate}">
                    </div>
                 </div>
                 
                 <!-- Notlar -->
                 <div class="input-group">
-                   <label class="block text-xs font-bold text-slate-500 uppercase">Notlar</label>
+                   <label for="i-res-notes" class="block text-xs font-bold text-slate-500 uppercase">Notlar</label>
                    <textarea id="i-res-notes" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none resize-none" placeholder="Önemli bilgiler, koltuk numarası vb.">${esc(f.notes)}</textarea>
                 </div>
                 
@@ -1866,11 +1866,11 @@ html, body {
               
               ${isOpen ? `
               
-              <!-- MADDE EKLEME KUTUSU (BASİTLEŞTİRİLMİŞ) -->
+              <!-- MADDE EKLEME KUTUSU (DAHA KÜÇÜK VE MİNİMAL) -->
               <div class="p-3 pt-0 border-t border-slate-700/50 mt-2"> 
                   <div class="flex gap-2 p-2 bg-slate-900/50 rounded-lg border border-slate-800">
-                    <input id="new-chk-item-${c.id}" data-cat-id="${c.id}" placeholder="Maddeleri virgülle ayırarak yazın (Örn: Mayo, Havlu, Terlik)" class="flex-1 bg-transparent border-none px-1 text-xs w-full outline-none text-slate-200 placeholder-slate-600">
-                    <button data-act="add-chk-single" data-cat-id="${c.id}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-500 transition text-xs font-bold whitespace-nowrap">${ICONS.plus.replace('w-4 h-4', 'w-3 h-3')} Ekle</button>
+                    <input id="new-chk-item-${c.id}" data-cat-id="${c.id}" placeholder="Maddeleri virgülle ayırın" class="flex-1 bg-transparent border-none px-1 text-xs w-full outline-none text-slate-200 placeholder-slate-600">
+                    <button data-act="add-chk-single" data-cat-id="${c.id}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-500 transition text-xs font-bold whitespace-nowrap">Ekle</button>
                   </div>
               </div>
 
@@ -2118,7 +2118,7 @@ html, body {
 
             <!-- SEYAHAT, ŞEHİR, MEKAN -->
             <div>
-              <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Seyahat</label>
+              <label for="i-trip" class="block text-xs font-bold text-slate-500 mb-1 uppercase">Seyahat</label>
               <div class="relative">
                  <input id="i-trip" list="dl-trip" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500 transition" placeholder="Seyahat Seç veya Yaz" value="${esc(f.trip)}">
                  <datalist id="dl-trip">${trips.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>
@@ -2127,26 +2127,26 @@ html, body {
 
             <div class="grid grid-cols-2 gap-3">
                <div>
-                 <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Şehir</label>
+                 <label for="i-city" class="block text-xs font-bold text-slate-500 mb-1 uppercase">Şehir</label>
                  <input id="i-city" list="dl-city" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="Şehir" value="${esc(f.city)}">
                  <datalist id="dl-city">${[...new Set(state.exp.map(x=>x.city))].sort().map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
                </div>
                <div>
-                 <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Mekan</label>
+                 <label for="i-place" class="block text-xs font-bold text-slate-500 mb-1 uppercase">Mekan</label>
                  <input id="i-place" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="Mekan Adı (Restoran, Müze, İstasyon)" value="${esc(f.place)}">
                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                <div class="col-span-1 relative">
-                  <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Toplam Tutar</label>
+                  <label for="i-amt" class="block text-xs font-bold text-slate-500 mb-1 uppercase">Toplam Tutar</label>
                   <input id="i-amt" type="text" inputmode="decimal" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-blue-500 font-mono" placeholder="0.00" value="${esc(f.amt)}">
                   <select id="i-cur" class="absolute right-1 top-[28px] bottom-1 bg-slate-700 text-slate-200 rounded-md text-xs px-2 outline-none border-l border-slate-600 cursor-pointer">
                      ${AVAILABLE_CURRENCIES.map(c=>`<option value="${c}" ${f.cur===c?'selected':''}>${c}</option>`).join('')}
                   </select>
                </div>
                <div class="col-span-1 flex flex-col">
-                  <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Kişi Sayısı</label>
+                  <label for="i-ppl" class="block text-xs font-bold text-slate-500 mb-1 uppercase">Kişi Sayısı</label>
                   <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 flex-1">
                       <span class="text-slate-500 text-xs mr-2">Kişi:</span>
                       <input id="i-ppl" type="number" inputmode="numeric" min="1" class="w-full bg-transparent text-sm text-slate-200 outline-none text-center" value="${f.ppl}">
@@ -2158,12 +2158,12 @@ html, body {
             <div class="grid grid-cols-2 gap-3">
                 <!-- TARİH -->
                 <div class="input-group">
-                   <label class="block text-xs font-bold text-slate-500 uppercase">Tarih</label>
+                   <label for="i-date" class="block text-xs font-bold text-slate-500 uppercase">Tarih</label>
                    <input id="i-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none">
                 </div>
                 <!-- ÖDEME TİPİ -->
                 <div class="input-group">
-                   <label class="block text-xs font-bold text-slate-500 uppercase">Ödeme Tipi</label>
+                   <label for="i-type" class="block text-xs font-bold text-slate-500 uppercase">Ödeme Tipi</label>
                    <select id="i-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none appearance-none cursor-pointer">
                        ${EXPENSE_TYPES.map(t=>`<option value="${t.id}" ${f.type===t.id?'selected':''}>${esc(t.l)}</option>`).join('')}
                    </select>
@@ -2573,43 +2573,59 @@ html, body {
   window.handleDragEnd = (e) => { e.preventDefault(); };
   
   // REZERVASYON FORM INPUT HANDLER
+  // KRİTİK DÜZELTME: Sadece Select, Date ve Checkbox için renderApp çağrılır. Text inputlar için çağrılmaz.
   window.handleResFormInput = (e) => {
       const t = e.target;
       const fRes = state.resForm;
       
       let shouldRender = false;
+      let shouldChange = false; // Input tipi değiştiğinde state'i güncelle
 
       switch(t.id) {
-          case 'i-res-type': fRes.type = t.value; shouldRender = true; break; // Select değişince yeniden çizilmeli
-          case 'i-res-name': fRes.name = t.value; break;
-          case 'i-res-trip': fRes.trip = t.value; break;
-          case 'i-res-location': fRes.location = t.value; break;
-          case 'i-res-code': fRes.code = t.value; break;
+          // SELECT, DATE, CHECKBOX (Re-render gerekli)
+          case 'i-res-type': 
+          case 'i-res-cur': 
+              fRes[t.id.slice(2)] = t.value; 
+              shouldRender = true;
+              break; 
+          case 'i-res-start-date': 
+          case 'i-res-end-date':
+              fRes[t.id.slice(2).replace(/-/g, '')] = t.value; 
+              shouldRender = true;
+              break; 
+          case 'i-res-completed': 
+              fRes.completed = t.checked; 
+              shouldRender = true;
+              break; 
+              
+          // TEXT INPUTS (Sadece state'i güncelle, re-render yapma)
+          case 'i-res-name': 
+          case 'i-res-trip': 
+          case 'i-res-location': 
+          case 'i-res-code': 
+          case 'i-res-notes':
+              fRes[t.id.slice(2)] = t.value; 
+              shouldChange = true;
+              break;
           case 'i-res-cost': 
-             // Sadece sayısal/decimal karakterlere izin ver
              fRes.cost = t.value.replace(',', '.').replace(/[^0-9.]/g, ''); 
+             shouldChange = true;
              break;
-          case 'i-res-cur': fRes.cur = t.value; shouldRender = true; break; // Select değişince yeniden çizilmeli
-          case 'i-res-start-date': fRes.startDate = t.value; shouldRender = true; break; // Date değişince yeniden çizilmeli
-          case 'i-res-end-date': fRes.endDate = t.value; shouldRender = true; break; // Date değişince yeniden çizilmeli
-          case 'i-res-notes': fRes.notes = t.value; break;
-          case 'i-res-completed': fRes.completed = t.checked; shouldRender = true; break; // Checkbox değişince yeniden çizilmeli
-          default: return;
+          default: 
+             return;
       }
       
-      // Sadece select, checkbox veya date değiştiğinde ekranı yeniden çiz
+      // Select, Date, Checkbox değiştiğinde render et.
       if(shouldRender) {
           state.err = ''; // Hata mesajını temizle
           renderApp();
       }
       
-      // Text inputlar için sadece state'i güncelle, yeniden çizme
-      if (!shouldRender && (e.type === 'input' || e.type === 'change')) {
-          // Bu kısım sadece state'i güncel tutar, klavye kapanmaz.
-          // Hata kontrolü gerekiyorsa buraya eklenmeli.
-          state.err = ''; 
-          // Not: renderApp çağrılmadığı için, ekranda bu değişikliği hemen göremeyiz, 
-          // ancak state'de doğru tutulur ve form kaydedildiğinde işlenir.
+      // Text inputlar için state'i güncel tut. (Klavyeyi kapatmamak için renderApp çağrılmaz)
+      if (shouldChange) {
+           state.err = ''; 
+           // Eğer input event'i ise (tuşa basma), değeri state'e kaydet.
+           // Form kaydedildiğinde state'teki güncel değeri alacak.
       }
   };
   
@@ -2691,6 +2707,8 @@ html, body {
     if(act === 'save-res'){
         e.preventDefault();
         const form = document.getElementById('res-form');
+        
+        // KRİTİK: handleResFormInput sadece state'i güncelledi, form elemanlarından güncel değeri alıyoruz.
         const f = {
             id: state.resForm.id,
             trip: form.elements['i-res-trip'].value,
@@ -2904,6 +2922,22 @@ html, body {
        // Tarih inputundan değeri al
        const dateInput = document.getElementById('i-date');
        if(dateInput) f.date = dateInput.value;
+       
+       // Diğer alanları manuel olarak yakalama
+       f.trip = document.getElementById('i-trip').value;
+       f.city = document.getElementById('i-city').value;
+       f.place = document.getElementById('i-place').value;
+       f.amt = document.getElementById('i-amt').value;
+       f.ppl = document.getElementById('i-ppl').value;
+       f.desc = document.getElementById('i-desc').value;
+       f.cur = document.getElementById('i-cur').value;
+       
+       // Yakıt alanları (eğer aktifse)
+       if (isFuelActive) {
+            f.startKm = document.getElementById('i-start-km').value;
+            f.endKm = document.getElementById('i-end-km').value;
+            f.fuelAmount = document.getElementById('i-fuel-amount').value;
+       }
 
 
        if(!f.city || !f.place || !f.amt || !f.cat) { 
@@ -3179,8 +3213,7 @@ html, body {
     // Harcama formu inputları
     if(t.closest('.form-modal-overlay') && t.closest('#expense-form')) { 
         const fExp=state.form; 
-        let shouldRender = false; 
-
+        
         switch(t.id) {
             case 'i-trip': fExp.trip = t.value; break;
             case 'i-city': fExp.city = t.value; break;
@@ -3188,10 +3221,10 @@ html, body {
             case 'i-amt': 
                 fExp.amt = t.value.replace(',','.').replace(/[^0-9.]/g,'');
                 break;
-            case 'i-cur': fExp.cur = t.value; shouldRender = true; break; 
+            case 'i-cur': fExp.cur = t.value; renderApp(); break; // Select değişimi render gerektirir
             case 'i-ppl': fExp.ppl = t.value; break; 
-            case 'i-date': fExp.date = t.value; shouldRender = true; break; 
-            case 'i-type': fExp.type = t.value; break; // Ödeme tipi güncellendi
+            case 'i-date': fExp.date = t.value; renderApp(); break; // Date değişimi render gerektirir
+            case 'i-type': fExp.type = t.value; break; 
             case 'i-desc': fExp.desc = t.value; break;
             case 'i-start-km': fExp.startKm = t.value.replace(/[^0-9]/g, ''); break; 
             case 'i-end-km': fExp.endKm = t.value.replace(/[^0-9]/g, ''); break; 
@@ -3199,10 +3232,6 @@ html, body {
                 fExp.fuelAmount = t.value.replace(',','.').replace(/[^0-9.]/g,'');
                 break; 
             default: return;
-        }
-        
-        if (shouldRender) {
-            renderApp();
         }
     } 
   });
