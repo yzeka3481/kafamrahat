@@ -846,10 +846,6 @@ html, body {
                     <label class="block text-xs font-bold text-slate-500 uppercase">${isMultiDay ? 'Başlangıç Tarihi' : 'Tarih'}</label>
                     <input id="i-res-start-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none" value="${f.startDate}">
                  </div>
-                 <div class="input-group">
-                    <label class="block text-xs font-bold text-slate-500 uppercase">${isMultiDay ? 'Bitiş Tarihi' : 'Opsiyonel Tarih'}</label>
-                    <input id="i-res-end-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none" value="${f.endDate}">
-                 </div>
               </div>
 
               <!-- KOD ve Tutar -->
@@ -2072,28 +2068,41 @@ html, body {
                </div>
             </div>
             
-            <!-- TARİH VE ÖDEME TİPİ ALANLARI -->
-            <div class="grid grid-cols-2 gap-3">
-                <!-- TARİH -->
-<div class="col-span-1">
-  <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Tarih</label>
-  <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
-    <input
-      id="i-date"
-      type="date"
-      class="w-full bg-transparent border-none outline-none text-sm text-slate-200"
-    >
+           <!-- TARİH VE ÖDEME TİPİ ALANLARI -->
+<div class="grid grid-cols-2 gap-3 items-start">
+  <!-- TARİH -->
+  <div class="flex flex-col">
+    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">
+      Tarih
+    </label>
+    <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 h-10">
+      <input
+        id="i-date"
+        type="date"
+        class="w-full bg-transparent border-none outline-none text-sm text-slate-200"
+      >
+    </div>
+  </div>
+
+  <!-- ÖDEME TİPİ -->
+  <div class="flex flex-col">
+    <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">
+      Ödeme Tipi
+    </label>
+    <div class="relative">
+      <select
+        id="i-type"
+        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 pr-8 h-10 text-sm text-slate-200 outline-none appearance-none cursor-pointer"
+      >
+        ${EXPENSE_TYPES.map(t=>`<option value="${t.id}" ${f.type===t.id?'selected':''}>${esc(t.l)}</option>`).join('')}
+      </select>
+      <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-400">
+        ${ICONS.down.replace('w-4 h-4','w-3 h-3')}
+      </div>
+    </div>
   </div>
 </div>
 
-                <!-- ÖDEME TİPİ -->
-                <div class="input-group">
-                   <label class="block text-xs font-bold text-slate-500 uppercase">Ödeme Tipi</label>
-                   <select id="i-type" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none appearance-none cursor-pointer">
-                       ${EXPENSE_TYPES.map(t=>`<option value="${t.id}" ${f.type===t.id?'selected':''}>${esc(t.l)}</option>`).join('')}
-                   </select>
-                </div>
-            </div>
 
             <div>
                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Kategori</label>
@@ -3185,7 +3194,7 @@ window.onload = function() {
     try {
         initState(); 
         renderApp(); // İlk ekran, kur beklemeden çizilsin
-        fetchAndApplyRates().then(() => {
+        fetchAndApplyRates().then(() => {f
             startClock(); 
         });
     } catch(e) {
