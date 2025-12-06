@@ -396,7 +396,6 @@ html, body {
     currency: mkSvg('<circle cx="12" cy="12" r="10"/><path d="M12 18V6"/><path d="M9 9h6"/><path d="M9 15h6"]/>'),
     reserve: mkSvg('<rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="7" cy="7" r="4"/><path d="M14 7h6a2 2 0 0 1 2 2v2M2 9v2M12 15h0"/>', 4),
     check: mkSvg('<polyline points="20 6 9 17 4 12"/>', 4)
-    // Hava durumu ikonları kaldırıldı, artık kullanılmayacak
   };
   
   // Menü ikonlarının estetik gradient renkleri
@@ -497,7 +496,7 @@ html, body {
     // Rezervasyonları yükle
     try{r=JSON.parse(localStorage.getItem(K.RES)||'[]');}catch(err){r = [];}
     
-    try{prefTZ=localStorage.parse(localStorage.getItem(K.PREF+'_tz')||initialTZ);}catch(err){}
+    try{prefTZ=localStorage.getItem(K.PREF+'_tz')||initialTZ;}catch(err){}
     try{criticalNotes=JSON.parse(localStorage.getItem(K.NOTES)||'[]');}catch(err){criticalNotes = [];}
     try{preferredBaseCurrency=localStorage.getItem(K.PREF+'_base_cur')||'TRY';}catch(err){preferredBaseCurrency = 'TRY';}
 
@@ -676,7 +675,12 @@ html, body {
   function editReservation(id){
       const res = state.res.find(r => r.id === id);
       if(res){
-          state.resForm = {...res};
+          // Tarih inputlarının doğru formatlanması için state'i kopyalarken tarihleri doğru ayarla
+          const resCopy = {...res};
+          resCopy.startDate = resCopy.startDate ? resCopy.startDate.slice(0, 10) : new Date().toISOString().slice(0,10);
+          resCopy.endDate = resCopy.endDate ? resCopy.endDate.slice(0, 10) : '';
+
+          state.resForm = resCopy;
           setState({selRes: id, modals: {...state.modals, resForm: true}});
       }
   }
@@ -716,13 +720,17 @@ html, body {
   };
 
   // KRİTİK DÜZELTME: AKORDİYON ITEM RENDERER GENEL ALANA TAŞINDI
-  const accordionItem = (id, icon, title, content) => {
+  const accordionItem = (id, icon, title, content, disableLocation=false) => {
       const isOpen = state.helpersAccordion[id];
       // Max height reservation, critical ve report için daha fazla olacak
       const maxHeight = (id === 'critical' || id === 'report' || id === 'route' || id === 'reservations') ? '900px' : '500px';
+      
+      const isReady = false; // Konum özelliği kapatıldı
+      const disabledClass = !disableLocation && !isReady ? 'opacity-40 pointer-events-none' : '';
+
 
       return `
-          <div class="bg-slate-800/60 rounded-xl border border-slate-700/50 shadow-lg overflow-hidden">
+          <div class="bg-slate-800/60 rounded-xl border border-slate-700/50 shadow-lg overflow-hidden ${disabledClass}">
               <button data-act="tog-accordion" data-val="${id}" class="w-full flex justify-between items-center p-4 hover:bg-slate-800/80 transition focus:outline-none">
                   <h3 class="flex items-center gap-3 text-base font-bold text-white">
                       ${icon} ${title}
@@ -802,7 +810,7 @@ html, body {
               <button data-act="cancel-res" class="text-slate-400 hover:text-white transition">${ICONS.x}</button>
             </div>
             
-            <form id="res-form" data-act="save-res" onchange="handleResFormInput(event)">
+            <form id="res-form" data-act="save-res" onchange="handleResFormInput(event)" oninput="handleResFormInput(event)">
               <div class="space-y-3">
                 
                 <!-- Rezervasyon Tipi -->
@@ -1017,7 +1025,7 @@ html, body {
                      ${flightCheckContent}
                   </div>
               </div>
-          `)}
+          `, true)}
       `;
   }
   
@@ -1411,9 +1419,9 @@ html, body {
                   <div class="text-sm font-medium text-white/70 mt-1">
                       Yaklaşan bir seyahat planı veya rezervasyon bulunamadı.
                   </div>
-                  <div class="text-[10px] font-bold text-white px-2 py-0.5 mt-3 rounded-full inline-block bg-slate-600">
+                  <button data-act="new-res" class="text-[10px] font-bold text-white px-3 py-1.5 mt-3 rounded-full inline-block bg-blue-600 hover:bg-blue-500 transition">
                       Yeni kayıt ekleyin
-                  </div>
+                  </button>
               </div>
           `;
       }
@@ -1922,10 +1930,10 @@ html, body {
               ${renderReservationsAccordion()}
 
               <!-- SEYAHAT ÖZET RAPORU -->
-              ${accordionItem('report', ICONS.report, 'Seyahat Özet Raporu', renderReportContent())}
+              ${accordionItem('report', ICONS.report.replace('w-4 h-4', 'w-4 h-4'), 'Seyahat Özet Raporu', renderReportContent(), true)}
               
               <!-- ROTA PLANLAYICI -->
-              ${accordionItem('route', ICONS.route, 'Yol Güzergahı Haritası (Hızlı Rota)', `
+              ${accordionItem('route', ICONS.route.replace('w-4 h-4', 'w-4 h-4'), 'Yol Güzergahı Haritası (Hızlı Rota)', `
                   <div class="space-y-3 pt-3">
                       <p class="text-xs text-slate-400">Harcama kayıtlarınızdaki mekanları kronolojik sıraya göre birleştirerek Google Haritalar'da güzergah oluşturur.</p>
                       <div>
@@ -1942,10 +1950,10 @@ html, body {
                           ${renderRoutePlanner()}
                       </div>
                   </div>
-              `)}
+              `, true)}
               
               <!-- KRİTİK BİLGİLER AKORDİYONU -->
-              ${accordionItem('critical', ICONS.key, 'Kritik Bilgiler (Notlar)', `
+              ${accordionItem('critical', ICONS.key.replace('w-4 h-4', 'w-4 h-4'), 'Kritik Bilgiler (Notlar)', `
                   <div class="space-y-4 pt-3">
                       <div>
                          <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Seyahat Seçimi</label>
@@ -1979,7 +1987,7 @@ html, body {
                           </div>
                       </div>
                   </div>
-              `)}
+              `, true)}
 
               <!-- KONUM BAZLI YARDIMCILAR (Devre Dışı) -->
               <h3 class="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2 opacity-50">
@@ -2004,7 +2012,7 @@ html, body {
                               <span class="text-xs font-bold text-white/90 text-center leading-tight">Otel / Konaklama</span>
                           </a>
                       </div>
-                  `)}
+                  `, false)}
               </div>
               
               <!-- SAĞLIK -->
@@ -2025,7 +2033,7 @@ html, body {
                               <span class="text-xs font-bold text-white/90 text-center leading-tight">Polis / Güvenlik</span>
                           </a>
                       </div>
-                  `)}
+                  `, false)}
               </div>
               
               <!-- ULAŞIM -->
@@ -2044,10 +2052,10 @@ html, body {
                           <div class="text-[10px] font-bold text-white">Uber / Taksi</div>
                       </a>
                   </div>
-              `)}
+              `, true)}
 
               <!-- VERİ YÖNETİMİ -->
-              ${accordionItem('data', ICONS.info, 'Veri Yönetimi (Yedekleme/Yükleme)', `<div class="pt-3">${dataContent}</div>`)}
+              ${accordionItem('data', ICONS.info.replace('w-4 h-4', 'w-4 h-4'), 'Veri Yönetimi (Yedekleme/Yükleme)', `<div class="pt-3">${dataContent}</div>`, true)}
 
           </div>
       `;
@@ -2514,7 +2522,8 @@ html, body {
              h+= renderOtherTab();
           } 
           
-          h+=`<button data-act="new" class="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl shadow-blue-600/40 flex items-center justify-center transition transform hover:scale-105 active:scale-95 z-40 border border-white/10">${ICONS.plus.replace('w-4 h-4', 'w-5 h-5')}</button>`;
+          // Harcama Ekle butonu, ana ekranda (sum ve exp) ve diğer sekmede (rezervasyon eklemek için) görünür.
+          h+=`<button data-act="${state.tab === 'exp' ? 'new' : (state.tab === 'sum' ? 'new' : 'new-res')}" class="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl shadow-blue-600/40 flex items-center justify-center transition transform hover:scale-105 active:scale-95 z-40 border border-white/10">${ICONS.plus.replace('w-4 h-4', 'w-5 h-5')}</button>`;
         } else {
           h+= renderForm();
         }
@@ -2568,22 +2577,40 @@ html, body {
       const t = e.target;
       const fRes = state.resForm;
       
+      let shouldRender = false;
+
       switch(t.id) {
-          case 'i-res-type': fRes.type = t.value; break;
+          case 'i-res-type': fRes.type = t.value; shouldRender = true; break; // Select değişince yeniden çizilmeli
           case 'i-res-name': fRes.name = t.value; break;
           case 'i-res-trip': fRes.trip = t.value; break;
           case 'i-res-location': fRes.location = t.value; break;
           case 'i-res-code': fRes.code = t.value; break;
-          case 'i-res-cost': fRes.cost = t.value.replace(',','.').replace(/[^0-9.]/g,''); break;
-          case 'i-res-cur': fRes.cur = t.value; break;
-          case 'i-res-start-date': fRes.startDate = t.value; break;
-          case 'i-res-end-date': fRes.endDate = t.value; break;
+          case 'i-res-cost': 
+             // Sadece sayısal/decimal karakterlere izin ver
+             fRes.cost = t.value.replace(',', '.').replace(/[^0-9.]/g, ''); 
+             break;
+          case 'i-res-cur': fRes.cur = t.value; shouldRender = true; break; // Select değişince yeniden çizilmeli
+          case 'i-res-start-date': fRes.startDate = t.value; shouldRender = true; break; // Date değişince yeniden çizilmeli
+          case 'i-res-end-date': fRes.endDate = t.value; shouldRender = true; break; // Date değişince yeniden çizilmeli
           case 'i-res-notes': fRes.notes = t.value; break;
-          case 'i-res-completed': fRes.completed = t.checked; break;
+          case 'i-res-completed': fRes.completed = t.checked; shouldRender = true; break; // Checkbox değişince yeniden çizilmeli
           default: return;
       }
-      state.err = ''; // Hata mesajını temizle
-      renderApp();
+      
+      // Sadece select, checkbox veya date değiştiğinde ekranı yeniden çiz
+      if(shouldRender) {
+          state.err = ''; // Hata mesajını temizle
+          renderApp();
+      }
+      
+      // Text inputlar için sadece state'i güncelle, yeniden çizme
+      if (!shouldRender && (e.type === 'input' || e.type === 'change')) {
+          // Bu kısım sadece state'i güncel tutar, klavye kapanmaz.
+          // Hata kontrolü gerekiyorsa buraya eklenmeli.
+          state.err = ''; 
+          // Not: renderApp çağrılmadığı için, ekranda bu değişikliği hemen göremeyiz, 
+          // ancak state'de doğru tutulur ve form kaydedildiğinde işlenir.
+      }
   };
   
   document.addEventListener('click',e=>{
@@ -2642,6 +2669,8 @@ html, body {
         if(state.tripFilter)state.form.trip=state.tripFilter; 
         state.view='form'; 
         state.form.isFuel = false;
+        // Tarih inputlarının doğru formatlanması için
+        state.form.date = new Date().toISOString().slice(0, 10);
         renderApp();
     }
     if(act==='cancel'){
@@ -2682,7 +2711,7 @@ html, body {
     // Not İşlemleri
     if (act === 'add-note') {
         const noteInput = document.getElementById('new-note-input-other') || document.getElementById('new-note-input');
-        const noteText = noteInput ? noteInput.value.trim() : state.newCriticalNote.trim();
+        const noteText = state.newCriticalNote.trim(); // state'den oku
         
         if (noteText) {
             state.criticalNotes.push({
@@ -2872,6 +2901,11 @@ html, body {
        const isFuelActive = f.cat === 'fuel';
        f.isFuel = isFuelActive;
 
+       // Tarih inputundan değeri al
+       const dateInput = document.getElementById('i-date');
+       if(dateInput) f.date = dateInput.value;
+
+
        if(!f.city || !f.place || !f.amt || !f.cat) { 
            state.err = 'Zorunlu alanları doldurunuz (Şehir, Mekan, Tutar, Kategori).'; 
            renderApp(); 
@@ -2889,7 +2923,7 @@ html, body {
        if (isFuelActive) {
            rec.startKm = String(rec.startKm).replace(/[^0-9]/g, '');
            rec.endKm = String(rec.endKm).replace(/[^0-9]/g, '');
-           rec.fuelAmount = String(rec.fuelAmount).replace(/[^0-9.]/g,'');
+           rec.fuelAmount = String(rec.fuelAmount).replace(',','.').replace(/[^0-9.]/g,'');
            
            if (Number(rec.endKm) < Number(rec.startKm)) {
                state.err = 'Bitiş Kilometresi, Başlangıç Kilometresinden küçük olamaz.'; 
