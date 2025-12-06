@@ -2676,6 +2676,34 @@ html, body {
         }
         return; // İşlem tamamlandı
     }
+
+    // HARCAMA DETAYINDAN DÜZENLEME (FORMU DOLDUR)
+    if(act==='edit'){
+        e.preventDefault();
+        e.stopPropagation();
+        if(state.selExp){
+            const existing = state.exp.find(x => x.id === state.selExp);
+            if(existing){
+                // Boş form şablonunu al, kaydı üzerine yaz
+                state.form = { 
+                    ...getEmptyForm(), 
+                    ...existing 
+                };
+                // Yakıt harcaması ise ilgili alanları aktif tut
+                state.form.isFuel = existing.cat === 'fuel' || !!existing.isFuel;
+                // Seçilen harcamanın şehrini genişlet
+                if(existing.city){
+                    state.expandedCities[existing.city] = true;
+                }
+                // Detay modali kapanır, form ekranına geçilir
+                state.view = 'form';
+                state.modals.detail = false;
+                state.err = '';
+                renderApp();
+            }
+        }
+        return; // İşlem tamamlandı
+    }
     
     // KRİTİK: ŞEHİR BAŞLIĞINDAN TÜM ŞEHİR HARCAMALARINI SİLME
     if(act==='del-city'){
@@ -3217,7 +3245,7 @@ window.onload = function() {
     try {
         initState(); 
         renderApp(); // İlk ekran, kur beklemeden çizilsin
-        fetchAndApplyRates().then(() => {f
+        fetchAndApplyRates().then(() => {
             startClock(); 
         });
     } catch(e) {
