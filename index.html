@@ -2075,10 +2075,17 @@ html, body {
             <!-- TARİH VE ÖDEME TİPİ ALANLARI -->
             <div class="grid grid-cols-2 gap-3">
                 <!-- TARİH -->
-                <div class="input-group">
-                   <label class="block text-xs font-bold text-slate-500 uppercase">Tarih</label>
-                   <input id="i-date" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none">
-                </div>
+<div class="col-span-1">
+  <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Tarih</label>
+  <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-2">
+    <input
+      id="i-date"
+      type="date"
+      class="w-full bg-transparent border-none outline-none text-sm text-slate-200"
+    >
+  </div>
+</div>
+
                 <!-- ÖDEME TİPİ -->
                 <div class="input-group">
                    <label class="block text-xs font-bold text-slate-500 uppercase">Ödeme Tipi</label>
