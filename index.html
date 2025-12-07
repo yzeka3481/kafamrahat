@@ -1366,7 +1366,7 @@ html, body {
                      </div>
                   </div>
                   
-                  <div class="flex flex-col gap-1 min-w-[150px]">
+                 <div class="flex flex-col gap-1 w-[110px] sm:w-auto">
                      <label class="text-[10px] text-white/80 font-bold uppercase ml-1">Özet Para Birimi</label>
                      <div class="relative">
                        <select data-act="set-base-currency" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
@@ -2000,7 +2000,10 @@ html, body {
 
   function renderForm(){
     const f = state.form;
-    const trips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean))].sort();
+    const trips = [...new Set([
+        ...state.exp.map(x=>x.trip),
+        ...state.res.map(r=>r.trip)
+    ].filter(Boolean))].sort();
     
     const imagesCount = f.imgs ? f.imgs.length : 0;
     const isImageLimitReached = imagesCount >= MAX_IMAGES;
@@ -2482,7 +2485,7 @@ html, body {
              h+= renderOtherTab();
           } 
           
-          h+=`<button data-act="new" class="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl shadow-blue-600/40 flex items-center justify-center transition transform hover:scale-105 active:scale-95 z-40 border border-white/10">${ICONS.plus.replace('w-4 h-4', 'w-5 h-5')}</button>`;
+          if(state.tab==='exp') h+=`<button data-act="new" class="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl shadow-blue-600/40 flex items-center justify-center transition transform hover:scale-105 active:scale-95 z-40 border border-white/10">${ICONS.plus.replace('w-4 h-4', 'w-5 h-5')}</button>`;
         } else {
           h+= renderForm();
         }
@@ -2676,7 +2679,33 @@ html, body {
         }
         return; // İşlem tamamlandı
     }
-    
+
+    // HARCAMA DETAYINDAN DÜZENLEME (FORMU DOLDUR)
+    if(act==='edit'){
+        e.preventDefault();
+        e.stopPropagation();
+        if(state.selExp){
+            const existing = state.exp.find(x => x.id === state.selExp);
+            if(existing){
+                state.form = { 
+                    ...getEmptyForm(), 
+                    ...existing 
+                };
+                // Yakıt harcaması ise ilgili alanları aktif tut
+                state.form.isFuel = existing.cat === 'fuel' || !!existing.isFuel;
+                // İlgili şehrin accordion'unu açık tut
+                if(existing.city){
+                    state.expandedCities[existing.city] = true;
+                }
+                state.view = 'form';
+                state.modals.detail = false;
+                state.err = '';
+                renderApp();
+            }
+        }
+        return; // İşlem tamamlandı
+    }
+
     // KRİTİK: ŞEHİR BAŞLIĞINDAN TÜM ŞEHİR HARCAMALARINI SİLME
     if(act==='del-city'){
       e.stopPropagation(); 
@@ -2863,8 +2892,7 @@ html, body {
         f.trip = document.getElementById('i-res-trip').value;
         f.location = document.getElementById('i-res-location').value;
         f.startDate = document.getElementById('i-res-start-date').value;
-        // Tek tarihli model: bitiş tarihi UI'da yok; her zaman başlangıçla aynı kabul et
-        f.endDate = f.startDate;
+        f.endDate = document.getElementById('i-res-end-date').value;
         f.code = document.getElementById('i-res-code').value;
         f.cost = document.getElementById('i-res-cost').value;
         f.cur = document.getElementById('i-res-cur').value;
@@ -3137,7 +3165,18 @@ html, body {
   document.addEventListener('input', e => {
     const t = e.target;
     
-    if(t.dataset.act==='search'){state.search=t.target.value; renderApp(); return;}
+    if(t.dataset.act==='search'){
+      const old = t;
+      const caret = old.selectionStart || old.value.length;
+      state.search = old.value;
+      renderApp();
+      const s = document.querySelector('input[data-act="search"]');
+      if(s){
+        s.focus();
+        try{s.setSelectionRange(caret, caret);}catch(e){}
+      }
+      return;
+    }
     
     if(t.dataset.act==='update-new-note'){
         state.newCriticalNote = t.value;
