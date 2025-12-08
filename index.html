@@ -15,21 +15,38 @@
             </h1>
         </div>
 
-        <!-- Özet Kartları -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl shadow p-3 md:p-4">
-                <div class="text-xs md:text-sm text-slate-400">Toplam Borç (Çıkış)</div>
-                <div id="total-outgoing" class="text-lg md:text-xl font-semibold text-red-400 mt-1">0 ₺</div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl shadow p-3 md:p-4">
-                <div class="text-xs md:text-sm text-slate-400">Toplam Alacak (Giriş)</div>
-                <div id="total-incoming" class="text-lg md:text-xl font-semibold text-emerald-400 mt-1">0 ₺</div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl shadow p-3 md:p-4">
-                <div id="total-unpaid-label" class="text-xs md:text-sm text-slate-400">Ödenmemiş Toplam</div>
-                <div id="total-unpaid" class="text-lg md:text-xl font-semibold mt-1 text-slate-100">0 ₺</div>
+       <!-- Özet Kartları -->
+<div class="space-y-3 md:space-y-4 mb-4 md:mb-6">
+    <!-- Borç & Alacak yan yana -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <!-- Toplam Borç -->
+        <div class="bg-gradient-to-r from-rose-950 to-red-900 border border-red-500/40 rounded-xl shadow p-3 md:p-4">
+            <div class="text-xs md:text-sm text-rose-100/80">Toplam Borç (Çıkış)</div>
+            <div id="total-outgoing" class="text-lg md:text-2xl font-semibold text-rose-50 mt-1">
+                0 ₺
             </div>
         </div>
+
+        <!-- Toplam Alacak -->
+        <div class="bg-gradient-to-r from-emerald-950 to-teal-900 border border-emerald-500/40 rounded-xl shadow p-3 md:p-4">
+            <div class="text-xs md:text-sm text-emerald-100/80">Toplam Alacak (Giriş)</div>
+            <div id="total-incoming" class="text-lg md:text-2xl font-semibold text-emerald-50 mt-1">
+                0 ₺
+            </div>
+        </div>
+    </div>
+
+    <!-- Ödenmemiş Toplam (alta, nötr kart) -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl shadow p-3 md:p-4">
+        <div id="total-unpaid-label" class="text-xs md:text-sm text-slate-400">
+            Ödenmemiş Toplam
+        </div>
+        <div id="total-unpaid" class="text-lg md:text-xl font-semibold mt-1 text-slate-100">
+            0 ₺
+        </div>
+    </div>
+</div>
+
 
         <!-- Liste + Kompakt Filtreler -->
         <div class="bg-slate-900 border border-slate-800 rounded-xl shadow overflow-hidden">
@@ -194,7 +211,7 @@
                             <input
                                 type="text"
                                 id="voice-command"
-                                placeholder="Örn: Halkbankası 10 bin lira borç 16 Aralık"
+                                placeholder="Örn: Halkbankası 20 bin lira borç 16 Aralık"
                                 class="flex-1 border border-slate-700 bg-slate-950 text-slate-100 rounded-lg px-3 py-2 text-xs md:text-sm placeholder:text-slate-500"
                             />
                             <button
@@ -258,7 +275,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // Senin Firebase config'in
+        // Firebase config
         const firebaseConfig = {
           apiKey: "AIzaSyCor3xd3b5oISqFTChJeO1KNR6FsCQiAKg",
           authDomain: "gezi-5b54b.firebaseapp.com",
@@ -421,13 +438,13 @@
                 .join(" ");
         }
 
-        // Komut metnini çöz ve forma yaz
+        // Komut metnini çöz ve forma yaz (20 bin -> 20000 fix'li)
         function fillFormFromCommand(text) {
             if (!text) return;
             const raw = text.trim();
             let t = raw.toLowerCase();
 
-            // Tür
+            // --- TÜR ---
             let type = "outgoing"; // varsayılan: borç
             if (t.includes("alacak") || t.includes("alacağım") || t.includes("tahsil")) {
                 type = "incoming";
@@ -435,31 +452,45 @@
                 type = "outgoing";
             }
 
-            // Tutar
+            // --- TUTAR ---
             let amount = null;
 
-            // "10 bin" gibi
+            // 1) "10 bin", "20 bin" vb. -> 10 * 1000
             let amountMatchBin = t.match(/(\d+)\s*bin/);
             if (amountMatchBin) {
                 amount = parseInt(amountMatchBin[1], 10) * 1000;
             }
 
-            // Genel sayı (12500, 12.500, 12,5...)
+            // 2) Genel sayı (12500, 12.500, 12,500, 12,5...)
             if (!amount) {
                 let liraIndex = t.indexOf("lira");
                 let searchSpan = t;
                 if (liraIndex !== -1) {
-                    const start = Math.max(0, liraIndex - 15);
+                    const start = Math.max(0, liraIndex - 20);
                     searchSpan = t.substring(start, liraIndex);
                 }
-                let numMatch = searchSpan.match(/(\d+([.,]\d+)?)/);
+
+                let numMatch = searchSpan.match(/(\d[\d.,]*)/);
                 if (numMatch) {
-                    const normalized = numMatch[1].replace(",", ".");
-                    amount = parseFloat(normalized);
+                    let n = numMatch[1].trim();
+
+                    // Sadece nokta varsa → çoğunlukla binlik ayıracı (20.000, 12.500)
+                    if (n.includes(".") && !n.includes(",")) {
+                        n = n.replace(/\./g, "");
+                    } else {
+                        // . ve , karışık ise / sadece , varsa
+                        // . -> binlik ayıracı kabul edip siliyoruz, ',' -> ondalık
+                        n = n.replace(/\./g, "").replace(",", ".");
+                    }
+
+                    const parsed = parseFloat(n);
+                    if (!isNaN(parsed)) {
+                        amount = parsed;
+                    }
                 }
             }
 
-            // Tarih (16 aralık vb.)
+            // --- TARİH ---
             const aylar = {
                 "ocak": "01",
                 "şubat": "02",
@@ -501,12 +532,12 @@
                 dateStr = `${y}-${m}-${d}`;
             }
 
-            // Başlık
+            // --- BAŞLIK ---
             let title = raw;
 
             let cleaned = t
                 .replace(/(\d+)\s*bin/g, "")
-                .replace(/(\d+([.,]\d+)?)/g, "")
+                .replace(/(\d[\d.,]*)/g, "")
                 .replace(/lira/g, "")
                 .replace(/borç|borcu|borcum|alacak|alacağım|tahsil/g, "")
                 .trim();
@@ -736,18 +767,19 @@
             document.getElementById("empty-state").classList.toggle("hidden", filtered.length !== 0);
 
             let totalOutgoing = 0;
-            let totalIncoming = 0;
-            let netUnpaid = 0;
+let totalIncoming = 0;
+let netTotal = 0;
 
-            filtered.forEach(p => {
-                if (p.type === "outgoing") totalOutgoing += p.amount;
-                if (p.type === "incoming") totalIncoming += p.amount;
+filtered.forEach(p => {
+    if (p.type === "outgoing") {
+        totalOutgoing += p.amount;
+        netTotal += p.amount;   // borçlar + yönde
+    } else if (p.type === "incoming") {
+        totalIncoming += p.amount;
+        netTotal -= p.amount;   // alacaklar - yönde
+    }
+});
 
-                if (!p.isPaid) {
-                    if (p.type === "outgoing") netUnpaid += p.amount;
-                    else netUnpaid -= p.amount;
-                }
-            });
 
             document.getElementById("total-outgoing").textContent = formatCurrency(totalOutgoing);
             document.getElementById("total-incoming").textContent = formatCurrency(totalIncoming);
@@ -766,7 +798,8 @@
                 unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-slate-100";
             }
 
-            unpaidEl.textContent = formatCurrency(Math.abs(netUnpaid));
+          unpaidEl.textContent = formatCurrency(Math.abs(netTotal));
+
 
             document.getElementById("count-info").textContent =
                 filtered.length + " kayıt gösteriliyor (toplam: " + payments.length + ")";
