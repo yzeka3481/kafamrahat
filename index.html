@@ -291,6 +291,7 @@
 
     <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
     <script>
@@ -307,14 +308,26 @@
 
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
         const paymentsCol = db.collection("payments");
 
         let payments = [];
         let editingId = null;
+        let currentUserId = null;
+        let unsubscribePayments = null;
 
         document.addEventListener("DOMContentLoaded", () => {
-            bindEvents();
-            subscribePayments();
+            // Önce anonim login ol, sonra event'leri bağla + veriyi dinle
+            auth.signInAnonymously()
+                .then(cred => {
+                    currentUserId = cred.user.uid;
+                    bindEvents();
+                    subscribePayments();
+                })
+                .catch(err => {
+                    console.error("Anonim giriş hatası:", err);
+                    alert("Giriş sırasında bir hata oluştu (Firebase Auth). Konsolu kontrol edebilirsin.");
+                });
         });
 
         function bindEvents() {
@@ -590,6 +603,11 @@
         async function handleSubmit(e) {
             e.preventDefault();
 
+            if (!currentUserId) {
+                alert("Kullanıcı oturumu oluşturulamadı (Auth). Lütfen sayfayı yenileyin.");
+                return;
+            }
+
             const date = document.getElementById("date").value;
             const amount = parseFloat(document.getElementById("amount").value || "0");
             let title = document.getElementById("title").value.trim();
@@ -615,7 +633,8 @@
                         category,
                         type,
                         isPaid,
-                        isRecurring
+                        isRecurring,
+                        userId: currentUserId
                     });
                 } else {
                     await paymentsCol.add({
@@ -625,7 +644,8 @@
                         category,
                         type,
                         isPaid,
-                        isRecurring
+                        isRecurring,
+                        userId: currentUserId
                     });
                 }
                 closeModal();
@@ -655,18 +675,23 @@
         }
 
         function subscribePayments() {
-            paymentsCol.onSnapshot(
-                (snapshot) => {
-                    payments = snapshot.docs.map(docSnap => ({
-                        id: docSnap.id,
-                        ...docSnap.data()
-                    }));
-                    render();
-                },
-                (err) => {
-                    console.error("Firestore dinleme hatası:", err);
-                }
-            );
+            if (!currentUserId) return;
+            if (unsubscribePayments) unsubscribePayments();
+
+            unsubscribePayments = paymentsCol
+                .where("userId", "==", currentUserId)
+                .onSnapshot(
+                    (snapshot) => {
+                        payments = snapshot.docs.map(docSnap => ({
+                            id: docSnap.id,
+                            ...docSnap.data()
+                        }));
+                        render();
+                    },
+                    (err) => {
+                        console.error("Firestore dinleme hatası:", err);
+                    }
+                );
         }
 
         function formatCurrency(value) {
