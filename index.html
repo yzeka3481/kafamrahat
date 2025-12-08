@@ -36,31 +36,20 @@
         </div>
     </div>
 
-    <!-- Ödenmemiş Toplam (gizli) -->
-<div class="hidden bg-slate-900 border border-slate-800 rounded-xl shadow p-3 md:p-4">
+  <!-- Borç / Alacak Farkı -->
+<div class="bg-slate-900 border border-slate-800 rounded-xl shadow p-3 md:p-4">
     <div id="total-unpaid-label" class="text-xs md:text-sm text-slate-400">
-        Ödenmemiş Toplam
+        Borç / Alacak Farkı
     </div>
     <div id="total-unpaid" class="text-lg md:text-xl font-semibold mt-1 text-slate-100">
         0 ₺
     </div>
 </div>
-
 </div>
-
-
     <!-- Ödenmemiş Toplam (alta, nötr kart) -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl shadow p-3 md:p-4">
-        <div id="total-unpaid-label" class="text-xs md:text-sm text-slate-400">
-            Ödenmemiş Toplam
-        </div>
-        <div id="total-unpaid" class="text-lg md:text-xl font-semibold mt-1 text-slate-100">
-            0 ₺
-        </div>
-    </div>
+        <div id="total-unpaid-label" class="text-xs md:text-sm text-slate-400">       
 </div>
-
-
         <!-- Liste + Kompakt Filtreler -->
         <div class="bg-slate-900 border border-slate-800 rounded-xl shadow overflow-hidden">
             <!-- Başlık + Yeni Ödeme Butonu -->
@@ -78,16 +67,16 @@
                 </button>
             </div>
 
-                <!-- Kompakt Filtre Barı -->
+                    <!-- Kompakt Filtre Barı -->
     <div class="px-3 md:px-4 py-3 border-b border-slate-800 bg-slate-950/60">
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 items-end">
+        <div class="grid grid-cols-2 gap-2 md:gap-3 items-end">
             <!-- Dönem -->
             <div class="flex flex-col">
                 <label class="block text-[11px] md:text-xs text-slate-400 mb-1">Dönem</label>
                 <input
                     type="month"
                     id="month-filter"
-                    class="w-full border border-slate-700 bg-slate-900 text-slate-100 rounded-lg px-2 py-1.5 text-xs md:text-sm"
+                    class="w-full min-w-0 border border-slate-700 bg-slate-900 text-slate-100 rounded-lg px-2 py-1.5 text-xs md:text-sm"
                 />
             </div>
 
@@ -96,7 +85,7 @@
                 <label class="block text-[11px] md:text-xs text-slate-400 mb-1">Durum</label>
                 <select
                     id="status-filter"
-                    class="w-full border border-slate-700 bg-slate-900 text-slate-100 rounded-lg px-2 py-1.5 text-xs md:text-sm"
+                    class="w-full min-w-0 border border-slate-700 bg-slate-900 text-slate-100 rounded-lg px-2 py-1.5 text-xs md:text-sm"
                 >
                     <option value="all">Tümü</option>
                     <option value="unpaid">Sadece ödenmemiş</option>
@@ -109,7 +98,7 @@
                 <label class="block text-[11px] md:text-xs text-slate-400 mb-1">Tür</label>
                 <select
                     id="type-filter"
-                    class="w-full border border-slate-700 bg-slate-900 text-slate-100 rounded-lg px-2 py-1.5 text-xs md:text-sm"
+                    class="w-full min-w-0 border border-slate-700 bg-slate-900 text-slate-100 rounded-lg px-2 py-1.5 text-xs md:text-sm"
                 >
                     <option value="all">Hepsi</option>
                     <option value="outgoing">Sadece borç (çıkış)</option>
@@ -124,12 +113,12 @@
                     type="text"
                     id="search-filter"
                     placeholder="kira, elektrik, okul..."
-                    class="w-full border border-slate-700 bg-slate-900 text-slate-100 rounded-lg px-2 py-1.5 text-xs md:text-sm placeholder:text-slate-500"
+                    class="w-full min-w-0 border border-slate-700 bg-slate-900 text-slate-100 rounded-lg px-2 py-1.5 text-xs md:text-sm placeholder:text-slate-500"
                 />
             </div>
 
             <!-- Tüm Kayıtları Sil -->
-            <div class="col-span-2 md:col-span-1 flex md:justify-end">
+            <div class="col-span-2 flex justify-end">
                 <button
                     id="clear-all"
                     class="w-full md:w-auto border border-red-500/40 text-red-300 text-[11px] md:text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-red-500/10"
@@ -139,6 +128,7 @@
             </div>
         </div>
     </div>
+
 
 
             <!-- Tablo -->
@@ -798,39 +788,41 @@
 
             document.getElementById("empty-state").classList.toggle("hidden", filtered.length !== 0);
 
-            let totalOutgoing = 0;
-let totalIncoming = 0;
-let netTotal = 0;
+            let totalOutgoing = 0; // Toplam borç
+let totalIncoming = 0; // Toplam alacak
 
 filtered.forEach(p => {
     if (p.type === "outgoing") {
         totalOutgoing += p.amount;
-        netTotal += p.amount;   // borçlar + yönde
     } else if (p.type === "incoming") {
         totalIncoming += p.amount;
-        netTotal -= p.amount;   // alacaklar - yönde
     }
 });
 
+document.getElementById("total-outgoing").textContent = formatCurrency(totalOutgoing);
+document.getElementById("total-incoming").textContent = formatCurrency(totalIncoming);
 
-            document.getElementById("total-outgoing").textContent = formatCurrency(totalOutgoing);
-            document.getElementById("total-incoming").textContent = formatCurrency(totalIncoming);
+// Borç / Alacak farkı
+const diff = totalOutgoing - totalIncoming; // >0: borç fazlası, <0: alacak fazlası
 
-            const unpaidLabelEl = document.getElementById("total-unpaid-label");
-            const unpaidEl = document.getElementById("total-unpaid");
+const unpaidLabelEl = document.getElementById("total-unpaid-label");
+const unpaidEl = document.getElementById("total-unpaid");
 
-            if (totalIncoming > totalOutgoing) {
-                unpaidLabelEl.textContent = "Alacak";
-                unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-emerald-300";
-            } else if (totalOutgoing > totalIncoming) {
-                unpaidLabelEl.textContent = "Borç";
-                unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-red-300";
-            } else {
-                unpaidLabelEl.textContent = "Ödenmemiş Toplam";
-                unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-slate-100";
-            }
+if (diff > 0.01) {
+    // Borç daha fazla
+    unpaidLabelEl.textContent = "Borç Fazlası";
+    unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-red-300";
+} else if (diff < -0.01) {
+    // Alacak daha fazla
+    unpaidLabelEl.textContent = "Alacak Fazlası";
+    unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-emerald-300";
+} else {
+    // Neredeyse eşit
+    unpaidLabelEl.textContent = "Dengede";
+    unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-slate-100";
+}
 
-          unpaidEl.textContent = formatCurrency(Math.abs(netTotal));
+unpaidEl.textContent = formatCurrency(Math.abs(diff));
 
 
             document.getElementById("count-info").textContent =
