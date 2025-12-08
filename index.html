@@ -16,11 +16,78 @@
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
-    <div class="max-w-5xl mx-auto px-3 md:px-4 py-4 md:py-6">
-        <div class="flex items-center justify-between mb-4">
-            <h1 class="text-xl md:text-3xl font-bold text-slate-50">
-                Ödeme Takip Uygulaması
-            </h1>
+
+    <!-- AUTH BÖLÜMÜ -->
+    <div id="auth-section" class="min-h-screen flex items-center justify-center px-4">
+        <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-5 space-y-4">
+            <div class="text-center space-y-1">
+                <h1 class="text-lg font-semibold text-slate-50">Ödeme Takip Uygulaması</h1>
+                <p class="text-xs text-slate-400">
+                    Lütfen giriş yap veya yeni hesap oluştur.
+                </p>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">E-posta</label>
+                    <input
+                        type="email"
+                        id="auth-email"
+                        placeholder="ornek@mail.com"
+                        class="w-full border border-slate-700 bg-slate-950 text-slate-100 rounded-lg px-3 py-2 text-sm placeholder:text-slate-500"
+                    />
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Şifre</label>
+                    <input
+                        type="password"
+                        id="auth-password"
+                        placeholder="En az 6 karakter"
+                        class="w-full border border-slate-700 bg-slate-950 text-slate-100 rounded-lg px-3 py-2 text-sm placeholder:text-slate-500"
+                    />
+                </div>
+                <p id="auth-error" class="text-xs text-red-400 min-h-[1rem]"></p>
+                <div class="flex flex-col gap-2">
+                    <button
+                        id="btn-login"
+                        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-3 py-2 rounded-lg"
+                        type="button"
+                    >
+                        Giriş Yap
+                    </button>
+                    <button
+                        id="btn-register"
+                        class="w-full border border-slate-600 text-slate-100 text-sm font-medium px-3 py-2 rounded-lg hover:bg-slate-800"
+                        type="button"
+                    >
+                        Yeni Hesap Oluştur
+                    </button>
+                </div>
+            </div>
+            <p class="text-[11px] text-slate-500 text-center">
+                Aynı e-posta / şifreyle giriş yaptığın her cihazda verilerin senkron olur.
+            </p>
+        </div>
+    </div>
+
+    <!-- ANA UYGULAMA BÖLÜMÜ -->
+    <div id="app-section" class="hidden max-w-5xl mx-auto px-3 md:px-4 py-4 md:py-6">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-2">
+            <div>
+                <h1 class="text-xl md:text-3xl font-bold text-slate-50">
+                    Ödeme Takip Uygulaması
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">
+                    Giriş yapıldı: <span id="user-email-label" class="font-semibold text-slate-200"></span>
+                </p>
+            </div>
+            <button
+                id="btn-logout"
+                class="self-start md:self-auto border border-slate-600 text-slate-100 text-xs md:text-sm px-3 py-1.5 rounded-lg hover:bg-slate-800"
+                type="button"
+            >
+                Çıkış Yap
+            </button>
         </div>
 
         <!-- Özet Kartları -->
@@ -314,23 +381,109 @@
         let payments = [];
         let editingId = null;
         let currentUserId = null;
+        let currentUserEmail = null;
         let unsubscribePayments = null;
 
         document.addEventListener("DOMContentLoaded", () => {
-            // Önce anonim login ol, sonra event'leri bağla + veriyi dinle
-            auth.signInAnonymously()
-                .then(cred => {
-                    currentUserId = cred.user.uid;
-                    bindEvents();
+            bindAuthEvents();
+            bindAppEvents();
+
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUserId = user.uid;
+                    currentUserEmail = user.email || "";
+                    showApp();
                     subscribePayments();
-                })
-                .catch(err => {
-                    console.error("Anonim giriş hatası:", err);
-                    alert("Giriş sırasında bir hata oluştu (Firebase Auth). Konsolu kontrol edebilirsin.");
-                });
+                } else {
+                    currentUserId = null;
+                    currentUserEmail = null;
+                    payments = [];
+                    if (unsubscribePayments) unsubscribePayments();
+                    render(); // tabloyu temizle
+                    showAuth();
+                }
+            });
         });
 
-        function bindEvents() {
+        function showAuth() {
+            document.getElementById("auth-section").classList.remove("hidden");
+            document.getElementById("app-section").classList.add("hidden");
+            const errEl = document.getElementById("auth-error");
+            if (errEl) errEl.textContent = "";
+        }
+
+        function showApp() {
+            document.getElementById("auth-section").classList.add("hidden");
+            document.getElementById("app-section").classList.remove("hidden");
+            const emailLabel = document.getElementById("user-email-label");
+            if (emailLabel) emailLabel.textContent = currentUserEmail || "(E-posta yok)";
+        }
+
+        function bindAuthEvents() {
+            const emailInput = document.getElementById("auth-email");
+            const passInput = document.getElementById("auth-password");
+            const errEl = document.getElementById("auth-error");
+
+            document.getElementById("btn-login").addEventListener("click", async () => {
+                const email = emailInput.value.trim();
+                const password = passInput.value.trim();
+                errEl.textContent = "";
+
+                if (!email || !password) {
+                    errEl.textContent = "E-posta ve şifre girmeniz gerekiyor.";
+                    return;
+                }
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                } catch (err) {
+                    console.error("Login hatası:", err);
+                    errEl.textContent = getAuthErrorMessage(err);
+                }
+            });
+
+            document.getElementById("btn-register").addEventListener("click", async () => {
+                const email = emailInput.value.trim();
+                const password = passInput.value.trim();
+                errEl.textContent = "";
+
+                if (!email || !password) {
+                    errEl.textContent = "E-posta ve şifre girmeniz gerekiyor.";
+                    return;
+                }
+                if (password.length < 6) {
+                    errEl.textContent = "Şifre en az 6 karakter olmalı.";
+                    return;
+                }
+                try {
+                    await auth.createUserWithEmailAndPassword(email, password);
+                } catch (err) {
+                    console.error("Register hatası:", err);
+                    errEl.textContent = getAuthErrorMessage(err);
+                }
+            });
+
+            document.getElementById("btn-logout").addEventListener("click", async () => {
+                try {
+                    await auth.signOut();
+                } catch (err) {
+                    console.error("Çıkış hatası:", err);
+                    alert("Çıkış yapılamadı.");
+                }
+            });
+        }
+
+        function getAuthErrorMessage(err) {
+            if (!err || !err.code) return "Bir hata oluştu.";
+            const code = err.code;
+            if (code === "auth/user-not-found") return "Kayıt bulunamadı. Önce hesap oluşturabilirsiniz.";
+            if (code === "auth/wrong-password") return "Şifre hatalı.";
+            if (code === "auth/email-already-in-use") return "Bu e-posta ile zaten bir hesap var.";
+            if (code === "auth/invalid-email") return "Geçersiz e-posta adresi.";
+            if (code === "auth/too-many-requests") return "Çok fazla deneme yapıldı. Lütfen tekrar deneyin.";
+            return "Hata: " + code;
+        }
+
+        function bindAppEvents() {
             const form = document.getElementById("payment-form");
             form.addEventListener("submit", handleSubmit);
 
@@ -604,7 +757,7 @@
             e.preventDefault();
 
             if (!currentUserId) {
-                alert("Kullanıcı oturumu oluşturulamadı (Auth). Lütfen sayfayı yenileyin.");
+                alert("Önce giriş yapmanız gerekiyor.");
                 return;
             }
 
@@ -709,6 +862,7 @@
 
         function render() {
             const tbody = document.getElementById("payments-body");
+            if (!tbody) return;
             tbody.innerHTML = "";
 
             const monthFilter = document.getElementById("month-filter").value;
@@ -834,23 +988,23 @@
             const unpaidEl = document.getElementById("total-unpaid");
 
             if (diff > 0.01) {
-                // Borç daha fazla
                 unpaidLabelEl.textContent = "Borç Fazlası";
                 unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-red-300";
             } else if (diff < -0.01) {
-                // Alacak daha fazla
                 unpaidLabelEl.textContent = "Alacak Fazlası";
                 unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-emerald-300";
             } else {
-                // Neredeyse eşit
                 unpaidLabelEl.textContent = "Dengede";
                 unpaidEl.className = "text-lg md:text-xl font-semibold mt-1 text-slate-100";
             }
 
             unpaidEl.textContent = formatCurrency(Math.abs(diff));
 
-            document.getElementById("count-info").textContent =
-                filtered.length + " kayıt gösteriliyor (toplam: " + payments.length + ")";
+            const countInfoEl = document.getElementById("count-info");
+            if (countInfoEl) {
+                countInfoEl.textContent =
+                    filtered.length + " kayıt gösteriliyor (toplam: " + payments.length + ")";
+            }
         }
     </script>
 </body>
