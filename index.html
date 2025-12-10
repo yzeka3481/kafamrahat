@@ -3945,14 +3945,13 @@ window.onload = function() {
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 
 <script>
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+<!-- Firebase compat SDK'lar -->
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+<script>
+// 1) SENİN GERÇEK CONFIG'İN
 const firebaseConfig = {
   apiKey: "AIzaSyDiZ7KZBF1bPb185duB0iIXvtqrdfJ91e8",
   authDomain: "seyahat-takip.firebaseapp.com",
@@ -3963,15 +3962,10 @@ const firebaseConfig = {
   measurementId: "G-68BX89MR14"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-// 2) Firebase'i başlat
+// 2) compat tarzı initialize
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
-
 // 3) DOM referansları
 const overlay   = document.getElementById('auth-overlay');
 const appRoot   = document.getElementById('app-root');
@@ -4081,8 +4075,5 @@ window.saveUserStateToCloud = async function() {
   }
 };
 </script>
-</body>
-</html>
-
 </body>
 </html>
