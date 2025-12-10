@@ -3945,13 +3945,27 @@ window.onload = function() {
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 
 <script>
-// 1) KENDİ Firebase config'ini buraya yapıştır (console'dan aldığın obje)
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "SENİN_APIKEY",
-  authDomain: "SENIN_PROJE.firebaseapp.com",
-  projectId: "SENIN_PROJE_ID",
-  // geri kalan alanları da ekle
+  apiKey: "AIzaSyDiZ7KZBF1bPb185duB0iIXvtqrdfJ91e8",
+  authDomain: "seyahat-takip.firebaseapp.com",
+  projectId: "seyahat-takip",
+  storageBucket: "seyahat-takip.firebasestorage.app",
+  messagingSenderId: "740530417306",
+  appId: "1:740530417306:web:62b1538f1f85fa9e8c7923",
+  measurementId: "G-68BX89MR14"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
 // 2) Firebase'i başlat
 firebase.initializeApp(firebaseConfig);
