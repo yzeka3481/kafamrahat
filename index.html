@@ -138,12 +138,7 @@ html, body {
     </div>
   </div>
 
-  <!-- ASIL UYGULAMA ALANI -->
-  <div id="app-root" class="w-full max-w-xl md:max-w-2xl"></div>
-
-<script>
-(()=> {
-  // mevcut JS burada devam ediyor...
+<div id="app-root" class="w-full max-w-xl md:max-w-2xl"></div>
 
 <script>
 (()=>{
@@ -248,199 +243,6 @@ html, body {
       // Sadece seçili seyahatin harcamalarını getir
       return state.exp.filter(x => x.trip === tripName && !isNaN(Number(x.amt)) && Number(x.amt) > 0);
   }
-function buildReportHtml(payload){
-    const fmt = (n) => n.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    const dateRange = (payload.dateFrom && payload.dateTo)
-        ? `${payload.dateFrom} – ${payload.dateTo}`
-        : 'Tarih bilgisi yok';
-
-    const s = payload.summary || {};
-    const scopeLabel =
-        payload.scope === 'individual' ? 'Bireysel Harcamalar' :
-        payload.scope === 'shared' ? 'Ortak Harcamalar' :
-        'Tüm Harcamalar (Bireysel + Ortak)';
-
-    const esc = (str) => String(str || '').replace(/[&<>"]/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'
-    }[c]||c));
-
-    const expRows = payload.expenses.map(e => `
-        <tr>
-          <td>${esc(e.date || '')} ${esc(e.time || '')}</td>
-          <td>${esc(e.cat || '')}</td>
-          <td>${esc(e.place || '')}</td>
-          <td>${esc(e.city || '')}</td>
-          <td style="text-align:right;">${fmt(e.amt)} ${esc(e.cur)}</td>
-          <td>${e.isIndividual ? 'Bireysel' : 'Ortak'}</td>
-        </tr>
-    `).join('');
-
-    const resRows = payload.reservations.map(r => `
-        <tr>
-          <td>${esc(r.startDate || '')}</td>
-          <td>${esc(r.type || '')}</td>
-          <td>${esc(r.name || '')}</td>
-          <td>${esc(r.location || '')}</td>
-          <td>${esc(r.code || '')}</td>
-          <td style="text-align:right;">${fmt(r.cost)} ${esc(r.cur)}</td>
-          <td>${r.isIndividual ? 'Bireysel' : 'Ortak'}</td>
-        </tr>
-    `).join('');
-
-    const html = `<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <title>Seyahat Cüzdanı – ${esc(payload.trip)} Raporu</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 24px;
-      color: #111827;
-      background: #f3f4f6;
-    }
-    h1,h2,h3 { margin: 0 0 8px 0; }
-    .small { font-size: 11px; color: #4b5563; }
-    .card {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 10px rgba(15,23,42,0.08);
-    }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 6px;
-      font-size: 12px;
-    }
-    th, td {
-      border: 1px solid #e5e7eb;
-      padding: 6px 8px;
-    }
-    th {
-      background: #f9fafb;
-      text-align: left;
-      font-weight: 600;
-    }
-    .tag {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      background: #e5e7eb;
-      color: #111827;
-    }
-    .tag-scope { background:#dbebff; color:#1d4ed8; }
-    .tag-cur   { background:#dcfce7; color:#166534; }
-    .footer-note {
-      font-size: 10px;
-      color: #6b7280;
-      margin-top: 4px;
-    }
-    @media print {
-      body { margin: 0; }
-      .no-print { display: none; }
-    }
-  </style>
-</head>
-<body>
-  <div class="no-print" style="margin-bottom:12px; font-size:11px; color:#6b7280;">
-    Bu sayfayı tarayıcınızdan <strong>Yazdır → PDF olarak kaydet</strong> seçeneği ile PDF’e dönüştürebilirsiniz.
-  </div>
-
-  <div class="card">
-    <h1>Seyahat Cüzdanı – Harcama Raporu</h1>
-    <div class="small">
-      <div><strong>Seyahat:</strong> ${esc(payload.trip)}</div>
-      <div><strong>Tarih Aralığı:</strong> ${esc(dateRange)}</div>
-      <div><strong>Rapor Para Birimi:</strong> <span class="tag tag-cur">${esc(payload.reportCurrency)}</span></div>
-      <div><strong>Harcama Kapsamı:</strong> <span class="tag tag-scope">${esc(scopeLabel)}</span></div>
-      <div><strong>Oluşturulma Tarihi:</strong> ${esc(payload.generatedAt)}</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>1) Genel Özet</h2>
-    <div class="grid-2">
-      <div>
-        <div><strong>Toplam Harcama:</strong> ${fmt(s.totalReport || 0)} ${esc(payload.reportCurrency)}</div>
-        <div><strong>Rezervasyon Maliyetleri:</strong> ${fmt(s.totalResReport || 0)} ${esc(payload.reportCurrency)}</div>
-        <div><strong>Harcamalar (Gün içi):</strong> ${fmt(s.totalExpReport || 0)} ${esc(payload.reportCurrency)}</div>
-      </div>
-      <div>
-        <div><strong>Günlük Ortalama:</strong> ${fmt(s.dailyAvg || 0)} ${esc(payload.reportCurrency)} / gün</div>
-        <div><strong>Gün Sayısı:</strong> ${s.dayCount || 0}</div>
-        <div><strong>İşlem Sayısı:</strong> ${s.expenseCount || 0} harcama + ${s.reservationCount || 0} rezervasyon</div>
-      </div>
-    </div>
-    <div style="margin-top:8px; font-size:11px;">
-      <strong>Bireysel:</strong> ${fmt(s.indivTotal || 0)} ${esc(payload.reportCurrency)}
-      &nbsp;·&nbsp;
-      <strong>Ortak:</strong> ${fmt(s.sharedTotal || 0)} ${esc(payload.reportCurrency)}
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>2) Rezervasyon Özeti</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Tarih</th>
-          <th>Tip</th>
-          <th>Başlık</th>
-          <th>Lokasyon</th>
-          <th>Kod</th>
-          <th style="text-align:right;">Maliyet</th>
-          <th>Kapsam</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${resRows || '<tr><td colspan="7">Kayıtlı rezervasyon bulunmamaktadır.</td></tr>'}
-      </tbody>
-    </table>
-    <div class="footer-note">
-      Rezervasyon maliyetleri toplam harcamaya dahildir. Bireysel/ortak bilgisi uygulamadaki işaretlemelere göre alınmıştır.
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>3) Günlük Harcama Dökümü</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Tarih / Saat</th>
-          <th>Kategori</th>
-          <th>Yer / Açıklama</th>
-          <th>Şehir</th>
-          <th style="text-align:right;">Tutar (Orijinal)</th>
-          <th>Kapsam</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${expRows || '<tr><td colspan="6">Kayıtlı harcama bulunmamaktadır.</td></tr>'}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2>4) Notlar</h2>
-    <p class="footer-note">
-      • Rezervasyon maliyetleri toplam harcamaya dahil edilmiştir.<br/>
-      • Bireysel/ortak ayrımı seyahat cüzdanı uygulamasındaki işaretlemelere göre yapılmıştır.<br/>
-      • Rapor para birimi ${esc(payload.reportCurrency)}’dir; diğer para birimlerindeki harcamalar uygulamadaki kur bilgilerine göre dönüştürülmüştür.
-    </p>
-  </div>
-</body>
-</html>`;
-
-    return html;
-}
 
 
   // --- HARCAMA GRAFİĞİ VE RAPOR VERİ HAZIRLAMA ---
@@ -741,7 +543,6 @@ function buildReportHtml(payload){
       cur: BASE_CURRENCY,
       notes: '',
       completed: false,
-      isIndividual: false,
   });
   
   function initState(){
@@ -807,7 +608,6 @@ function buildReportHtml(payload){
         type: item.type || RESERVATION_TYPES[0].id,
         completed: item.completed !== undefined ? item.completed : false,
         notes: item.notes || '',
-        isIndividual: item.isIndividual !== undefined ? item.isIndividual : false,
     }));
 
     const allTrips = [...new Set((e || []).map(x=>x.trip).filter(Boolean).concat((r || []).map(x=>x.trip).filter(Boolean)))].sort(); // Rezervasyonlardan da seyahat adı al
@@ -870,20 +670,18 @@ function buildReportHtml(payload){
   function setState(p){state={...state,...p}; renderApp();}
   
   function save(){
-  // Mevcut localStorage kayıtları
-  localStorage.setItem(K.EXP,JSON.stringify(state.exp));
-  localStorage.setItem(K.LIST,JSON.stringify(state.chk));
-  localStorage.setItem(K.RES,JSON.stringify(state.res)); // Rezervasyonları kaydet
-  localStorage.setItem(K.PREF+'_tz', state.targetTimezone); 
-  localStorage.setItem(K.NOTES, JSON.stringify(state.criticalNotes));
-  localStorage.setItem(K.PREF+'_base_cur', state.baseCurrency);
+    localStorage.setItem(K.EXP,JSON.stringify(state.exp));
+    localStorage.setItem(K.LIST,JSON.stringify(state.chk));
+    localStorage.setItem(K.RES,JSON.stringify(state.res)); // Rezervasyonları kaydet
+    localStorage.setItem(K.PREF+'_tz', state.targetTimezone); 
+    localStorage.setItem(K.NOTES, JSON.stringify(state.criticalNotes));
+    localStorage.setItem(K.PREF+'_base_cur', state.baseCurrency);
 
-  // Yeni: kullanıcı giriş yaptıysa Firestore'a da kaydet
-  if (window.saveUserStateToCloud) {
-    window.saveUserStateToCloud();
-  }
-};
-
+    // Kullanıcı giriş yaptıysa Firestore'a da kaydet
+    if (window.saveUserStateToCloud) {
+      window.saveUserStateToCloud();
+    }
+  };
   
   // --- RESİM YENİDEN BOYUTLANDIRMA VE BASE64'E DÖNÜŞTÜRME YARDIMCISI ---
   const resizeAndConvertImage = (file) => {
@@ -1198,31 +996,6 @@ const dateText = startDate;
                  </div>
               </div>
               
-              <!-- BİREYSEL / ORTAK -->
-              <div>
-                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Bu Rezervasyon</label>
-                <div class="inline-flex gap-2 rounded-lg bg-slate-800/80 p-1 border border-slate-700">
-                  <button
-                    type="button"
-                    data-act="set-res-ind"
-                    data-val="shared"
-                    class="flex-1 text-xs font-semibold px-3 py-1.5 rounded-md ${
-                      !f.isIndividual ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/60' : 'text-slate-300 border border-transparent'
-                    }">
-                    Ortak
-                  </button>
-                  <button
-                    type="button"
-                    data-act="set-res-ind"
-                    data-val="individual"
-                    class="flex-1 text-xs font-semibold px-3 py-1.5 rounded-md ${
-                      f.isIndividual ? 'bg-amber-500/25 text-amber-100 border border-amber-400/70' : 'text-slate-300 border border-transparent'
-                    }">
-                    Bireysel
-                  </button>
-                </div>
-              </div>
-
               <!-- NOTLAR -->
               <textarea id="i-res-notes" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none resize-none" placeholder="Ekstra Notlar (Check-in saati, koltuk no, vb.)">${esc(f.notes)}</textarea>
 
@@ -1519,18 +1292,6 @@ const dateText = startDate;
                   <h3 class="text-lg font-bold text-white mb-2">${selectedTrip} Seyahat Özeti</h3>
                   <div class="text-[10px] text-slate-400">Toplam Harcama: <span class="font-bold text-white">${fmtNum(totalInReportCur)} ${reportCur}</span>'a dönüştürülmüştür. (${tripExpenses.length} kayıt)</div>
               </div>
-              <div class="flex items-center gap-2 text-[11px] text-slate-200">
-                <span>Bu seyahatin detaylı harcama dökümünü PDF olarak</span>
-                <button
-                  type="button"
-                  data-act="export-pdf"
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-900 font-semibold text-[11px] shadow-sm hover:bg-white transition"
-                >
-                  ${ICONS.report.replace('w-4 h-4', 'w-3.5 h-3.5')}
-                  <span>buradan indirebilirsiniz</span>
-                </button>
-              </div>
-
 
               <!-- 1. Toplam Harcama (Orijinal Kurlar) -->
               <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
@@ -1643,33 +1404,16 @@ const dateText = startDate;
       const today = new Date().toISOString().slice(0, 10);
       let todayTotal = 0;
       let allTimeTotal = 0;
-      const indFilter = state.indFilter || '';
-
-      // Harcama kayıtları (bireysel/ortak filtresine göre)
-      const filteredExpForSum = state.exp.filter(x => {
-          if (indFilter === 'individual' && x.isIndividual !== true) return false;
-          if (indFilter === 'shared' && x.isIndividual !== false) return false;
-          return true;
-      });
-
-      filteredExpForSum.forEach(x => {
+      
+      state.exp.forEach(x => {
           allTimeTotal += convertToBase(x.amt, x.cur, baseCur);
       });
 
-      // Bugünün harcamaları (sadece fiili harcamalar, bireysel/ortak filtresine göre)
-      const todayExpenses = filteredExpForSum.filter(x => x.date === today);
+      const todayExpenses = state.exp.filter(x => x.date === today);
       todayExpenses.forEach(x => {
           todayTotal += convertToBase(x.amt, x.cur, baseCur);
       });
-
-      // Rezervasyon maliyetleri (toplam harcamaya dahil, bireysel/ortak filtresine göre)
-      state.res.forEach(r => {
-          if (!r.cost) return;
-          if (indFilter === 'individual' && r.isIndividual !== true) return;
-          if (indFilter === 'shared' && r.isIndividual !== false) return;
-          allTimeTotal += convertToBase(r.cost, r.cur || baseCur, baseCur);
-      });
-
+      
       // YAKLAŞAN REZERVASYONLAR
       const now = new Date();
       const nextReservation = state.res
@@ -1742,43 +1486,21 @@ const dateText = startDate;
                         </div>
                     </div>
                     
-                    
-                    <div class="flex flex-col gap-2 w-full sm:w-auto">
-                        <div class="flex flex-row gap-3">
-                            <div class="flex flex-col gap-1 w-[120px] sm:w-auto">
-                                <label class="text-[10px] text-slate-900/80 font-bold uppercase ml-1">
-                                    Özet Para Birimi
-                                </label>
-                                <div class="relative">
-                                    <select
-                                        data-act="set-base-currency"
-                                        class="w-full rounded-xl border border-slate-300/70 bg-white/70 px-3 py-1.5 text-[11px] font-semibold text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-cyan-400/80 appearance-none">
-                                        ${currencyOptions}
-                                    </select>
-                                    <div class="pointer-events-none absolute right-3 top-2.5 text-slate-700/70">
-                                        ${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex flex-col gap-1 w-[140px] sm:w-auto">
-                                <label class="text-[10px] text-slate-900/80 font-bold uppercase ml-1">
-                                    Harcama Kapsamı
-                                </label>
-                                <div class="relative">
-                                    <select
-                                        data-act="flt-ind"
-                                        class="w-full rounded-xl border border-slate-300/70 bg-white/70 px-3 py-1.5 text-[11px] font-semibold text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-cyan-400/80 appearance-none">
-                                        ${INDIVIDUAL_FILTERS.map(f=>`<option value="${f.id}" ${state.indFilter===f.id?'selected':''}>${esc(f.l)}</option>`).join('')}
-                                    </select>
-                                    <div class="pointer-events-none absolute right-3 top-2.5 text-slate-700/70">
-                                        ${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}
-                                    </div>
-                                </div>
+                    <div class="flex flex-col gap-1 w-[120px] sm:w-auto">
+                        <label class="text-[10px] text-slate-900/80 font-bold uppercase ml-1">
+                            Özet Para Birimi
+                        </label>
+                        <div class="relative">
+                            <select
+                                data-act="set-base-currency"
+                                class="w-full rounded-xl border border-cyan-500/60 bg-white/70 px-3 py-1.5 text-[11px] font-semibold text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-400/80 appearance-none">
+                                ${currencyOptions}
+                            </select>
+                            <div class="pointer-events-none absolute right-3 top-2.5 text-slate-700/70">
+                                ${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}
                             </div>
                         </div>
                     </div>
-</div></div>
                 </div>
             </div>
 
@@ -1929,43 +1651,16 @@ function renderDashboardHeader(visibleExp){
     let headerCur = baseCur;
     if (isFiltered) {
         const tripExps = visibleExp.filter(x => (x.trip || '') === state.tripFilter);
-        const tripRes = state.res.filter(r => (r.trip || '') === state.tripFilter && r.cost);
-        const tripCurrencies = [...new Set(
-            tripExps.map(x => x.cur || baseCur).concat(
-                tripRes.map(r => r.cur || baseCur)
-            )
-        )];
+        const tripCurrencies = [...new Set(tripExps.map(x => x.cur || baseCur))];
         if (tripCurrencies.length === 1) {
             headerCur = tripCurrencies[0];
         }
     }
 
-    const indFilter = state.indFilter || '';
-
-    // Toplamı ve para birimi bazında dağılımı hesapla (harcamalar)
+    // Toplamı ve para birimi bazında dağılımı hesapla
     visibleExp.forEach(x => {
-        if (indFilter === 'individual' && x.isIndividual !== true) return;
-        if (indFilter === 'shared' && x.isIndividual !== false) return;
-
         const cur = x.cur || headerCur; 
         const amt = Number(x.amt) || 0;
-
-        totalInHeaderCur += convertToBase(amt, cur, headerCur);
-        totalsByCurrency[cur] = (totalsByCurrency[cur] || 0) + amt;
-    });
-
-    // Seçili seyahat ve bireysel/ortak filtresine göre rezervasyon maliyetlerini ekle
-    const resForHeader = state.res.filter(r => {
-        if (isFiltered && (r.trip || '') !== state.tripFilter) return false;
-        if (!r.cost) return false;
-        if (indFilter === 'individual' && r.isIndividual !== true) return false;
-        if (indFilter === 'shared' && r.isIndividual !== false) return false;
-        return true;
-    });
-
-    resForHeader.forEach(r => {
-        const cur = r.cur || headerCur;
-        const amt = Number(r.cost) || 0;
 
         totalInHeaderCur += convertToBase(amt, cur, headerCur);
         totalsByCurrency[cur] = (totalsByCurrency[cur] || 0) + amt;
@@ -3341,10 +3036,6 @@ function renderTabs(){
         state.resForm.type = val;
         renderApp();
     }
-    if(act === 'set-res-ind'){
-        state.resForm.isIndividual = (val === 'individual');
-        renderApp();
-    }
     if(act === 'save-res'){
         const f = state.resForm;
         
@@ -3520,151 +3211,6 @@ function renderTabs(){
         renderApp();
       }
     }
-    if(act === 'export-pdf'){
-        e.preventDefault();
-        e.stopPropagation();
-
-        // 1) Seçili seyahat ve rapor para birimini al
-        const selectedTrip = state.selectedReportTrip;
-        if (!selectedTrip) {
-            alert('Önce rapor ekranında bir seyahat seçmelisiniz.');
-            return;
-        }
-
-        const reportCur = state.reportCurrency || state.baseCurrency || BASE_CURRENCY;
-        const scope = state.indFilter || 'all';
-
-        // 2) Bu seyahate ait harcamaları al (mevcut helper)
-        const allExpenses = getTripExpenses(selectedTrip) || [];
-
-        // Bireysel / Ortak filtresini uygula
-        const filteredExpenses = allExpenses.filter(x => {
-            if (scope === 'individual' && x.isIndividual !== true) return false;
-            if (scope === 'shared' && x.isIndividual !== false) return false;
-            return true;
-        });
-
-        // 3) Bu seyahate ait rezervasyonları al
-        const allReservations = (state.res || []).filter(r => {
-            if (!r.trip || r.trip !== selectedTrip) return false;
-            if (isNaN(Number(r.cost)) || Number(r.cost) <= 0) return false;
-            return true;
-        });
-
-        const filteredReservations = allReservations.filter(r => {
-            if (scope === 'individual' && r.isIndividual !== true) return false;
-            if (scope === 'shared' && r.isIndividual !== false) return false;
-            return true;
-        });
-
-        // 4) Tarih aralığı çıkar (min/max tarih)
-        const allDates = [];
-        filteredExpenses.forEach(x => { if (x.date) allDates.push(x.date); });
-        filteredReservations.forEach(r => {
-            if (r.startDate) allDates.push(r.startDate);
-            if (r.endDate) allDates.push(r.endDate);
-        });
-        allDates.sort();
-        const dateFrom = allDates[0] || '';
-        const dateTo = allDates[allDates.length - 1] || '';
-
-        // 5) Özet tutarları rapor para biriminde hesapla
-        let totalExpReport = 0;
-        filteredExpenses.forEach(x => {
-            const amt = Number(x.amt) || 0;
-            const cur = x.cur || reportCur;
-            totalExpReport += convertToBase(amt, cur, reportCur);
-        });
-
-        let totalResReport = 0;
-        filteredReservations.forEach(r => {
-            const amt = Number(r.cost) || 0;
-            const cur = r.cur || reportCur;
-            totalResReport += convertToBase(amt, cur, reportCur);
-        });
-
-        const totalReport = totalExpReport + totalResReport;
-
-        // Gün sayısı (ortalama için)
-        let dayCount = 0;
-        if (dateFrom && dateTo) {
-            const d1 = new Date(dateFrom);
-            const d2 = new Date(dateTo);
-            const diff = Math.round((d2 - d1) / (1000*60*60*24)) + 1;
-            if (diff > 0) dayCount = diff;
-        }
-        const dailyAvg = dayCount > 0 ? totalReport / dayCount : 0;
-
-        // Bireysel/ortak alt özet
-        let indivTotal = 0;
-        let sharedTotal = 0;
-
-        filteredExpenses.forEach(x => {
-            const amt = convertToBase(Number(x.amt)||0, x.cur || reportCur, reportCur);
-            if (x.isIndividual) indivTotal += amt; else sharedTotal += amt;
-        });
-        filteredReservations.forEach(r => {
-            const amt = convertToBase(Number(r.cost)||0, r.cur || reportCur, reportCur);
-            if (r.isIndividual) indivTotal += amt; else sharedTotal += amt;
-        });
-
-        // 6) Payload hazırla
-        const payload = {
-            trip: selectedTrip,
-            reportCurrency: reportCur,
-            scope, // 'all' | 'individual' | 'shared'
-            baseCurrency: state.baseCurrency || BASE_CURRENCY,
-            generatedAt: new Date().toISOString(),
-            dateFrom,
-            dateTo,
-            summary: {
-                totalReport,
-                totalExpReport,
-                totalResReport,
-                dayCount,
-                dailyAvg,
-                indivTotal,
-                sharedTotal,
-                expenseCount: filteredExpenses.length,
-                reservationCount: filteredReservations.length
-            },
-            expenses: filteredExpenses.map(x => ({
-                id: x.id,
-                date: x.date,
-                time: x.time || '',
-                city: x.city || '',
-                country: x.country || '',
-                cat: x.cat,
-                place: x.place || '',
-                note: x.note || '',
-                amt: Number(x.amt) || 0,
-                cur: x.cur || BASE_CURRENCY,
-                isIndividual: !!x.isIndividual
-            })),
-            reservations: filteredReservations.map(r => ({
-                id: r.id,
-                trip: r.trip,
-                type: r.type,
-                name: r.name || '',
-                location: r.location || '',
-                startDate: r.startDate || '',
-                endDate: r.endDate || '',
-                code: r.code || '',
-                cost: Number(r.cost) || 0,
-                cur: r.cur || BASE_CURRENCY,
-                completed: !!r.completed,
-                isIndividual: !!r.isIndividual,
-                notes: r.notes || ''
-            })),
-        };
-
-        // 7) HTML raporu oluştur ve yeni sekmede aç
-        const html = buildReportHtml(payload);
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-    }
-
     if(act==='copy-json'){
       const textarea = document.getElementById('io-txt');
       textarea.select();
@@ -3939,19 +3485,14 @@ window.onload = function() {
 
 })();
 </script>
-<!-- Firebase (compat) SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 
-<script>
 <!-- Firebase compat SDK'lar -->
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
 
 <script>
-// 1) SENİN GERÇEK CONFIG'İN
+// Firebase config (senin projen)
 const firebaseConfig = {
   apiKey: "AIzaSyDiZ7KZBF1bPb185duB0iIXvtqrdfJ91e8",
   authDomain: "seyahat-takip.firebaseapp.com",
@@ -3962,31 +3503,40 @@ const firebaseConfig = {
   measurementId: "G-68BX89MR14"
 };
 
-// 2) compat tarzı initialize
+// Başlat
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
-// 3) DOM referansları
+
+// DOM elemanları
 const overlay   = document.getElementById('auth-overlay');
-const appRoot   = document.getElementById('app-root');
 const emailEl   = document.getElementById('email-input');
 const passEl    = document.getElementById('password-input');
 const btnGoogle = document.getElementById('btn-google-login');
 const btnLogin  = document.getElementById('btn-email-login');
 const btnReg    = document.getElementById('btn-email-register');
 
-// 4) Google ile giriş
+// Google ile giriş
 btnGoogle?.addEventListener('click', async () => {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
     await auth.signInWithPopup(provider);
   } catch (err) {
     console.error('Google login error', err);
+    if (err.code === 'auth/operation-not-supported-in-this-environment') {
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await auth.signInWithRedirect(provider);
+        return;
+      } catch (err2) {
+        console.error('Google redirect login error', err2);
+      }
+    }
     alert('Google ile giriş sırasında hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
   }
 });
 
-// 5) E-posta ile kayıt
+// E-posta ile kayıt
 btnReg?.addEventListener('click', async () => {
   try {
     await auth.createUserWithEmailAndPassword(emailEl.value, passEl.value);
@@ -3996,7 +3546,7 @@ btnReg?.addEventListener('click', async () => {
   }
 });
 
-// 6) E-posta ile giriş
+// E-posta ile giriş
 btnLogin?.addEventListener('click', async () => {
   try {
     await auth.signInWithEmailAndPassword(emailEl.value, passEl.value);
@@ -4006,24 +3556,7 @@ btnLogin?.addEventListener('click', async () => {
   }
 });
 
-// 7) Kullanıcı oturum değiştiğinde
-auth.onAuthStateChanged(async (user) => {
-  if (user) {
-    // Giriş yapmış kullanıcı
-    overlay.classList.add('hidden');
-    // Kullanıcıya özel veriyi cloud'dan çek
-    await loadUserStateFromCloud(user.uid);
-    // App zaten render edilmişse tekrar çağırmak isteyebilirsin
-    if (typeof renderApp === 'function') {
-      renderApp();
-    }
-  } else {
-    // Çıkış yapılmış
-    overlay.classList.remove('hidden');
-  }
-});
-
-// 8) Cloud'dan kullanıcı verisini çek
+// Kullanıcı state'ini Firestore'dan yükle
 async function loadUserStateFromCloud(uid) {
   try {
     const ref = db.collection('users').doc(uid);
@@ -4031,35 +3564,38 @@ async function loadUserStateFromCloud(uid) {
     if (snap.exists) {
       const data = snap.data();
       if (window.state) {
-        state.exp            = data.exp || [];
-        state.res            = data.res || [];
-        state.list           = data.checklist || {};
-        state.criticalNotes  = data.notes || [];
+        state.exp           = data.exp || [];
+        state.res           = data.res || [];
+        state.chk           = data.checklist || {};
+        state.criticalNotes = data.notes || [];
         if (data.baseCurrency) {
-          BASE_CURRENCY = data.baseCurrency;
+          state.baseCurrency = data.baseCurrency;
         }
       }
     } else {
-      // İlk kez giriş yapan kullanıcı: mevcut local state’i ilk cloud kaydı olarak gönder
+      // İlk defa giriş yapıyorsa mevcut local state'i cloud'a yaz
       await saveUserStateToCloud(uid);
+    }
+    if (typeof renderApp === 'function') {
+      renderApp();
     }
   } catch (err) {
     console.error('loadUserStateFromCloud error', err);
   }
 }
 
-// 9) Cloud'a kullanıcı state'ini yaz
+// Firestore'a kullanıcı state'ini kaydet
 async function saveUserStateToCloud(uid) {
   try {
     if (!window.state) return;
     const ref = db.collection('users').doc(uid);
     const payload = {
-      exp:           state.exp || [],
-      res:           state.res || [],
-      checklist:     state.list || {},
-      notes:         state.criticalNotes || [],
-      baseCurrency:  BASE_CURRENCY,
-      updatedAt:     new Date().toISOString()
+      exp:          state.exp || [],
+      res:          state.res || [],
+      checklist:    state.chk || {},
+      notes:        state.criticalNotes || [],
+      baseCurrency: state.baseCurrency || "TRY",
+      updatedAt:    new Date().toISOString()
     };
     await ref.set(payload, { merge: true });
   } catch (err) {
@@ -4067,13 +3603,26 @@ async function saveUserStateToCloud(uid) {
   }
 }
 
-// 10) Uygulama içinden kolay çağırmak için global helper
+// Global helper: uygulama içinden çağırmak için
 window.saveUserStateToCloud = async function() {
   const user = auth.currentUser;
   if (user) {
     await saveUserStateToCloud(user.uid);
   }
 };
+
+// Kullanıcı oturum değişimini dinle
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    // Giriş yapıldı
+    if (overlay) overlay.classList.add('hidden');
+    await loadUserStateFromCloud(user.uid);
+  } else {
+    // Çıkış yapıldı
+    if (overlay) overlay.classList.remove('hidden');
+  }
+});
 </script>
+
 </body>
 </html>
