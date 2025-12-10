@@ -211,7 +211,203 @@ html, body {
   }
 
   // --- KRİTİK FONKSİYON: KUR ÇEKİMİNİ SİMÜLE EDER VE UYGULAR ---
-  function fetchAndApplyRates() {
+  func
+
+function buildReportHtml(payload){
+    const fmt = (n) => n.toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const dateRange = (payload.dateFrom && payload.dateTo)
+        ? `${payload.dateFrom} – ${payload.dateTo}`
+        : 'Tarih bilgisi yok';
+
+    const s = payload.summary || {};
+    const scopeLabel =
+        payload.scope === 'individual' ? 'Bireysel Harcamalar' :
+        payload.scope === 'shared' ? 'Ortak Harcamalar' :
+        'Tüm Harcamalar (Bireysel + Ortak)';
+
+    const esc = (str) => String(str || '').replace(/[&<>"]/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'
+    }[c]||c));
+
+    const expRows = payload.expenses.map(e => `
+        <tr>
+          <td>${esc(e.date || '')} ${esc(e.time || '')}</td>
+          <td>${esc(e.cat || '')}</td>
+          <td>${esc(e.place || '')}</td>
+          <td>${esc(e.city || '')}</td>
+          <td style="text-align:right;">${fmt(e.amt)} ${esc(e.cur)}</td>
+          <td>${e.isIndividual ? 'Bireysel' : 'Ortak'}</td>
+        </tr>
+    `).join('');
+
+    const resRows = payload.reservations.map(r => `
+        <tr>
+          <td>${esc(r.startDate || '')}</td>
+          <td>${esc(r.type || '')}</td>
+          <td>${esc(r.name || '')}</td>
+          <td>${esc(r.location || '')}</td>
+          <td>${esc(r.code || '')}</td>
+          <td style="text-align:right;">${fmt(r.cost)} ${esc(r.cur)}</td>
+          <td>${r.isIndividual ? 'Bireysel' : 'Ortak'}</td>
+        </tr>
+    `).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Seyahat Cüzdanı – ${esc(payload.trip)} Raporu</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 24px;
+      color: #111827;
+      background: #f3f4f6;
+    }
+    h1,h2,h3 { margin: 0 0 8px 0; }
+    .small { font-size: 11px; color: #4b5563; }
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 10px rgba(15,23,42,0.08);
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 12px;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+    }
+    th {
+      background: #f9fafb;
+      text-align: left;
+      font-weight: 600;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #e5e7eb;
+      color: #111827;
+    }
+    .tag-scope { background:#dbebff; color:#1d4ed8; }
+    .tag-cur   { background:#dcfce7; color:#166534; }
+    .footer-note {
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    @media print {
+      body { margin: 0; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom:12px; font-size:11px; color:#6b7280;">
+    Bu sayfayı tarayıcınızdan <strong>Yazdır → PDF olarak kaydet</strong> seçeneği ile PDF’e dönüştürebilirsiniz.
+  </div>
+
+  <div class="card">
+    <h1>Seyahat Cüzdanı – Harcama Raporu</h1>
+    <div class="small">
+      <div><strong>Seyahat:</strong> ${esc(payload.trip)}</div>
+      <div><strong>Tarih Aralığı:</strong> ${esc(dateRange)}</div>
+      <div><strong>Rapor Para Birimi:</strong> <span class="tag tag-cur">${esc(payload.reportCurrency)}</span></div>
+      <div><strong>Harcama Kapsamı:</strong> <span class="tag tag-scope">${esc(scopeLabel)}</span></div>
+      <div><strong>Oluşturulma Tarihi:</strong> ${esc(payload.generatedAt)}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1) Genel Özet</h2>
+    <div class="grid-2">
+      <div>
+        <div><strong>Toplam Harcama:</strong> ${fmt(s.totalReport || 0)} ${esc(payload.reportCurrency)}</div>
+        <div><strong>Rezervasyon Maliyetleri:</strong> ${fmt(s.totalResReport || 0)} ${esc(payload.reportCurrency)}</div>
+        <div><strong>Harcamalar (Gün içi):</strong> ${fmt(s.totalExpReport || 0)} ${esc(payload.reportCurrency)}</div>
+      </div>
+      <div>
+        <div><strong>Günlük Ortalama:</strong> ${fmt(s.dailyAvg || 0)} ${esc(payload.reportCurrency)} / gün</div>
+        <div><strong>Gün Sayısı:</strong> ${s.dayCount || 0}</div>
+        <div><strong>İşlem Sayısı:</strong> ${s.expenseCount || 0} harcama + ${s.reservationCount || 0} rezervasyon</div>
+      </div>
+    </div>
+    <div style="margin-top:8px; font-size:11px;">
+      <strong>Bireysel:</strong> ${fmt(s.indivTotal || 0)} ${esc(payload.reportCurrency)}
+      &nbsp;·&nbsp;
+      <strong>Ortak:</strong> ${fmt(s.sharedTotal || 0)} ${esc(payload.reportCurrency)}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2) Rezervasyon Özeti</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Tarih</th>
+          <th>Tip</th>
+          <th>Başlık</th>
+          <th>Lokasyon</th>
+          <th>Kod</th>
+          <th style="text-align:right;">Maliyet</th>
+          <th>Kapsam</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${resRows || '<tr><td colspan="7">Kayıtlı rezervasyon bulunmamaktadır.</td></tr>'}
+      </tbody>
+    </table>
+    <div class="footer-note">
+      Rezervasyon maliyetleri toplam harcamaya dahildir. Bireysel/ortak bilgisi uygulamadaki işaretlemelere göre alınmıştır.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3) Günlük Harcama Dökümü</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Tarih / Saat</th>
+          <th>Kategori</th>
+          <th>Yer / Açıklama</th>
+          <th>Şehir</th>
+          <th style="text-align:right;">Tutar (Orijinal)</th>
+          <th>Kapsam</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${expRows || '<tr><td colspan="6">Kayıtlı harcama bulunmamaktadır.</td></tr>'}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>4) Notlar</h2>
+    <p class="footer-note">
+      • Rezervasyon maliyetleri toplam harcamaya dahil edilmiştir.<br/>
+      • Bireysel/ortak ayrımı seyahat cüzdanı uygulamasındaki işaretlemelere göre yapılmıştır.<br/>
+      • Rapor para birimi ${esc(payload.reportCurrency)}’dir; diğer para birimlerindeki harcamalar uygulamadaki kur bilgilerine göre dönüştürülmüştür.
+    </p>
+  </div>
+</body>
+</html>`;
+
+    return html;
+}
+
+tion fetchAndApplyRates() {
       const MOCK_USD_RATE = 42.51920; 
       const MOCK_EUR_RATE = 49.55726; 
 
@@ -1291,6 +1487,18 @@ const dateText = startDate;
               <div class="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-700/50 rounded-xl p-4">
                   <h3 class="text-lg font-bold text-white mb-2">${selectedTrip} Seyahat Özeti</h3>
                   <div class="text-[10px] text-slate-400">Toplam Harcama: <span class="font-bold text-white">${fmtNum(totalInReportCur)} ${reportCur}</span>'a dönüştürülmüştür. (${tripExpenses.length} kayıt)</div>
+              </div>
+
+              <div class="flex items-center gap-2 text-[11px] text-slate-200">
+                <span>Bu seyahatin detaylı harcama dökümünü PDF olarak</span>
+                <button
+                  type="button"
+                  data-act="export-pdf"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-900 font-semibold text-[11px] shadow-sm hover:bg-white transition"
+                >
+                  ${ICONS.report.replace('w-4 h-4', 'w-3.5 h-3.5')}
+                  <span>buradan indirebilirsiniz</span>
+                </button>
               </div>
 
               <!-- 1. Toplam Harcama (Orijinal Kurlar) -->
@@ -3211,7 +3419,148 @@ function renderTabs(){
         renderApp();
       }
     }
-    if(act==='copy-json'){
+    
+    if(act === 'export-pdf'){
+      e.preventDefault();
+      e.stopPropagation();
+
+      const selectedTrip = state.selectedReportTrip;
+      if (!selectedTrip) {
+        alert('Önce rapor ekranında bir seyahat seçmelisiniz.');
+        return;
+      }
+
+      const reportCur = state.reportCurrency || state.baseCurrency || BASE_CURRENCY;
+      const scope = state.indFilter || 'all';
+
+      // Bu seyahate ait harcamalar
+      const allExpenses = getTripExpenses(selectedTrip) || [];
+      const filteredExpenses = allExpenses.filter(x => {
+        if (scope === 'individual' && x.isIndividual !== true) return false;
+        if (scope === 'shared' && x.isIndividual !== false) return false;
+        return true;
+      });
+
+      // Bu seyahate ait rezervasyonlar
+      const allReservations = (state.res || []).filter(r => {
+        if (!r.trip || r.trip !== selectedTrip) return false;
+        if (isNaN(Number(r.cost)) || Number(r.cost) <= 0) return false;
+        return true;
+      });
+
+      const filteredReservations = allReservations.filter(r => {
+        if (scope === 'individual' && r.isIndividual !== true) return false;
+        if (scope === 'shared' && r.isIndividual !== false) return false;
+        return true;
+      });
+
+      // Tarih aralığı
+      const allDates = [];
+      filteredExpenses.forEach(x => { if (x.date) allDates.push(x.date); });
+      filteredReservations.forEach(r => {
+        if (r.startDate) allDates.push(r.startDate);
+        if (r.endDate) allDates.push(r.endDate);
+      });
+      allDates.sort();
+      const dateFrom = allDates[0] || '';
+      const dateTo = allDates[allDates.length - 1] || '';
+
+      // Özet tutarları
+      let totalExpReport = 0;
+      filteredExpenses.forEach(x => {
+        const amt = Number(x.amt) || 0;
+        const cur = x.cur || reportCur;
+        totalExpReport += convertToBase(amt, cur, reportCur);
+      });
+
+      let totalResReport = 0;
+      filteredReservations.forEach(r => {
+        const amt = Number(r.cost) || 0;
+        const cur = r.cur || reportCur;
+        totalResReport += convertToBase(amt, cur, reportCur);
+      });
+
+      const totalReport = totalExpReport + totalResReport;
+
+      // Gün sayısı
+      let dayCount = 0;
+      if (dateFrom && dateTo) {
+        const d1 = new Date(dateFrom);
+        const d2 = new Date(dateTo);
+        const diff = Math.round((d2 - d1) / (1000*60*60*24)) + 1;
+        if (diff > 0) dayCount = diff;
+      }
+      const dailyAvg = dayCount > 0 ? totalReport / dayCount : 0;
+
+      // Bireysel / Ortak alt özet
+      let indivTotal = 0;
+      let sharedTotal = 0;
+
+      filteredExpenses.forEach(x => {
+        const amt = convertToBase(Number(x.amt)||0, x.cur || reportCur, reportCur);
+        if (x.isIndividual) indivTotal += amt; else sharedTotal += amt;
+      });
+      filteredReservations.forEach(r => {
+        const amt = convertToBase(Number(r.cost)||0, r.cur || reportCur, reportCur);
+        if (r.isIndividual) indivTotal += amt; else sharedTotal += amt;
+      });
+
+      const payload = {
+        trip: selectedTrip,
+        reportCurrency: reportCur,
+        scope,
+        baseCurrency: state.baseCurrency || BASE_CURRENCY,
+        generatedAt: new Date().toISOString(),
+        dateFrom,
+        dateTo,
+        summary: {
+          totalReport,
+          totalExpReport,
+          totalResReport,
+          dayCount,
+          dailyAvg,
+          indivTotal,
+          sharedTotal,
+          expenseCount: filteredExpenses.length,
+          reservationCount: filteredReservations.length
+        },
+        expenses: filteredExpenses.map(x => ({
+          id: x.id,
+          date: x.date,
+          time: x.time || '',
+          city: x.city || '',
+          country: x.country || '',
+          cat: x.cat,
+          place: x.place || '',
+          note: x.note || '',
+          amt: Number(x.amt) || 0,
+          cur: x.cur || BASE_CURRENCY,
+          isIndividual: !!x.isIndividual
+        })),
+        reservations: filteredReservations.map(r => ({
+          id: r.id,
+          trip: r.trip,
+          type: r.type,
+          name: r.name || '',
+          location: r.location || '',
+          startDate: r.startDate || '',
+          endDate: r.endDate || '',
+          code: r.code || '',
+          cost: Number(r.cost) || 0,
+          cur: r.cur || BASE_CURRENCY,
+          completed: !!r.completed,
+          isIndividual: !!r.isIndividual,
+          notes: r.notes || ''
+        }))
+      };
+
+      const html = buildReportHtml(payload);
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    }
+
+if(act==='copy-json'){
       const textarea = document.getElementById('io-txt');
       textarea.select();
       document.execCommand('copy');
