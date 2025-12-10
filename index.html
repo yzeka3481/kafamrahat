@@ -315,6 +315,16 @@ function buildReportHtml(payload){
   </style>
 </head>
 <body>
+<!-- ÜST SAĞDA KULLANICI BİLGİSİ + ÇIKIŞ -->
+<div id="user-bar"
+     class="fixed top-3 right-4 z-40 hidden px-3 py-1.5 rounded-full bg-black/60 text-xs text-slate-100 flex items-center gap-2">
+  <span id="user-email" class="max-w-[180px] truncate"></span>
+  <button id="btn-logout"
+          class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[10px] font-semibold hover:bg-white">
+    Çıkış
+  </button>
+</div>
+
   <div class="no-print" style="margin-bottom:12px; font-size:11px; color:#6b7280;">
     Bu sayfayı tarayıcınızdan <strong>Yazdır → PDF olarak kaydet</strong> seçeneği ile PDF’e dönüştürebilirsiniz.
   </div>
@@ -3858,12 +3868,16 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 
 // DOM elemanları
-const overlay   = document.getElementById('auth-overlay');
-const emailEl   = document.getElementById('email-input');
-const passEl    = document.getElementById('password-input');
-const btnGoogle = document.getElementById('btn-google-login');
-const btnLogin  = document.getElementById('btn-email-login');
-const btnReg    = document.getElementById('btn-email-register');
+const overlay    = document.getElementById('auth-overlay');
+const emailEl    = document.getElementById('email-input');
+const passEl     = document.getElementById('password-input');
+const btnGoogle  = document.getElementById('btn-google-login');
+const btnLogin   = document.getElementById('btn-email-login');
+const btnReg     = document.getElementById('btn-email-register');
+const userBar    = document.getElementById('user-bar');
+const userEmailL = document.getElementById('user-email');
+const btnLogout  = document.getElementById('btn-logout');
+
 
 // Google ile giriş
 btnGoogle?.addEventListener('click', async () => {
@@ -3892,6 +3906,15 @@ btnReg?.addEventListener('click', async () => {
   } catch (err) {
     console.error('Register error', err);
     alert('Kayıt sırasında hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+  }
+});
+// Çıkış
+btnLogout?.addEventListener('click', async () => {
+  try {
+    await auth.signOut();
+  } catch (err) {
+    console.error('Logout error', err);
+    alert('Çıkış sırasında hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
   }
 });
 
@@ -3964,13 +3987,18 @@ window.saveUserStateToCloud = async function() {
 auth.onAuthStateChanged(async (user) => {
   if (user) {
     // Giriş yapıldı
-    if (overlay) overlay.classList.add('hidden');
+    if (overlay)  overlay.classList.add('hidden');
+    if (userBar)  userBar.classList.remove('hidden');
+    if (userEmailL) userEmailL.textContent = user.email || user.uid;
+
     await loadUserStateFromCloud(user.uid);
   } else {
-    // Çıkış yapıldı
-    if (overlay) overlay.classList.remove('hidden');
+    // Çıkış yapıldı / hiç giriş yok
+    if (overlay)  overlay.classList.remove('hidden');
+    if (userBar)  userBar.classList.add('hidden');
   }
 });
+
 </script>
 
 </body>
