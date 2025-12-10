@@ -104,40 +104,57 @@ html, body {
 </head>
 <body class="min-h-screen bg-[#0F111A] text-slate-200 flex justify-center p-4 selection:bg-blue-500/30">
 
-  <!-- GİRİŞ EKRANI (OVERLAY) -->
-  <div id="auth-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
-      <h2 class="text-lg font-bold mb-2 text-slate-900">Seyahat Cüzdanı</h2>
-      <p class="text-sm text-slate-600 mb-4">
-        Uygulamayı kullanmak için giriş yapın.
-      </p>
+  
+  <!-- KULLANICI BİLGİSİ + GİRİŞ PANELİ -->
+  <div id="user-bar"
+       class="fixed top-3 right-4 z-40 px-3 py-1.5 rounded-full bg-black/60 text-xs text-slate-100 flex items-center gap-2">
+    <span id="user-email" class="max-w-[180px] truncate hidden"></span>
+    <button id="btn-show-login"
+            class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[10px] font-semibold hover:bg-white">
+      Giriş yap
+    </button>
+    <button id="btn-logout"
+            class="hidden px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[10px] font-semibold hover:bg-white">
+      Çıkış
+    </button>
+  </div>
 
-      <button type="button"
-        id="btn-google-login"
-        class="w-full mb-3 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600">
-        Google ile giriş yap
+  <div id="login-panel"
+       class="hidden fixed top-12 right-4 z-40 w-80 bg-white rounded-2xl shadow-xl p-4 text-slate-900">
+    <div class="flex justify-between items-center mb-2">
+      <h2 class="text-sm font-bold">Seyahat Cüzdanı</h2>
+      <button id="btn-close-login" class="text-xs text-slate-500 hover:text-slate-900">Kapat</button>
+    </div>
+    <p class="text-xs text-slate-600 mb-3">
+      Verilerinizi cihazlar arasında senkronlamak için giriş yapabilirsiniz.
+    </p>
+
+    <button type="button"
+      id="btn-google-login"
+      class="w-full mb-3 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-600">
+      Google ile giriş yap
+    </button>
+
+    <div class="text-[11px] text-slate-400 text-center my-2">veya e-posta ile devam edin</div>
+
+    <input id="email-input" type="email" placeholder="E-posta"
+      class="w-full mb-2 px-3 py-1.5 border rounded-lg text-xs text-slate-900" />
+    <input id="password-input" type="password" placeholder="Şifre"
+      class="w-full mb-3 px-3 py-1.5 border rounded-lg text-xs text-slate-900" />
+
+    <div class="flex gap-2">
+      <button type="button" id="btn-email-login"
+        class="flex-1 px-3 py-1.5 text-[11px] rounded-lg bg-slate-900 text-white">
+        Giriş yap
       </button>
-
-      <div class="text-xs text-slate-400 text-center my-2">veya e-posta ile devam edin</div>
-
-      <input id="email-input" type="email" placeholder="E-posta"
-        class="w-full mb-2 px-3 py-2 border rounded-lg text-sm text-slate-900" />
-      <input id="password-input" type="password" placeholder="Şifre"
-        class="w-full mb-3 px-3 py-2 border rounded-lg text-sm text-slate-900" />
-
-      <div class="flex gap-2">
-        <button type="button" id="btn-email-login"
-          class="flex-1 px-3 py-2 text-xs rounded-lg bg-slate-900 text-white">
-          Giriş yap
-        </button>
-        <button type="button" id="btn-email-register"
-          class="flex-1 px-3 py-2 text-xs rounded-lg bg-slate-100 text-slate-900 border">
-          Kayıt ol
-        </button>
-      </div>
+      <button type="button" id="btn-email-register"
+        class="flex-1 px-3 py-1.5 text-[11px] rounded-lg bg-slate-100 text-slate-900 border">
+        Kayıt ol
+      </button>
     </div>
   </div>
 
+  <div id="app-root" class="w-full max-w-xl md:max-w-2xl"></div>
 <div id="app-root" class="w-full max-w-xl md:max-w-2xl"></div>
 
 <script>
@@ -315,16 +332,6 @@ function buildReportHtml(payload){
   </style>
 </head>
 <body>
-<!-- ÜST SAĞDA KULLANICI BİLGİSİ + ÇIKIŞ -->
-<div id="user-bar"
-     class="fixed top-3 right-4 z-40 hidden px-3 py-1.5 rounded-full bg-black/60 text-xs text-slate-100 flex items-center gap-2">
-  <span id="user-email" class="max-w-[180px] truncate"></span>
-  <button id="btn-logout"
-          class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[10px] font-semibold hover:bg-white">
-    Çıkış
-  </button>
-</div>
-
   <div class="no-print" style="margin-bottom:12px; font-size:11px; color:#6b7280;">
     Bu sayfayı tarayıcınızdan <strong>Yazdır → PDF olarak kaydet</strong> seçeneği ile PDF’e dönüştürebilirsiniz.
   </div>
@@ -3868,7 +3875,6 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 
 // DOM elemanları
-const overlay    = document.getElementById('auth-overlay');
 const emailEl    = document.getElementById('email-input');
 const passEl     = document.getElementById('password-input');
 const btnGoogle  = document.getElementById('btn-google-login');
@@ -3877,7 +3883,9 @@ const btnReg     = document.getElementById('btn-email-register');
 const userBar    = document.getElementById('user-bar');
 const userEmailL = document.getElementById('user-email');
 const btnLogout  = document.getElementById('btn-logout');
-
+const btnShowLogin  = document.getElementById('btn-show-login');
+const btnCloseLogin = document.getElementById('btn-close-login');
+const loginPanel    = document.getElementById('login-panel');
 
 // Google ile giriş
 btnGoogle?.addEventListener('click', async () => {
@@ -3908,15 +3916,6 @@ btnReg?.addEventListener('click', async () => {
     alert('Kayıt sırasında hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
   }
 });
-// Çıkış
-btnLogout?.addEventListener('click', async () => {
-  try {
-    await auth.signOut();
-  } catch (err) {
-    console.error('Logout error', err);
-    alert('Çıkış sırasında hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
-  }
-});
 
 // E-posta ile giriş
 btnLogin?.addEventListener('click', async () => {
@@ -3925,6 +3924,26 @@ btnLogin?.addEventListener('click', async () => {
   } catch (err) {
     console.error('Login error', err);
     alert('Giriş sırasında hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
+  }
+});
+
+
+// Login panelini aç/kapat
+btnShowLogin?.addEventListener('click', () => {
+  if (loginPanel) loginPanel.classList.remove('hidden');
+});
+
+btnCloseLogin?.addEventListener('click', () => {
+  if (loginPanel) loginPanel.classList.add('hidden');
+});
+
+// Çıkış
+btnLogout?.addEventListener('click', async () => {
+  try {
+    await auth.signOut();
+  } catch (err) {
+    console.error('Logout error', err);
+    alert('Çıkış sırasında hata oluştu: ' + (err.message || 'Bilinmeyen hata'));
   }
 });
 
@@ -3987,18 +4006,28 @@ window.saveUserStateToCloud = async function() {
 auth.onAuthStateChanged(async (user) => {
   if (user) {
     // Giriş yapıldı
-    if (overlay)  overlay.classList.add('hidden');
-    if (userBar)  userBar.classList.remove('hidden');
-    if (userEmailL) userEmailL.textContent = user.email || user.uid;
+    if (loginPanel) loginPanel.classList.add('hidden');
+    if (userEmailL) {
+      userEmailL.textContent = user.email || user.uid;
+      userEmailL.classList.remove('hidden');
+    }
+    if (btnShowLogin) btnShowLogin.classList.add('hidden');
+    if (btnLogout) btnLogout.classList.remove('hidden');
+    if (userBar) userBar.classList.remove('hidden');
 
     await loadUserStateFromCloud(user.uid);
   } else {
-    // Çıkış yapıldı / hiç giriş yok
-    if (overlay)  overlay.classList.remove('hidden');
-    if (userBar)  userBar.classList.add('hidden');
+    // Çıkış yapıldı veya hiç giriş yapılmamış
+    if (userEmailL) {
+      userEmailL.textContent = '';
+      userEmailL.classList.add('hidden');
+    }
+    if (btnShowLogin) btnShowLogin.classList.remove('hidden');
+    if (btnLogout) btnLogout.classList.add('hidden');
+    if (loginPanel) loginPanel.classList.add('hidden');
+    if (userBar) userBar.classList.remove('hidden');
   }
 });
-
 </script>
 
 </body>
