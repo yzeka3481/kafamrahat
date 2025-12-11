@@ -135,6 +135,14 @@ html, body {
         Kayıt ol
       </button>
     </div>
+
+    <button
+      type="button"
+      id="auth-logout-btn"
+      data-act="auth-logout"
+      class="mt-3 w-full text-[11px] rounded-lg border border-red-500/60 text-red-200 py-1.5 hidden">
+      Çıkış yap
+    </button>
   </div>
 </div>
 
@@ -187,23 +195,40 @@ html, body {
 
   function updateAuthUi(){
       const loginBtn = document.getElementById('auth-btn-login-toggle');
+      const logoutBtn = document.getElementById('auth-logout-btn');
       if (!loginBtn) return;
 
       // Varsayılan hali: misafir (gri ikon)
       loginBtn.classList.remove('bg-emerald-500/80','border-emerald-400');
       loginBtn.classList.add('bg-slate-800/70','border-slate-600');
 
+      if (logoutBtn) {
+          logoutBtn.classList.add('hidden');
+      }
+
       if (currentUser) {
           // Giriş yapılmışsa: ikon yeşil
           loginBtn.classList.remove('bg-slate-800/70','border-slate-600');
           loginBtn.classList.add('bg-emerald-500/80','border-emerald-400');
+
+          if (logoutBtn) {
+              logoutBtn.classList.remove('hidden');
+          }
       }
   }
 
   function openLoginModal(message){
       const modal = document.getElementById('auth-login-modal');
       const msg = document.getElementById('auth-login-message');
-      if(msg && message) msg.textContent = message;
+      if (msg) {
+          if (currentUser) {
+              msg.textContent = 'Şu anda giriş yapmış durumdasınız. İsterseniz aşağıdan çıkış yapabilirsiniz.';
+          } else if (message) {
+              msg.textContent = message;
+          } else {
+              msg.textContent = 'Gelişmiş özellikler ve PDF dökümü için giriş yapmanız gerekir.';
+          }
+      }
       if(modal){
           modal.classList.remove('hidden');
           modal.classList.add('flex');
@@ -3235,20 +3260,10 @@ function renderTabs(){
 
     // Auth ile ilgili aksiyonlar
         if (act === 'auth-open') {
-        // Eğer zaten giriş yapıldıysa: aynı ikona basınca çıkış yap
-        if (currentUser) {
-            if (auth) {
-                auth.signOut().catch(err => console.error('Çıkış hatası', err));
-            }
-            currentUser = null;
-            updateAuthUi();
-            closeLoginModal();
-        } else {
-            // Giriş yapılmamışsa: login modalını aç
-            openLoginModal('Gelişmiş özellikler ve PDF dökümü için giriş yapmanız gerekir.');
-        }
+        openLoginModal('Gelişmiş özellikler ve PDF dökümü için giriş yapmanız gerekir.');
         return;
     }
+
 
 if (act === 'auth-close') {
         closeLoginModal();
