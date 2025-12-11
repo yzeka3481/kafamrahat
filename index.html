@@ -176,7 +176,9 @@ html, body {
                   firebase.initializeApp(firebaseConfig);
               }
               auth = firebase.auth();
-              db = firebase.firestore();
+              if (firebase.firestore) {
+                  db = firebase.firestore();
+              }
               auth.onAuthStateChanged(user => {
                   currentUser = user;
                   updateAuthUi();
@@ -190,8 +192,7 @@ html, body {
       }catch(err){
           console.error('Firebase init hatası', err);
       }
-
-  
+  }
 
   function updateAuthUi(){
       const emailSpan = document.getElementById('auth-user-email');
@@ -253,85 +254,6 @@ html, body {
       return count >= 3;
   }
 
-
-  function getUserDocRef(){
-      if (!db || !currentUser) return null;
-      return db.collection('users').doc(currentUser.uid);
-  }
-
-  function loadUserDataFromCloud(){
-      if (!db || !currentUser || isCloudLoading) return;
-      const ref = getUserDocRef();
-      if (!ref) return;
-      isCloudLoading = true;
-      ref.get()
-        .then(snap => {
-            if (!snap.exists) {
-                // İlk kez giriş yapıyorsa, mevcut local veriyi buluta yaz
-                saveStateToCloud();
-                return;
-            }
-            const data = snap.data() || {};
-            try {
-                // Buluttan gelen veriyi state'e uygula
-                if (Array.isArray(data.exp)) {
-                    state.exp = data.exp;
-                }
-                if (Array.isArray(data.res)) {
-                    state.res = data.res;
-                }
-                if (data.chk) {
-                    state.chk = data.chk;
-                }
-                if (Array.isArray(data.criticalNotes)) {
-                    state.criticalNotes = data.criticalNotes;
-                }
-                if (data.targetTimezone) {
-                    state.targetTimezone = data.targetTimezone;
-                }
-                if (data.baseCurrency) {
-                    state.baseCurrency = data.baseCurrency;
-                    state.reportCurrency = data.baseCurrency;
-                    state.chartCurrency = data.baseCurrency;
-                    BASE_CURRENCY = data.baseCurrency;
-                }
-                // LocalStorage'i de güncelle
-                save();
-                renderApp();
-            } catch(err) {
-                console.error('Bulut verisi state\'e uygulanırken hata oluştu', err);
-            }
-        })
-        .catch(err => {
-            console.error('Bulut verisi okunamadı', err);
-        })
-        .finally(() => {
-            isCloudLoading = false;
-        });
-  }
-
-  function saveStateToCloud(){
-      if (!db || !currentUser || isCloudSaving) return;
-      const ref = getUserDocRef();
-      if (!ref) return;
-      const payload = {
-          exp: state.exp || [],
-          res: state.res || [],
-          chk: state.chk || {},
-          criticalNotes: state.criticalNotes || [],
-          targetTimezone: state.targetTimezone || '',
-          baseCurrency: state.baseCurrency || BASE_CURRENCY || 'TRY',
-          updatedAt: new Date().toISOString()
-      };
-      isCloudSaving = true;
-      ref.set(payload, {merge: true})
-         .catch(err => {
-             console.error('Buluta kaydedilirken hata oluştu', err);
-         })
-         .finally(() => {
-             isCloudSaving = false;
-         });
-  }
   // --- Sabitler ---
   const K={EXP:'travel_expenses',LIST:'travel_checklist',BUD:'travel_budget', PREF:'travel_pref', NOTES:'travel_notes', RES:'travel_reservations'}; 
   const AVAILABLE_CURRENCIES = ['TRY', 'EUR', 'USD', 'GBP', 'JPY', 'CAD', 'AUD']; 
@@ -1061,12 +983,89 @@ function buildReportHtml(payload){
     localStorage.setItem(K.PREF+'_tz', state.targetTimezone); 
     localStorage.setItem(K.NOTES, JSON.stringify(state.criticalNotes));
     localStorage.setItem(K.PREF+'_base_cur', state.baseCurrency);
-    // Giriş yapmış kullanıcı için buluta da kaydet
     if (!isGuest()) {
         saveStateToCloud();
     }
   };
-  
+
+
+  function getUserDocRef(){
+      if (!db || !currentUser) return null;
+      return db.collection('users').doc(currentUser.uid);
+  }
+
+  function loadUserDataFromCloud(){
+      if (!db || !currentUser || isCloudLoading) return;
+      const ref = getUserDocRef();
+      if (!ref) return;
+      isCloudLoading = true;
+      ref.get()
+        .then(snap => {
+            if (!snap.exists) {
+                // İlk kez giriş yapıyorsa, mevcut local veriyi buluta yaz
+                saveStateToCloud();
+                return;
+            }
+            const data = snap.data() || {};
+            try {
+                if (Array.isArray(data.exp)) {
+                    state.exp = data.exp;
+                }
+                if (Array.isArray(data.res)) {
+                    state.res = data.res;
+                }
+                if (data.chk) {
+                    state.chk = data.chk;
+                }
+                if (Array.isArray(data.criticalNotes)) {
+                    state.criticalNotes = data.criticalNotes;
+                }
+                if (data.targetTimezone) {
+                    state.targetTimezone = data.targetTimezone;
+                }
+                if (data.baseCurrency) {
+                    state.baseCurrency = data.baseCurrency;
+                    state.reportCurrency = data.baseCurrency;
+                    state.chartCurrency = data.baseCurrency;
+                }
+                // LocalStorage'i de güncelle
+                save();
+                renderApp();
+            } catch(err) {
+                console.error('Bulut verisi state\'e uygulanırken hata oluştu', err);
+            }
+        })
+        .catch(err => {
+            console.error('Bulut verisi okunamadı', err);
+        })
+        .finally(() => {
+            isCloudLoading = false;
+        });
+  }
+
+  function saveStateToCloud(){
+      if (!db || !currentUser || isCloudSaving) return;
+      const ref = getUserDocRef();
+      if (!ref) return;
+      const payload = {
+          exp: state.exp || [],
+          res: state.res || [],
+          chk: state.chk || {},
+          criticalNotes: state.criticalNotes || [],
+          targetTimezone: state.targetTimezone || '',
+          baseCurrency: state.baseCurrency || 'TRY',
+          updatedAt: new Date().toISOString()
+      };
+      isCloudSaving = true;
+      ref.set(payload, {merge: true})
+         .catch(err => {
+             console.error('Buluta kaydedilirken hata oluştu', err);
+         })
+         .finally(() => {
+             isCloudSaving = false;
+         });
+  }
+
   // --- RESİM YENİDEN BOYUTLANDIRMA VE BASE64'E DÖNÜŞTÜRME YARDIMCISI ---
   const resizeAndConvertImage = (file) => {
       return new Promise((resolve, reject) => {
