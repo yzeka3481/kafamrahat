@@ -102,11 +102,10 @@ html, body {
 }
 </style>
 
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
 </head>
-
 <body class="min-h-screen bg-[#0F111A] text-slate-200 flex justify-center p-4 selection:bg-blue-500/30">
 <div id="auth-user-bar" class="fixed top-3 right-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 text-xs text-slate-100 border border-white/10 shadow-lg">
   <span class="font-semibold">Seyahat Cüzdanı</span>
@@ -151,8 +150,7 @@ html, body {
 
 <script>
 (()=>{
-
-  // --- Firebase Auth Ayarları ---
+  // --- Firebase Auth + Misafir Limitleri ---
   const firebaseConfig = {
     apiKey: "AIzaSyDiZ7KZBF1bPb185duB0iIXvtqrdfJ91e8",
     authDomain: "seyahat-takip.firebaseapp.com",
@@ -186,11 +184,10 @@ html, body {
   }
 
   function updateAuthUi(){
-      const bar = document.getElementById('auth-user-bar');
       const emailSpan = document.getElementById('auth-user-email');
       const loginBtn = document.getElementById('auth-btn-login-toggle');
       const logoutBtn = document.getElementById('auth-btn-logout');
-      if(!bar || !emailSpan || !loginBtn || !logoutBtn) return;
+      if(!emailSpan || !loginBtn || !logoutBtn) return;
 
       if(currentUser){
           emailSpan.textContent = currentUser.email || '';
@@ -223,6 +220,28 @@ html, body {
       }
   }
 
+  function isGuest(){
+      return !currentUser;
+  }
+
+  function getDistinctTripsAll(){
+      const fromExp = (state && state.exp ? state.exp : []).map(x=>x.trip).filter(Boolean);
+      const fromRes = (state && state.res ? state.res : []).map(x=>x.trip).filter(Boolean);
+      return [...new Set([...fromExp, ...fromRes])];
+  }
+
+  function guestTripLimitExceeded(newTripName){
+      if (!newTripName) return false;
+      const trips = getDistinctTripsAll();
+      const exists = trips.includes(newTripName);
+      return (!exists && trips.length >= 2);
+  }
+
+  function guestExpenseLimitExceeded(tripName){
+      if (!tripName || !state || !state.exp) return false;
+      const count = state.exp.filter(x=>x.trip === tripName).length;
+      return count >= 3;
+  }
 
   // --- Sabitler ---
   const K={EXP:'travel_expenses',LIST:'travel_checklist',BUD:'travel_budget', PREF:'travel_pref', NOTES:'travel_notes', RES:'travel_reservations'}; 
@@ -3449,6 +3468,29 @@ function renderTabs(){
            return; 
        }
 
+
+       // Misafir kullanıcı için seyahat ve harcama limitleri
+       if (isGuest()) {
+           const newTripName = titleCase(f.trip || '');
+           const isNewRecord = !f.id;
+
+           // 1) En fazla 2 seyahat
+           if (isNewRecord && guestTripLimitExceeded(newTripName)) {
+               state.err = 'Giriş yapmadan en fazla 2 seyahat ekleyebilirsiniz. Lütfen giriş yapın veya mevcut seyahatlerden birini kullanın.';
+               openLoginModal('En fazla 2 seyahat eklemek için giriş yapmanız gerekir.');
+               renderApp();
+               return;
+           }
+
+           // 2) Bir seyahat için en fazla 3 harcama
+           if (isNewRecord && newTripName && guestExpenseLimitExceeded(newTripName)) {
+               state.err = 'Giriş yapmadan bir seyahat için en fazla 3 harcama ekleyebilirsiniz. Lütfen giriş yapın.';
+               openLoginModal('Bir seyahat için 3\'ten fazla harcama eklemek için giriş yapmanız gerekir.');
+               renderApp();
+               return;
+           }
+       }
+
        const rec={...f, id:f.id||genId(), city:titleCase(f.city), place:titleCase(f.place), trip:titleCase(f.trip)};
 
        if (isFuelActive) {
@@ -3512,7 +3554,19 @@ function renderTabs(){
              renderApp(); 
              return; 
         }
-        
+
+        // Misafir kullanıcı için seyahat sayısı limiti (rezervasyon tarafı)
+        if (isGuest()) {
+            const newTripName = titleCase(f.trip || '');
+            const isNewRecord = !f.id;
+            if (isNewRecord && guestTripLimitExceeded(newTripName)) {
+                state.err = 'Giriş yapmadan en fazla 2 seyahat ekleyebilirsiniz. Lütfen giriş yapın veya mevcut seyahatlerden birini kullanın.';
+                openLoginModal('En fazla 2 seyahat eklemek için giriş yapmanız gerekir.');
+                renderApp();
+                return;
+            }
+        }
+
         const rec = {...f, 
             id: f.id || genId(),
             trip: titleCase(f.trip),
