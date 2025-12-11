@@ -105,6 +105,7 @@ html, body {
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="min-h-screen bg-[#0F111A] text-slate-200 flex justify-center p-4 selection:bg-blue-500/30">
 <div id="auth-user-bar" class="fixed top-3 right-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 text-xs text-slate-100 border border-white/10 shadow-lg">
@@ -163,6 +164,10 @@ html, body {
 
   let auth = null;
   let currentUser = null;
+  let db = null;
+  let isCloudLoading = false;
+  let isCloudSaving = false;
+
 
   function initFirebaseAuth(){
       try{
@@ -171,9 +176,13 @@ html, body {
                   firebase.initializeApp(firebaseConfig);
               }
               auth = firebase.auth();
+              db = firebase.firestore();
               auth.onAuthStateChanged(user => {
                   currentUser = user;
                   updateAuthUi();
+                  if (currentUser) {
+                      loadUserDataFromCloud();
+                  }
               });
           } else {
               console.warn('Firebase yüklü değil');
@@ -181,7 +190,8 @@ html, body {
       }catch(err){
           console.error('Firebase init hatası', err);
       }
-  }
+
+  
 
   function updateAuthUi(){
       const emailSpan = document.getElementById('auth-user-email');
@@ -243,6 +253,85 @@ html, body {
       return count >= 3;
   }
 
+
+  function getUserDocRef(){
+      if (!db || !currentUser) return null;
+      return db.collection('users').doc(currentUser.uid);
+  }
+
+  function loadUserDataFromCloud(){
+      if (!db || !currentUser || isCloudLoading) return;
+      const ref = getUserDocRef();
+      if (!ref) return;
+      isCloudLoading = true;
+      ref.get()
+        .then(snap => {
+            if (!snap.exists) {
+                // İlk kez giriş yapıyorsa, mevcut local veriyi buluta yaz
+                saveStateToCloud();
+                return;
+            }
+            const data = snap.data() || {};
+            try {
+                // Buluttan gelen veriyi state'e uygula
+                if (Array.isArray(data.exp)) {
+                    state.exp = data.exp;
+                }
+                if (Array.isArray(data.res)) {
+                    state.res = data.res;
+                }
+                if (data.chk) {
+                    state.chk = data.chk;
+                }
+                if (Array.isArray(data.criticalNotes)) {
+                    state.criticalNotes = data.criticalNotes;
+                }
+                if (data.targetTimezone) {
+                    state.targetTimezone = data.targetTimezone;
+                }
+                if (data.baseCurrency) {
+                    state.baseCurrency = data.baseCurrency;
+                    state.reportCurrency = data.baseCurrency;
+                    state.chartCurrency = data.baseCurrency;
+                    BASE_CURRENCY = data.baseCurrency;
+                }
+                // LocalStorage'i de güncelle
+                save();
+                renderApp();
+            } catch(err) {
+                console.error('Bulut verisi state\'e uygulanırken hata oluştu', err);
+            }
+        })
+        .catch(err => {
+            console.error('Bulut verisi okunamadı', err);
+        })
+        .finally(() => {
+            isCloudLoading = false;
+        });
+  }
+
+  function saveStateToCloud(){
+      if (!db || !currentUser || isCloudSaving) return;
+      const ref = getUserDocRef();
+      if (!ref) return;
+      const payload = {
+          exp: state.exp || [],
+          res: state.res || [],
+          chk: state.chk || {},
+          criticalNotes: state.criticalNotes || [],
+          targetTimezone: state.targetTimezone || '',
+          baseCurrency: state.baseCurrency || BASE_CURRENCY || 'TRY',
+          updatedAt: new Date().toISOString()
+      };
+      isCloudSaving = true;
+      ref.set(payload, {merge: true})
+         .catch(err => {
+             console.error('Buluta kaydedilirken hata oluştu', err);
+         })
+         .finally(() => {
+             isCloudSaving = false;
+         });
+  }
   // --- Sabitler ---
   const K={EXP:'travel_expenses',LIST:'travel_checklist',BUD:'travel_budget', PREF:'travel_pref', NOTES:'travel_notes', RES:'travel_reservations'}; 
   const AVAILABLE_CURRENCIES = ['TRY', 'EUR', 'USD', 'GBP', 'JPY', 'CAD', 'AUD']; 
@@ -972,6 +1061,10 @@ function buildReportHtml(payload){
     localStorage.setItem(K.PREF+'_tz', state.targetTimezone); 
     localStorage.setItem(K.NOTES, JSON.stringify(state.criticalNotes));
     localStorage.setItem(K.PREF+'_base_cur', state.baseCurrency);
+    // Giriş yapmış kullanıcı için buluta da kaydet
+    if (!isGuest()) {
+        saveStateToCloud();
+    }
   };
   
   // --- RESİM YENİDEN BOYUTLANDIRMA VE BASE64'E DÖNÜŞTÜRME YARDIMCISI ---
