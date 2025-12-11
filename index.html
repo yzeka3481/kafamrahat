@@ -108,14 +108,6 @@ html, body {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="min-h-screen bg-[#0F111A] text-slate-200 flex justify-center p-4 selection:bg-blue-500/30">
-<div id="auth-user-bar" class="fixed top-20 left-4 z-40 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 text-xs text-slate-100 border border-white/10 shadow-lg">
-  <button id="auth-btn-login-toggle" data-act="auth-open" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[10px] font-semibold hover:bg-white">
-    Giriş yap
-  </button>
-  <button id="auth-btn-logout" data-act="auth-logout" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[10px] font-semibold hover:bg-white hidden">
-    Çıkış
-  </button>
-</div>
 
 <!-- Login modal -->
 <div id="auth-login-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -2062,7 +2054,28 @@ const dateText = startDate;
         
         <div class="flex items-center gap-2 w-full md:w-auto justify-end mt-2 md:mt-0">
            
-           <!-- KONUM BİLGİSİ İKONU -->
+             <!-- GİRİŞ İKONU -->
+   <div class="flex items-center gap-1">
+     <button
+       id="auth-btn-login-toggle"
+       data-act="auth-open"
+       class="flex items-center justify-center w-8 h-8 rounded-full border border-slate-600 bg-slate-800/70 hover:bg-slate-700"
+       title="Giriş yap / hesabı değiştir">
+       <span class="text-[11px]">👤</span>
+     </button>
+
+     <button
+       id="auth-btn-logout"
+       data-act="auth-logout"
+       class="hidden px-2 py-1 rounded-full text-[10px] border border-slate-600 text-slate-200">
+       Çıkış
+     </button>
+
+     <!-- E-posta sadece JS için, ekranda görünmeyecek -->
+     <span id="auth-user-email" class="sr-only"></span>
+   </div>
+
+	 <!-- KONUM BİLGİSİ İKONU -->
            <button data-act="get-location" class="flex items-center bg-slate-800/80 hover:bg-slate-700/80 transition rounded-lg p-1 border border-slate-700 justify-center cursor-pointer min-w-10" title="${locationName}">
                <span class="text-xs text-slate-400 mr-1">${locIcon}</span>
                <span class="text-[9px] text-white/80 font-bold hidden sm:inline-block">${isReady ? 'Konum OK' : 'Konum Al'}</span>
@@ -2085,6 +2098,7 @@ const dateText = startDate;
              <button data-act="open-chart" class="bg-slate-800/70 hover:bg-slate-700/90 border border-slate-600/60 rounded-lg p-1.5 flex items-center justify-center transition" title="Harcama Grafiği">
                ${ICONS.chart.replace('w-4 h-4','w-3.5 h-3.5')}
              </button>
+
            ` : ''}
            
            ${state.tab==='chk' ? `
