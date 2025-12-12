@@ -3452,23 +3452,14 @@ const helperCard = (href, emoji, label) => {
 
         if(state.lightbox) h+=`<div class="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-2 backdrop-blur-xl" data-act="close-lb"><img src="${state.lightbox}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"></div>`;
 
-                root.innerHTML=h;
+        root.innerHTML=h;
         if(state.modals.chart){
           setTimeout(renderExpenseChart,0);
         }
-
-        // Login ikonunu auth durumuna göre her render sonrası güncelle
+	// Login ikonunu auth durumuna göre her render sonrası güncelle
         if (typeof updateAuthUi === 'function') {
             updateAuthUi();
         }
-        
-        // Form alanlarının değerini manuel olarak ayarlama
-        if(state.view === 'form' && state.form.date) {
-            const dateInput = document.getElementById('i-date');
-            if (dateInput) dateInput.value = state.form.date;
-        }
-        ...
-
         
         // Form alanlarının değerini manuel olarak ayarlama
         if(state.view === 'form' && state.form.date) {
