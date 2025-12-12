@@ -1977,6 +1977,20 @@ const dateText = startDate;
           nextPlan = { type: 'chk', item: nextChecklistItem };
       }
 
+      // Rezervasyon tipini Türkçeye çeviren yardımcı fonksiyon
+      const formatResType = (type) => {
+          if (!type) return '';
+          switch (type) {
+              case 'flight': return 'Uçuş';
+              case 'hotel':  return 'Otel';
+              case 'car':    return 'Araç';
+              case 'train':  return 'Tren';
+              case 'bus':    return 'Otobüs';
+              default:       return type;
+          }
+      };
+
+
       let resText = 'Yaklaşan Plan Yok';
       if (nextPlan) {
           const item = nextPlan.item;
@@ -1984,7 +1998,10 @@ const dateText = startDate;
           const date = isRes ? item.startDate : item.date;
           const diff = new Date(date).getTime() - new Date().getTime();
           const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-          const name = isRes ? `${esc(item.type)}: ${esc(item.name)}` : `${esc(item.val)} (${esc(item.cat)})`;
+                    const name = isRes
+            ? `${esc(formatResType(item.type))}: ${esc(item.name)}`
+            : `${esc(item.val)} (${esc(item.cat)})`;
+
 
           if (daysLeft < 7) {
               resText = `Çok Yakın! ${fmtDate(date)}: ${name}`;
