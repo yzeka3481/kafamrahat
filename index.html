@@ -100,6 +100,38 @@ html, body {
     flex-direction: column;
     gap: 0.5rem; /* Etiket ve input arasına boşluk */
 }
+
+/* DİĞER SEKME KART MODAL STİLLERİ */
+.helper-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.8);
+  z-index: 50;
+}
+
+.helper-modal:target {
+  display: flex;
+}
+
+.helper-modal-inner {
+  background-color: #020617; /* slate-950 */
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148,163,184,0.5);
+  padding: 1.25rem;
+  max-width: 42rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.helper-modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
 </style>
 
 
@@ -1544,46 +1576,75 @@ const dateText = startDate;
   }
 
   // YENİ FONKSİYON: UÇUŞLAR VE REZERVASYONLAR AKORDİYONU
+  
   function renderReservationsAccordion() {
-      // Akordiyon başlığını dinamik hale getirelim
+      // Rezervasyonların başlığı ve listesi
       const reservationHeader = `
           <div class="w-full flex justify-between items-center pb-3">
               <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
-                 ${ICONS.reserve.replace('w-4 h-4', 'w-4 h-4')} Aktif Rezervasyonlar
+                 ${ICONS.reserve.replace('w-4 h-4', 'w-4 h-4')} Rezervasyonlar
               </h4>
-              <button data-act="new-res" class="bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1">
+              <button
+                type="button"
+                data-act="new-res"
+                class="bg-blue-600 hover:bg-blue-500 text-xs font-bold transition px-3 py-1 rounded-lg flex items-center justify-center gap-1">
                  ${ICONS.plus.replace('w-4 h-4', 'w-3.5 h-3.5')} Ekle
               </button>
           </div>
           ${renderReservationList()}
       `;
-      
+
+      // Uçuş linkleri içeriği
       const flightCheckContent = `
-            <p class="text-xs text-slate-400 mb-3">Uçuş takibi için harici linkler.</p>
-            <div class="grid grid-cols-2 gap-3">
-                <a href="https://www.google.com/flights" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    <div class="text-xl mb-1">✈️</div>
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Google Flights (Arama)</span>
-                </a>
-                <a href="https://www.flightradar24.com/" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                    <div class="text-xl mb-1">📡</div>
-                    <span class="text-xs font-bold text-white/90 text-center leading-tight">Canlı Uçuş Takibi</span>
-                </a>
-            </div>
+          <p class="text-xs text-slate-400 mb-3">
+              Uçuşları aramak ve canlı takip etmek için harici servisleri kullanabilirsiniz.
+          </p>
+          <div class="grid grid-cols-2 gap-3">
+              <a
+                href="https://www.google.com/flights"
+                target="_blank"
+                class="bg-slate-900/70 border border-slate-700/70 rounded-xl px-3 py-3 flex flex-col items-center justify-center hover:bg-slate-800/80 hover:border-slate-500 transition shadow-sm">
+                  <div class="text-xl mb-1">✈️</div>
+                  <span class="text-xs font-bold text-white/90 text-center leading-tight">
+                      Google Flights
+                  </span>
+              </a>
+              <a
+                href="https://www.flightradar24.com/"
+                target="_blank"
+                class="bg-slate-900/70 border border-slate-700/70 rounded-xl px-3 py-3 flex flex-col items-center justify-center hover:bg-slate-800/80 hover:border-slate-500 transition shadow-sm">
+                  <div class="text-xl mb-1">📡</div>
+                  <span class="text-xs font-bold text-white/90 text-center leading-tight">
+                      Canlı Uçuş Takibi
+                  </span>
+              </a>
+          </div>
       `;
 
       return `
-          <!-- YENİ REZERVASYON AKORDİYONU -->
-          ${accordionItem('reservations', ICONS.reserve.replace('w-4 h-4', 'w-4 h-4'), 'Uçuşlar ve Rezervasyonlar', `
-              <div class="space-y-4 pt-3">
-                  ${reservationHeader}
-                  <div class="pt-2 border-t border-slate-700/50">
-                     ${flightCheckContent}
-                  </div>
-              </div>
-          `)}
+          ${accordionItem(
+              'reservations',
+              ICONS.reserve.replace('w-4 h-4', 'w-4 h-4'),
+              'Rezervasyonlar',
+              `
+                <div class="space-y-4 pt-3">
+                    ${reservationHeader}
+                </div>
+              `
+          )}
+          ${accordionItem(
+              'flightCheck',
+              ICONS.flight.replace('w-4 h-4', 'w-4 h-4'),
+              'Uçuşlar',
+              `
+                <div class="space-y-4 pt-3">
+                    ${flightCheckContent}
+                </div>
+              `
+          )}
       `;
   }
+
   
   // YENİ FONKSİYON: RAPOR AKORDİYON İÇERİĞİ
   function renderReportContent() {
@@ -1996,7 +2057,7 @@ const dateText = startDate;
                         </div>
                     </div>
 </div></div>
-           
+               
 <!-- 2. BUGÜNÜN HARCAMASI ve YAKLAŞAN PLAN Kartları (Yanyana 2 Box) -->
             <div class="grid grid-cols-2 gap-3 mb-4">
                 
@@ -2106,7 +2167,7 @@ const dateText = startDate;
              <span class="text-[11px]">👤</span>
            </button>
            <!-- Kullanıcı menüsü (sadece giriş yapıldığında kullanılır) -->
-           <div id="auth-user-menu" class="hidden absolute right-0 top-50 z-40">
+           <div id="auth-user-menu" class="hidden absolute right-0 top-10 z-40">
              <div class="bg-slate-900 border border-slate-700 rounded-xl shadow-lg px-3 py-2 min-w-[180px]">
                <div id="auth-user-email" class="text-[11px] text-slate-300 mb-2 break-all">
                  Oturum açılmadı
@@ -2544,173 +2605,338 @@ function renderTabs(){
   }
   
   // YENİ FONKSİYON: DİĞER SEKME İÇERİĞİ
-  function renderOtherTab() {
-      
-      const loc = state.location;
-      const isReady = loc && loc.lat && loc.lon;
-      const locationQuery = isReady ? `@${loc.lat},${loc.lon},15z` : '';
-      const baseSearchUrl = 'https://www.google.com/maps/search/';
-      const disabledClass = !isReady ? 'opacity-40 pointer-events-none' : '';
+  
+function renderOtherTab() {
+  const loc = state.location || {};
+  const hasLoc = !!(loc.lat && loc.lng);
 
-      const touristPlacesUrl = `${baseSearchUrl}Turistik+Yerler/${locationQuery}`;
-      const cafeRestaurantUrl = `${baseSearchUrl}yüksek+puanlı+cafe+restoran/${locationQuery}`;
-      const hotelUrl = `${baseSearchUrl}otel+konaklama/${locationQuery}`;
-      const hospitalUrl = `${baseSearchUrl}Hastane/${locationQuery}`;
-      const pharmacyUrl = `${baseSearchUrl}Eczane/${locationQuery}`;
-      const policeUrl = `${baseSearchUrl}Polis+Karakolu/${locationQuery}`; 
+  const googleMapsBase = hasLoc
+    ? `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`
+    : 'https://www.google.com/maps';
 
-      const allTrips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean).concat(state.res.map(x=>x.trip).filter(Boolean)))].sort();
-      if (!allTrips.includes('Genel')) {
-          allTrips.unshift('Genel');
-      }
-      
-      const notesForTrip = state.criticalNotes.filter(n => n.trip === state.selectedNoteTrip);
-      
-      // Data Modal İçeriği
-      const dataContent = `
-         <p class="text-sm text-slate-400 mb-3">Tüm uygulama verilerinizi (harcamalar, listeler, notlar, **rezervasyonlar**) JSON formatında yedekleyebilir veya geri yükleyebilirsiniz.</p>
-         <textarea id="io-txt" class="w-full h-40 bg-black/50 border border-slate-700 rounded-lg p-3 text-xs font-mono text-slate-400 mb-4 outline-none focus:border-blue-500">${JSON.stringify({exp:state.exp,chk:state.chk,notes:state.criticalNotes, res: state.res, baseCur: state.baseCurrency})}</textarea>
-         <div class="flex gap-3">
-             <button data-act="copy-json" class="flex-1 bg-slate-800 text-slate-300 py-2.5 rounded-lg font-medium">Kopyala</button>
-             <button data-act="imp" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-bold">Yükle</button>
-         </div>
-      `;
+  const nearbyTouristUrl = hasLoc ? `${googleMapsBase}+tourist+attractions` : googleMapsBase;
+  const nearbyCafeUrl = hasLoc ? `${googleMapsBase}+cafes+restaurants` : googleMapsBase;
+  const nearbyHotelUrl = hasLoc ? `${googleMapsBase}+hotels` : googleMapsBase;
+  const nearbyHospitalUrl = hasLoc ? `${googleMapsBase}+hospitals` : googleMapsBase;
+  const nearbyPharmacyUrl = hasLoc ? `${googleMapsBase}+pharmacies` : googleMapsBase;
+  const nearbyPoliceUrl = hasLoc ? `${googleMapsBase}+police+stations` : googleMapsBase;
 
-      return `
-          <div class="space-y-4 pb-24">
-              
-              <!-- YENİ REZERVASYON AKORDİYONU -->
-              ${renderReservationsAccordion()}
+  const tripsWithSpending = [...new Set(state.exp.map(x => x.trip).filter(Boolean))].sort();
 
-              <!-- SEYAHAT ÖZET RAPORU -->
-              ${accordionItem('report', ICONS.report, 'Seyahat Özet Raporu', renderReportContent())}
-              
-              <!-- ROTA PLANLAYICI -->
-              ${accordionItem('route', ICONS.route, 'Yol Güzergahı Haritası (Hızlı Rota)', `
-                  <div class="space-y-3 pt-3">
-                      <p class="text-xs text-slate-400">Harcama kayıtlarınızdaki mekanları kronolojik sıraya göre birleştirerek Google Haritalar'da güzergah oluşturur.</p>
-                      <div>
-                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Harcamaları Olan Seyahati Seç</label>
-                         <div class="relative">
-                           <select id="route-trip-select" data-act="set-route-trip" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
-                             <option value="">-- Seyahat Seçin --</option>
-                             ${[...new Set(state.exp.map(x=>x.trip).filter(Boolean))].sort().map(t=>`<option value="${esc(t)}" ${(state.routeTrip||state.tripFilter)===t?'selected':''}>${esc(t)}</option>`).join('')}
-                           </select>
-                           <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
-                         </div>
-                      </div>
-                      <div id="route-output-box">
-                          ${renderRoutePlanner()}
-                      </div>
-                  </div>
-              `)}
-              
-              <!-- KRİTİK BİLGİLER AKORDİYONU -->
-              ${accordionItem('critical', ICONS.key, 'Kritik Bilgiler (Notlar)', `
-                  <div class="space-y-4 pt-3">
-                      <div>
-                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Seyahat Seçimi</label>
-                         <div class="relative">
-                           <select data-act="set-note-trip" class="w-full bg-slate-950/50 border border-white/30 rounded-lg py-2 px-3 pr-8 text-sm text-white outline-none focus:border-white appearance-none cursor-pointer backdrop-blur-sm">
-                             ${allTrips.map(t=>`<option value="${esc(t)}" ${state.selectedNoteTrip===t?'selected':''}>${esc(t)}</option>`).join('')}
-                           </select>
-                           <div class="absolute right-3 top-2.5 text-white pointer-events-none">${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}</div>
-                         </div>
-                      </div>
-                      
-                      <div>
-                          <h4 class="text-sm font-bold text-slate-300 mb-2">Yeni Not Ekle (${esc(state.selectedNoteTrip)})</h4>
-                          <div class="flex gap-2">
-                              <textarea data-act="update-new-note" id="new-note-input-other" class="w-full h-16 bg-slate-700 border border-slate-600 rounded-lg p-2 text-sm text-slate-200 outline-none resize-none" placeholder="Otel kodu, adres veya önemli bilgi...">${esc(state.newCriticalNote)}</textarea>
-                              <button data-act="add-note" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg text-sm font-bold transition flex-shrink-0 w-10 h-10 flex items-center justify-center">
-                                  ${ICONS.plus.replace('w-4 h-4', 'w-4 h-4')}
-                              </button>
-                          </div>
-                      </div>
+  const allTripsForNotes = [...new Set(
+    state.exp.map(x => x.trip).filter(Boolean).concat(
+      state.res.map(x => x.trip).filter(Boolean)
+    )
+  )].sort();
 
-                      <div>
-                          <h4 class="text-sm font-bold text-slate-300 mb-2">Mevcut Notlar (${esc(state.selectedNoteTrip)})</h4>
-                          <div class="space-y-2 max-h-40 overflow-y-auto scrl">
-                              ${notesForTrip.length > 0 ? notesForTrip.map((note, index) => `
-                                  <div class="bg-slate-700/70 border border-slate-600 rounded-lg p-3 text-sm text-slate-200 flex justify-between items-start gap-3">
-                                      <span class="flex-1 whitespace-pre-wrap">${esc(note.note)}</span>
-                                      <button data-act="del-note" data-id="${note.id}" class="text-slate-500 hover:text-rose-400 transition p-1 -m-1">${ICONS.x.replace('w-4 h-4', 'w-3.5 h-3.5')}</button>
-                                  </div>
-                              `).join('') : '<p class="text-sm text-slate-500 italic">Bu seyahat için kritik not bulunmamaktadır.</p>'}
-                          </div>
-                      </div>
-                  </div>
-              `)}
-
-              <!-- KONUM BAZLI YARDIMCILAR -->
-              <h3 class="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2">
-                 ${ICONS.compass} Konum Bazlı Yardımcılar
-              </h3>
-              
-              <!-- YERLER -->
-              <div class="${disabledClass}">
-                  ${accordionItem('places', ICONS.location, 'Yakındaki Yerler', `
-                      <div class="grid grid-cols-3 gap-3 pt-3">
-                          <a href="${touristPlacesUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                              ${ICONS.mapPin.replace('w-4 h-4', 'w-6 h-6')}
-                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Gezilecek Yerler</span>
-                          </a>
-                          <a href="${cafeRestaurantUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                              ${ICONS.restaurant.replace('w-4 h-4', 'w-6 h-6')}
-                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Cafe & Restoran</span>
-                          </a>
-                          <a href="${hotelUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                              ${ICONS.bed.replace('w-4 h-4', 'w-6 h-6')}
-                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Otel / Konaklama</span>
-                          </a>
-                      </div>
-                  `)}
-              </div>
-              
-              <!-- SAĞLIK -->
-              <div class="${disabledClass}">
-                  ${accordionItem('health', ICONS.hospital, 'Sağlık ve Güvenlik', `
-                      <div class="grid grid-cols-3 gap-3 pt-3">
-                          <a href="${hospitalUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                              ${ICONS.hospital.replace('w-4 h-4', 'w-6 h-6')}
-                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Hastane</span>
-                          </a>
-                          <a href="${pharmacyUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                              ${ICONS.pharmacy.replace('w-4 h-4', 'w-6 h-6')}
-                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Eczane</span>
-                          </a>
-                          <a href="${policeUrl}" target="_blank" class="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                              ${ICONS.police.replace('w-4 h-4', 'w-6 h-6')}
-                              <span class="text-xs font-bold text-white/90 text-center leading-tight">Polis / Güvenlik</span>
-                          </a>
-                      </div>
-                  `)}
-              </div>
-              
-              <!-- ULAŞIM -->
-              ${accordionItem('transport', ICONS.bus, 'Ulaşım ve Haritalar', `
-                  <div class="grid grid-cols-3 gap-3 pt-3">
-                      <a href="https://maps.google.com/maps?output=classic" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                          ${ICONS.mapPin.replace('w-4 h-4', 'w-6 h-6')}
-                          <div class="text-[10px] font-bold text-white">Google Haritalar</div>
-                      </a>
-                      <a href="https://moovitapp.com/" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                          <div class="text-xl mb-1">🚌</div>
-                          <div class="text-[10px] font-bold text-white">Moovit</div>
-                      </a>
-                      <a href="https://www.uber.com/" target="_blank" class="flex flex-col items-center gap-1 p-3 rounded-lg border border-slate-700/50 bg-slate-700/50 hover:bg-slate-700 transition shadow-sm">
-                          ${ICONS.taxi.replace('w-4 h-4', 'w-6 h-6')}
-                          <div class="text-[10px] font-bold text-white">Uber / Taksi</div>
-                      </a>
-                  </div>
-              `)}
-
-              <!-- VERİ YÖNETİMİ -->
-              ${accordionItem('data', ICONS.info, 'Veri Yönetimi (Yedekleme/Yükleme)', `<div class="pt-3">${dataContent}</div>`)}
-
-          </div>
-      `;
+  let selectedTripForNotes = state.selectedNoteTrip || allTripsForNotes[0] || 'Genel';
+  if (!allTripsForNotes.includes(selectedTripForNotes) && allTripsForNotes.length > 0) {
+    selectedTripForNotes = allTripsForNotes[0];
   }
+  state.selectedNoteTrip = selectedTripForNotes;
+
+  const notesForTrip = state.criticalNotes.filter(n => n.trip === selectedTripForNotes);
+
+  const dataExport = JSON.stringify({
+    exp: state.exp,
+    trips: state.trips,
+    criticalNotes: state.criticalNotes,
+    res: state.res,
+    baseCur: state.baseCurrency
+  }, null, 2);
+
+const helperCard = (href, emoji, label) => {
+  return `
+    <a
+      href="${href}"
+      class="group relative flex flex-col items-center justify-center rounded-3xl border border-slate-700/70 bg-slate-900/70 px-3 py-4 shadow-lg hover:bg-slate-800/80 hover:border-slate-500 transition">
+      <div class="mb-2 text-2xl">
+        ${emoji}
+      </div>
+      <div class="text-[11px] font-semibold text-slate-100 text-center leading-tight">
+        ${label}
+      </div>
+    </a>
+  `;
+};
+
+  return `
+   <div class="grid grid-cols-3 gap-3">
+  ${helperCard('#helper-reservations', '📑', 'Rezervasyonlar')}
+  ${helperCard('#helper-flights',     '✈️', 'Uçuşlar')}
+  ${helperCard('#helper-report',      '📊', 'Rapor')}
+  ${helperCard('#helper-route',       '🗺️', 'Rota')}
+  ${helperCard('#helper-critical',    '📝', 'Notlar')}
+  ${helperCard('#helper-places',      '📍', 'Yakın Yerler')}
+  ${helperCard('#helper-health',      '⚕️', 'Sağlık')}
+  ${helperCard('#helper-transport',   '🚌', 'Ulaşım')}
+  ${helperCard('#helper-data',        '💾', 'Veri / Yedek')}
+</div>
+
+      <!-- REZERVASYONLAR POPUP -->
+      <div id="helper-reservations" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Rezervasyonlar</h3>
+          <div class="space-y-4">
+            <div class="w-full flex justify-between items-center pb-3">
+              <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
+                ${ICONS.reserve.replace('w-4 h-4', 'w-4 h-4')} Rezervasyonlar
+              </h4>
+              <button
+                type="button"
+                data-act="new-res"
+                class="bg-blue-600 hover:bg-blue-500 text-xs font-bold transition px-3 py-1 rounded-lg flex items-center justify-center gap-1">
+                ${ICONS.plus.replace('w-4 h-4', 'w-3.5 h-3.5')} Ekle
+              </button>
+            </div>
+            ${renderReservationList()}
+          </div>
+        </div>
+      </div>
+
+      <!-- UÇUŞLAR POPUP -->
+      <div id="helper-flights" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Uçuşlar</h3>
+          <div class="space-y-4">
+            <p class="text-xs text-slate-400 mb-3">
+              Uçuşları aramak ve canlı takip etmek için aşağıdaki servisleri kullanabilirsiniz.
+            </p>
+            <div class="grid grid-cols-2 gap-3">
+              <a
+                href="https://www.google.com/flights"
+                target="_blank"
+                class="bg-slate-900/70 border border-slate-700/70 rounded-xl px-3 py-3 flex flex-col items-center justify-center hover:bg-slate-800/80 hover:border-slate-500 transition shadow-sm">
+                <div class="text-xl mb-1">✈️</div>
+                <span class="text-xs font-bold text-white/90 text-center leading-tight">
+                  Google Flights
+                </span>
+              </a>
+              <a
+                href="https://www.flightradar24.com/"
+                target="_blank"
+                class="bg-slate-900/70 border border-slate-700/70 rounded-xl px-3 py-3 flex flex-col items-center justify-center hover:bg-slate-800/80 hover:border-slate-500 transition shadow-sm">
+                <div class="text-xl mb-1">📡</div>
+                <span class="text-xs font-bold text-white/90 text-center leading-tight">
+                  Canlı Uçuş Takibi
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RAPOR POPUP -->
+      <div id="helper-report" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Seyahat Özet Raporu</h3>
+          ${renderReportContent()}
+        </div>
+      </div>
+
+      <!-- ROTA POPUP -->
+      <div id="helper-route" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Yol Güzergahı Haritası</h3>
+          <div class="space-y-3">
+            <p class="text-xs text-slate-400">
+              Harcama kayıtlarındaki şehir ve mekan bilgilerine göre Google Haritalar için hızlı rota bağlantısı oluşturur.
+            </p>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Harcamaları Olan Seyahati Seç</label>
+              <div class="relative">
+                <select id="route-trip-select" data-act="set-route-trip"
+                  class="w-full bg-slate-950/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-teal-400 appearance-none cursor-pointer backdrop-blur-sm">
+                  <option value="">-- Seyahat Seçin --</option>
+                  ${tripsWithSpending.map(t=>`<option value="${esc(t)}" ${esc(state.routeTrip||'')===t?'selected':''}>${esc(t)}</option>`).join('')}
+                </select>
+                <div class="absolute right-3 top-2.5 pointer-events-none">
+                  ${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}
+                </div>
+              </div>
+            </div>
+            <div id="route-output-box">
+              ${renderRoutePlanner()}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTLAR POPUP -->
+      <div id="helper-critical" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Kritik Bilgiler (Notlar)</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Seyahat Seçimi</label>
+              <div class="relative">
+                <select data-act="set-note-trip"
+                  class="w-full bg-slate-950/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-teal-400 appearance-none cursor-pointer backdrop-blur-sm">
+                  ${allTripsForNotes.map(t=>`<option value="${esc(t)}" ${t===selectedTripForNotes?'selected':''}>${esc(t)}</option>`).join('')}
+                </select>
+                <div class="absolute right-3 top-2.5 pointer-events-none">
+                  ${ICONS.down.replace('w-4 h-4', 'w-3.5 h-3.5')}
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-300 mb-2">Yeni Not Ekle (${esc(selectedTripForNotes)})</h4>
+              <div class="flex gap-2">
+                <textarea id="new-note-input-other" data-act="update-new-note"
+                  class="flex-1 bg-slate-950/60 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-teal-400 placeholder-slate-500"
+                  placeholder="Önemli not, hatırlatma veya kritik bilgi...">${esc(state.newCriticalNote||'')}</textarea>
+                <button data-act="add-note"
+                  class="w-10 h-10 flex items-center justify-center rounded-lg bg-teal-600 hover:bg-teal-500 text-white shadow-lg transition">
+                  ${ICONS.plus.replace('w-4 h-4', 'w-4 h-4')}
+                </button>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-300 mb-2">Mevcut Notlar (${esc(selectedTripForNotes)})</h4>
+              <div class="space-y-2 max-h-48 overflow-y-auto scrl">
+                ${
+                  notesForTrip.length
+                    ? notesForTrip.map(note => `
+                        <div class="bg-slate-700/70 border border-slate-600/60 rounded-lg px-3 py-2 text-sm text-slate-200 flex justify-between items-start gap-3">
+                          <span class="flex-1 whitespace-pre-wrap">${esc(note.note)}</span>
+                          <button data-act="del-note" data-val="${note.id}" class="text-slate-400 hover:text-red-400 p-1 -m-1">
+                            ${ICONS.x.replace('w-4 h-4', 'w-3.5 h-3.5')}
+                          </button>
+                        </div>
+                      `).join('')
+                    : '<p class="text-sm text-slate-500 italic">Bu seyahat için kritik not bulunmamaktadır.</p>'
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- YAKIN YERLER POPUP -->
+      <div id="helper-places" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Yakındaki Yerler</h3>
+          <div class="space-y-3">
+            <p class="text-xs text-slate-400">Konumunuza göre gezilecek yerler, kafeler ve oteller için kısayollar.</p>
+            <div class="grid grid-cols-3 gap-3 pt-1">
+              <a href="${nearbyTouristUrl}" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                ${ICONS.mapPin.replace('w-4 h-4', 'w-6 h-6')}
+                <span class="text-[11px] font-bold text-white/90 text-center leading-tight">Gezilecek Yerler</span>
+              </a>
+              <a href="${nearbyCafeUrl}" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                ${ICONS.restaurant.replace('w-4 h-4', 'w-6 h-6')}
+                <span class="text-[11px] font-bold text-white/90 text-center leading-tight">Cafe & Restoran</span>
+              </a>
+              <a href="${nearbyHotelUrl}" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                ${ICONS.bed.replace('w-4 h-4', 'w-6 h-6')}
+                <span class="text-[11px] font-bold text-white/90 text-center leading-tight">Otel / Konaklama</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAĞLIK POPUP -->
+      <div id="helper-health" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Sağlık ve Güvenlik</h3>
+          <div class="space-y-3">
+            <p class="text-xs text-slate-400">Konumunuza göre sağlık ve güvenlik kısayolları.</p>
+            <div class="grid grid-cols-3 gap-3 pt-1">
+              <a href="${nearbyHospitalUrl}" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                ${ICONS.hospital.replace('w-4 h-4', 'w-6 h-6')}
+                <span class="text-[11px] font-bold text-white/90 text-center leading-tight">Hastane</span>
+              </a>
+              <a href="${nearbyPharmacyUrl}" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                ${ICONS.pharmacy.replace('w-4 h-4', 'w-6 h-6')}
+                <span class="text-[11px] font-bold text-white/90 text-center leading-tight">Eczane</span>
+              </a>
+              <a href="${nearbyPoliceUrl}" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                ${ICONS.police.replace('w-4 h-4', 'w-6 h-6')}
+                <span class="text-[11px] font-bold text-white/90 text-center leading-tight">Polis / Güvenlik</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ULAŞIM POPUP -->
+      <div id="helper-transport" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Ulaşım ve Haritalar</h3>
+          <div class="space-y-3">
+            <p class="text-xs text-slate-400">Toplu taşıma ve harita uygulamalarına hızlı erişim.</p>
+            <div class="grid grid-cols-3 gap-3 pt-1">
+              <a href="https://maps.google.com/maps?output=classic" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                ${ICONS.mapPin.replace('w-4 h-4', 'w-6 h-6')}
+                <div class="text-[10px] font-bold text-white text-center leading-tight">Google Haritalar</div>
+              </a>
+              <a href="https://moovitapp.com/" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                <div class="text-xl mb-1">🚌</div>
+                <div class="text-[10px] font-bold text-white text-center leading-tight">Moovit</div>
+              </a>
+              <a href="https://www.uber.com/" target="_blank" class="flex flex-col items-center justify-center gap-1 bg-slate-700/60 border border-slate-700/50 rounded-xl px-2 py-3 hover:bg-slate-700 transition shadow-sm">
+                ${ICONS.taxi.replace('w-4 h-4', 'w-6 h-6')}
+                <div class="text-[10px] font-bold text-white text-center leading-tight">Uber / Taksi</div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VERİ / YEDEK POPUP -->
+      <div id="helper-data" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Veri Yönetimi (Yedekleme / Yükleme)</h3>
+          <div class="space-y-3">
+            <p class="text-sm text-slate-400 mb-1">
+              Tüm uygulama verilerinizi JSON formatında dışa aktarabilir veya geri yükleyebilirsiniz.
+            </p>
+            <textarea id="io-txt" class="w-full h-48 bg-black/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono outline-none focus:border-teal-400 placeholder-slate-500"
+              placeholder="Veri yedeği burada görünecek veya buraya yapıştırarak içe aktarabilirsiniz.">${esc(dataExport)}</textarea>
+            <div class="flex flex-col sm:flex-row gap-3 pt-1">
+              <button data-act="copy-json" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 py-2.5 rounded-lg font-medium text-sm">
+                Kopyala
+              </button>
+              <button data-act="imp" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-bold text-sm">
+                Yükle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
 
   function renderForm(){
     const f = state.form;
