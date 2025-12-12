@@ -2940,7 +2940,7 @@ const helperCard = (href, emoji, label) => {
 
   function renderForm(){
     const f = state.form;
-    const trips = [...new Set(state.exp.map(x=>x.trip).filter(Boolean))].sort();
+    const trips = getDistinctTripsAll().sort();
     
     const imagesCount = f.imgs ? f.imgs.length : 0;
     const isImageLimitReached = imagesCount >= MAX_IMAGES;
