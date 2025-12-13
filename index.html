@@ -309,6 +309,21 @@ function isGuest(){
       return [...new Set([...fromExp, ...fromRes])];
   }
 
+  function getCurrencyForTrip(tripName){
+      if(!tripName) return state.baseCurrency || BASE_CURRENCY;
+      const t = String(tripName || '').toLowerCase();
+      const fromExp = (state && state.exp ? state.exp : [])
+          .filter(x => (x.trip || '').toLowerCase() === t && x.cur);
+      if(!fromExp.length) return state.baseCurrency || BASE_CURRENCY;
+      const freq = {};
+      fromExp.forEach(x => {
+          const cur = x.cur || BASE_CURRENCY;
+          freq[cur] = (freq[cur] || 0) + 1;
+      });
+      return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+  }
+
+
   function guestTripLimitExceeded(newTripName){
       if (!newTripName) return false;
       const trips = getDistinctTripsAll();
@@ -1036,6 +1051,8 @@ function buildReportHtml(payload){
         chartCurrency: preferredBaseCurrency, 
         baseCurrency: preferredBaseCurrency, 
         reportCurrency: preferredBaseCurrency, 
+        quickExp: { trip: '', cat: 'food', amt: '', cur: preferredBaseCurrency },
+        quickExpOpen: false,
     };
     
     state.openChkCats={}; 
@@ -3428,7 +3445,78 @@ const helperCard = (href, emoji, label) => {
     return '';
   }
 
-  function renderApp(){
+  
+  function renderQuickExpensePanel(){
+      const baseCur = state.baseCurrency || BASE_CURRENCY;
+      const q = state.quickExp || { trip: '', cat: 'food', amt: '', cur: baseCur };
+      const allTrips = getDistinctTripsAll();
+      const tripOptions = allTrips.map(t => `<option value="${esc(t)}">`).join('');
+      const autoCur = getCurrencyForTrip(q.trip || '');
+      const cur = (q.cur && q.cur.trim()) || autoCur || baseCur;
+
+      const catDefs = [
+          { id: 'food',      label: 'Cafe',    icon: CATS.food.i },
+          { id: 'shopping',  label: 'Market',  icon: CATS.shopping.i },
+          { id: 'transport', label: 'Ulaşım',  icon: CATS.transport.i },
+          { id: 'other',     label: 'Diğer',   icon: CATS.other.i },
+      ];
+
+      const catButtons = catDefs.map(c => {
+          const active = q.cat ? q.cat === c.id : c.id === 'food';
+          const baseCls = "px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 border backdrop-blur";
+          const cls = active
+            ? baseCls + " bg-amber-500 text-white border-amber-300 shadow"
+            : baseCls + " bg-slate-900/60 text-slate-200 border-slate-600 hover:bg-slate-800";
+          return `<button type="button" data-act="quick-set-cat" data-val="${c.id}" class="${cls}">
+                      <span>${c.icon}</span><span>${c.label}</span>
+                  </button>`;
+      }).join('');
+
+      return `
+        <div class="fixed inset-x-0 bottom-0 z-40 px-4 pb-4">
+          <div class="mx-auto max-w-md rounded-2xl border border-slate-700/70 bg-slate-900/95 shadow-2xl backdrop-blur-xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="text-xs font-semibold uppercase tracking-wide text-amber-300">Hızlı Harcama</div>
+              <button type="button" data-act="open-quick-exp" class="text-slate-400 hover:text-white text-xs">Kapat</button>
+            </div>
+            <div class="space-y-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Seyahat</label>
+                <div class="relative">
+                  <input id="q-trip" list="dl-all-trips-quick"
+                         class="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-400"
+                         placeholder="Seyahat adı yaz veya seç"
+                         value="${esc(q.trip || '')}">
+                  <datalist id="dl-all-trips-quick">${tripOptions}</datalist>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                ${catButtons}
+              </div>
+              <div class="flex items-end gap-3">
+                <div class="flex-1">
+                  <label class="block text-[10px] text-slate-400 mb-1">Tutar</label>
+                  <input id="q-amt" type="number" min="0" step="0.01"
+                         class="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-400"
+                         placeholder="0,00">
+                </div>
+                <div class="w-[72px]">
+                  <label class="block text-[10px] text-slate-400 mb-1">Para Birimi</label>
+                  <div class="bg-slate-900/80 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-slate-100 text-center">
+                    <span id="q-cur">${cur}</span>
+                  </div>
+                </div>
+              </div>
+              <button type="button" data-act="save-quick-exp"
+                      class="w-full mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-xs font-semibold text-slate-900 py-2 shadow-lg shadow-amber-500/40">
+                ${ICONS.wallet.replace('w-4 h-4','w-4 h-4')} Hızlı Kaydet
+              </button>
+            </div>
+          </div>
+        </div>`;
+  }
+
+function renderApp(){
     try {
         const root=document.getElementById('app-root');
         
@@ -3465,10 +3553,25 @@ const helperCard = (href, emoji, label) => {
              h+= renderOtherTab();
           } 
 
-          // Yalnızca Harcamalar sekmesindeyken + butonu göster
+          // Yalnızca Harcamalar sekmesindeyken + ve Hızlı Ekle butonlarını göster
           if(state.tab==='exp'){
-            h+=`<button data-act="new" class="fixed bottom-6 right-6 w-12 h-12 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full shadow-2xl shadow-cyan-600/40 flex items-center justify-center transition transform hover:scale-105 active:scale-95 z-40 border border-white/10">${ICONS.plus.replace('w-4 h-4', 'w-5 h-5')}</button>`;
+            h+=`
+              <div class="fixed bottom-6 right-6 z-40 flex items-center gap-3">
+                <button data-act="open-quick-exp"
+                        class="w-11 h-11 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 rounded-full shadow-2xl shadow-amber-500/40 flex items-center justify-center transition transform hover:scale-105 active:scale-95 border border-white/10">
+                  ${ICONS.wallet.replace('w-4 h-4', 'w-5 h-5')}
+                </button>
+                <button data-act="new"
+                        class="w-12 h-12 bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 rounded-full shadow-2xl shadow-cyan-600/40 flex items-center justify-center transition transform hover:scale-105 active:scale-95 border border-white/10">
+                  ${ICONS.plus.replace('w-4 h-4', 'w-5 h-5')}
+                </button>
+              </div>`;
           }
+
+          if(state.quickExpOpen){
+            h+= renderQuickExpensePanel();
+          }
+
         } else {
           h+= renderForm();
         }
@@ -3693,11 +3796,102 @@ if (act === 'auth-close') {
         renderApp();
     }
     if(act==='new'){
-        state.form=getEmptyForm(); 
-        if(state.tripFilter)state.form.trip=state.tripFilter; 
-        state.view='form'; 
+        state.form = getEmptyForm(); 
+        if(state.tripFilter){
+            state.form.trip = state.tripFilter; 
+            const suggestedCur = getCurrencyForTrip(state.tripFilter);
+            if (suggestedCur) {
+                state.form.cur = suggestedCur;
+            } else {
+                state.form.cur = state.baseCurrency || BASE_CURRENCY;
+            }
+        } else {
+            state.form.cur = state.baseCurrency || BASE_CURRENCY;
+        }
+        state.view = 'form'; 
         state.form.isFuel = false;
         renderApp();
+    }
+
+        if(act==='open-quick-exp'){
+        state.quickExpOpen = !state.quickExpOpen;
+        if(state.quickExpOpen){
+            const baseCur = state.baseCurrency || BASE_CURRENCY;
+            if(!state.quickExp){
+                state.quickExp = { trip: '', cat: 'food', amt: '', cur: baseCur };
+            }
+            if(state.tripFilter){
+                state.quickExp.trip = state.tripFilter;
+                const tcur = getCurrencyForTrip(state.tripFilter);
+                state.quickExp.cur = tcur || baseCur;
+            } else {
+                const tcur = getCurrencyForTrip(state.quickExp.trip || '');
+                state.quickExp.cur = tcur || baseCur;
+            }
+        }
+        state.err = '';
+        renderApp();
+        return;
+    }
+if(act==='quick-set-cat'){
+        state.quickExp = state.quickExp || { trip: '', cat: 'food', amt: '', cur: state.baseCurrency || BASE_CURRENCY };
+        state.quickExp.cat = val || 'food';
+        renderApp();
+        return;
+    }
+    if(act==='save-quick-exp'){
+        const tripInput = document.getElementById('q-trip');
+        const amtInput  = document.getElementById('q-amt');
+
+        const tripRaw = tripInput ? tripInput.value.trim() : '';
+        const trip    = titleCase(tripRaw);
+        const amt     = parseFloat(amtInput ? amtInput.value : '');
+        const cat     = (state.quickExp && state.quickExp.cat) || 'other';
+
+        if (!trip || !amt || isNaN(amt) || amt <= 0) {
+            state.err = 'Lütfen seyahat ve tutar bilgilerini girin.';
+            renderApp();
+            return;
+        }
+
+        const cur = getCurrencyForTrip(trip) || state.baseCurrency || BASE_CURRENCY;
+
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+
+        const defaultPlaceMap = {
+            food:      'Cafe',
+            shopping:  'Market',
+            transport: 'Ulaşım',
+            other:     'Diğer'
+        };
+
+        const newExp = {
+            id: genId(),
+            trip,
+            city: 'Genel',
+            place: defaultPlaceMap[cat] || 'Hızlı Harcama',
+            cat,
+            type: EXPENSE_TYPES[0].id,
+            isIndividual: false,
+            amt,
+            cur,
+            date: dateStr,
+            time: timeStr,
+            imgs: [],
+            isFuel: false,
+            startKm: '',
+            endKm: '',
+            fuelAmount: ''
+        };
+
+        state.exp.push(newExp);
+        state.quickExpOpen = false;
+        state.quickExp = { trip: '', cat, amt: '', cur };
+        save();
+        renderApp();
+        return;
     }
     if(act==='cancel'){
         state.view='list'; 
