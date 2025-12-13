@@ -2713,6 +2713,8 @@ const helperCard = (href, emoji, label) => {
   ${helperCard('#helper-health',      '⚕️', 'Sağlık')}
   ${helperCard('#helper-transport',   '🚌', 'Ulaşım')}
   ${helperCard('#helper-data',        '💾', 'Veri / Yedek')}
+  ${helperCard('#helper-help',        '❓', 'Yardım')}
+
 </div>
 
       <!-- REZERVASYONLAR POPUP -->
@@ -2978,6 +2980,74 @@ const helperCard = (href, emoji, label) => {
       </div>
 
     </div>
+      <!-- YARDIM / KULLANIM KILAVUZU POPUP -->
+      <div id="helper-help" class="helper-modal">
+        <div class="helper-modal-inner relative">
+          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
+            ${ICONS.x}
+          </a>
+          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">
+            Yardım / Kullanım Kılavuzu
+          </h3>
+
+          <div class="space-y-3 text-xs leading-relaxed text-slate-200">
+            <p>
+              <strong>1. Amaç</strong><br>
+              Bu uygulama, seyahat bazlı harcamalarını, rezervasyonlarını, notlarını ve checklist’ini tek ekranda
+              toplamak için tasarlanmıştır.
+            </p>
+
+            <p>
+              <strong>2. Giriş (Login)</strong><br>
+              Sağ üstteki login ikonundan Google ile giriş yaparsın. Giriş başarılı olursa ikon yeşile döner.
+              İkona tekrar bastığında e-posta adresini ve Çıkış butonunu görürsün.
+            </p>
+
+            <p>
+              <strong>3. Ana Sekmeler</strong><br>
+              <em>Özet:</em> Tüm seyahatler toplamı, bugünün harcaması, yaklaşan plan ve son harcamalar.<br>
+              <em>Seyahatler:</em> Seyahat kartları; kartlara tıklayarak filtreleme.<br>
+              <em>Harcamalar:</em> Harcama listesi; turkuaz + ile detaylı form, turuncu ⚡ ile hızlı harcama paneli.<br>
+              <em>Rezervasyonlar:</em> Uçuş / otel / araç vb. kayıtları.<br>
+              <em>Notlar & Checklist:</em> Seyahat notları ve yapılacaklar listesi.
+            </p>
+
+            <p>
+              <strong>4. Detaylı Harcama Ekleme</strong><br>
+              Harcamalar sekmesinde sağ alttaki turkuaz + butonunu kullanırsın. Seyahat, kategori, tutar, para birimi
+              ve tarih alanlarını doldurursun. Bir seyahatte daha önce tek bir para birimi kullanıldıysa, para birimi
+              otomatik o para birimi olarak gelir.
+            </p>
+
+            <p>
+              <strong>5. Hızlı Harcama (⚡)</strong><br>
+              Turuncu buton, Hızlı Harcama panelini açar. Seyahat seç/yaz, Cafe–Market–Ulaşım–Diğer kategorilerinden birini
+              seç, tutarı gir. Seçilen seyahat için daha önce en çok kullanılan para birimi otomatik gelir; yoksa baz para
+              birimi kullanılır. “Hızlı Kaydet” ile kayıt doğrudan listeye eklenir.
+            </p>
+
+            <p>
+              <strong>6. Rezervasyonlar ve Yaklaşan Plan</strong><br>
+              Rezervasyonlar sekmesinde uçuş/otel/araç kayıtlarını tutarsın. İleri tarihli rezervasyonlar ve tarihli
+              checklist maddeleri arasından en yakını Özet ekranındaki “Yaklaşan Plan” kutusunda gösterilir
+              (örneğin “Çok Yakın! 12.03.2026: Uçuş: İstanbul → Roma”).
+            </p>
+
+            <p>
+              <strong>7. Para Birimi Özeti</strong><br>
+              Özet ekranında “Özet Para Birimi”ni (örn. TRY, EUR, USD) seçerek tüm seyahatlerin toplamını bu para
+              birimine çevrilmiş görebilirsin. Kur bilgisi ve son güncelleme zamanı aynı kart üzerinde küçük bir satırda yer alır.
+            </p>
+
+            <p>
+              <strong>8. Önerilen Kullanım Akışı</strong><br>
+              Yeni seyahat oluştur → Rezervasyonları gir → Günlük küçük harcamalar için çoğunlukla Hızlı Harcama panelini kullan → 
+              Detaylı kayıt gerektiğinde + ile formu aç → Özet ekranından toplam durum ve yaklaşan planları düzenli kontrol et.
+            </p>
+          </div>
+        </div>
+      </div>
+
   `;
 }
 
