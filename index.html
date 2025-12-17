@@ -965,6 +965,37 @@
                 isIndividual: false,
             });
 
+            // YENİ FONKSİYON: Google Takvim Linki Oluştur
+            function getGoogleCalendarUrl(res) {
+                const formatDate = (dateStr) => dateStr.replace(/-/g, '');
+
+                const start = formatDate(res.startDate);
+
+                // Bitiş tarihi hesapla (Tüm gün etkinliği için +1 gün)
+                const parts = (res.endDate || res.startDate).split('-');
+                const eDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                eDate.setDate(eDate.getDate() + 1);
+
+                const y = eDate.getFullYear();
+                const m = String(eDate.getMonth() + 1).padStart(2, '0');
+                const d = String(eDate.getDate()).padStart(2, '0');
+                const end = `${y}${m}${d}`;
+
+                const typeName = (RESERVATION_TYPES.find(t => t.id === res.type) || {}).l || 'Rezervasyon';
+                const title = encodeURIComponent(`${typeName}: ${res.name}`);
+
+                const details = encodeURIComponent(
+                    `Seyahat: ${res.trip || '-'}\n` +
+                    `Kod/PNR: ${res.code || '-'}\n` +
+                    `Maliyet: ${res.cost ? res.cost + ' ' + res.cur : '-'}\n\n` +
+                    `Notlar:\n${res.notes || '-'}`
+                );
+
+                const location = encodeURIComponent(res.location || '');
+
+                return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`;
+            }
+
             // YENİ FONKSİYON: Boş Seyahat Formu
             const getEmptyTripForm = () => ({
                 id: null,
@@ -1670,6 +1701,11 @@
                  <div class="text-xs font-bold text-slate-500 mb-1 uppercase">Notlar</div>
                  <p class="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">${esc(r.notes) || '<span class="italic text-slate-600">Ekstra not yok.</span>'}</p>
                </div>
+
+               <!-- GOOGLE TAKVİM BUTONU -->
+               <a href="${getGoogleCalendarUrl(r)}" target="_blank" class="block w-full text-center bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold text-sm py-3 rounded-lg border border-slate-700/50 transition mb-2 flex items-center justify-center gap-2">
+                   <span>📅</span> <span>Google Takvim'e Ekle (Web)</span>
+               </a>
 
                <div class="flex gap-3 pt-2">
                  <button data-act="del-res-detail" class="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-red-600/10 to-rose-700/10 text-red-400 border border-red-500/20 hover:from-red-600 hover:to-rose-700 hover:text-white transition flex items-center justify-center gap-1.5">
