@@ -963,6 +963,7 @@
                 notes: '',
                 completed: false,
                 isIndividual: false,
+                addToCalendar: false, // Varsayılan: Kapalı
             });
 
             // YENİ FONKSİYON: Google Takvim Linki Oluştur
@@ -1617,6 +1618,15 @@
               <textarea id="i-res-notes" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none resize-none" placeholder="Ekstra Notlar (Check-in saati, koltuk no, vb.)">${esc(f.notes)}</textarea>
 
 
+
+              <!-- GOOGLE TAKVİM SEÇENEĞİ -->
+              <div class="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-lg p-3 mb-3">
+                <input type="checkbox" id="i-res-calendar" ${f.addToCalendar ? 'checked' : ''} class="custom-checkbox w-5 h-5 rounded border-slate-600 bg-slate-700 cursor-pointer">
+                <label for="i-res-calendar" class="flex-1 text-sm text-slate-200 cursor-pointer">
+                  <span class="font-semibold">📅 Google Takvim'e Ekle</span>
+                  <span class="block text-xs text-slate-400 mt-0.5">Kaydettikten sonra Google Takvim açılacak</span>
+                </label>
+              </div>
 
               <button type="button" data-act="save-res" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow-lg shadow-blue-500/30 transition">Kaydet</button>
             </div>
@@ -4955,6 +4965,10 @@
                     const payerInput = document.getElementById('i-res-payer');
                     f.payer = (payerInput && !f.isIndividual) ? payerInput.value : '';
 
+                    // Takvime ekle seçeneğini al
+                    const calendarInput = document.getElementById('i-res-calendar');
+                    f.addToCalendar = calendarInput ? calendarInput.checked : false;
+
 
 
                     // Maliyet alanını temizle ve state'e kaydet (input eventinde bu işlem yapılmadığı için)
@@ -4989,7 +5003,18 @@
 
                     if (f.id) state.res = state.res.map(x => x.id === f.id ? rec : x); else state.res = [...state.res, rec];
 
+
                     save();
+
+                    // Eğer seçenek işaretliyse Google Takvim'i aç (Pop-up blocker'a takılmaması için kullanıcı etkileşimi zincirinde olmalı)
+                    if (f.addToCalendar) {
+                        try {
+                            const calendarUrl = getGoogleCalendarUrl(rec);
+                            window.open(calendarUrl, '_blank');
+                        } catch (e) {
+                            console.error('Takvim açılırken hata:', e);
+                        }
+                    }
 
 
 
