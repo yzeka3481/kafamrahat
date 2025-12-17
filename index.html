@@ -1032,11 +1032,6 @@
                     `SUMMARY:${escapeICS(summary)}`,
                     `DESCRIPTION:${escapeICS(description)}`,
                     `LOCATION:${escapeICS(reservation.location)}`,
-                    'BEGIN:VALARM',
-                    'ACTION:DISPLAY',
-                    `DESCRIPTION:${escapeICS(summary)}`,
-                    'TRIGGER:-P1D',
-                    'END:VALARM',
                     'END:VEVENT',
                     'END:VCALENDAR'
                 ].join('\r\n');
@@ -1046,13 +1041,8 @@
                 const link = document.createElement('a');
                 link.href = url;
 
-                // Dosya ismini tamamen ASCII karakterlere çevir
-                const safeName = toEnglishChars(reservation.name)
-                    .replace(/[^a-zA-Z0-9\s-_]/g, '')
-                    .trim()
-                    .replace(/\s+/g, '_');
-
-                link.download = `${safeName}_reservation.ics`;
+                // Dosya ismini sabitle (Test için)
+                link.download = 'rezervasyon.ics';
 
                 document.body.appendChild(link);
                 link.click();
