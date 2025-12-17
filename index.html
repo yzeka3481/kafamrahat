@@ -2838,20 +2838,21 @@
                     return `
         <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden relative group">
           
-          <button data-act="tog-city" data-val="${esc(city)}" data-city-name="${esc(city)}" class="w-full flex items-center p-3 hover:bg-slate-800 transition relative">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600/70" style="background-color:${cityColor}"></div>
-            
-            <div class="pl-3 text-left flex-1 min-w-0 pr-16">
-              <div class="font-bold text-sm text-slate-200">${esc(city)}</div>
-              <div class="text-[10px] text-slate-500 mt-0.5">${lst.length} harcama · Toplam: <span class="text-slate-300 font-bold">${sumTxt}</span></div>
-            </div>
-            
-            <!-- KRİTİK DÜZELTME: Artık data-act="del-city" ile buton içinde. -->
-            <button data-act="del-city" type="button" data-val="${esc(city)}" class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-600 hover:text-red-400 hover:bg-slate-700 rounded-full transition z-20">
-                ${ICONS.trash.replace('w-4 h-4', 'w-3.5 h-3.5')}
-            </button>
-            
-          </button>
+          <div class="relative w-full">
+              <button data-act="tog-city" data-val="${esc(city)}" data-city-name="${esc(city)}" class="w-full flex items-center p-3 hover:bg-slate-800 transition relative text-left">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600/70" style="background-color:${cityColor}"></div>
+                
+                <div class="pl-3 flex-1 min-w-0 pr-16">
+                  <div class="font-bold text-sm text-slate-200">${esc(city)}</div>
+                  <div class="text-[10px] text-slate-500 mt-0.5">${lst.length} harcama · Toplam: <span class="text-slate-300 font-bold">${sumTxt}</span></div>
+                </div>
+              </button>
+              
+              <!-- Silme butonu artık wrapper içinde ve toggle butonundan bağımsız -->
+              <button data-act="del-city" type="button" data-val="${esc(city)}" class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-600 hover:text-red-400 hover:bg-slate-700 rounded-full transition z-20">
+                  ${ICONS.trash.replace('w-4 h-4', 'w-3.5 h-3.5')}
+              </button>
+          </div>
           
           <div class="bg-slate-100 border-t border-slate-300 ${expd ? 'rounded-b-2xl' : ''}">
             ${expd ? lst.map((x, index) => {
