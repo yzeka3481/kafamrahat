@@ -1037,7 +1037,7 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+                setTimeout(() => { URL.revokeObjectURL(url); }, 100);
             }
 
             // YENİ FONKSİYON: Boş Seyahat Formu
@@ -3658,7 +3658,8 @@
                 <input type="checkbox" id="i-isIndividual" ${f.isIndividual ? 'checked' : ''} class="custom-checkbox w-5 h-5 rounded border-slate-600 bg-slate-700 focus:ring-blue-500" onchange="document.getElementById('payer-wrapper').style.display = this.checked ? 'none' : 'block'">
             </div>
 
-            <div>
+            <!-- KATEGORİ SEÇİMİ (YUKARI TAŞINDI) -->
+            <div class="mb-3">
                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase">Kategori</label>
                <div class="flex gap-2 overflow-x-auto pb-2 scrl">
                  ${Object.values(CATS).map(c => `
@@ -3666,6 +3667,7 @@
                      <span class="text-xl mb-1">${c.i}</span><span class="text-[9px] font-bold">${esc(c.l)}</span>
                    </button>`).join('')}
                </div>
+            </div>
 
             <!-- HARCAMAYI YAPAN (PAYER) - DİNAMİK -->
             <div id="payer-wrapper" style="display: ${f.isIndividual ? 'none' : 'block'}">
@@ -3736,7 +3738,8 @@
   </div>
 </div>
 
-            </div>
+
+
 
             <textarea id="i-desc" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none resize-none" placeholder="Not ekle...">${esc(f.desc)}</textarea>
 
