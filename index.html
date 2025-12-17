@@ -3312,7 +3312,7 @@
                   <span class="text-lg">🏠</span>
                   <h4 class="font-bold text-white text-sm">1. Uygulama Tanıtımı</h4>
                 </div>
-                <img src="guide-images/intro.png" alt="Uygulama tanıtımı" class="w-full rounded-lg border border-slate-700 mb-3" />
+
                 <p class="text-xs text-slate-300 leading-relaxed">
                   Bu uygulama; seyahat harcamalarınızı, rezervasyonlarınızı ve kimin kime ne kadar borcu olduğunu tek bir yerden takip etmenizi sağlar.
                   <br/><br/>
@@ -3332,7 +3332,7 @@
                   <span class="text-lg">🧳</span>
                   <h4 class="font-bold text-white text-sm">2. Seyahat Oluşturma</h4>
                 </div>
-                <img src="guide-images/new_trip.png" alt="Yeni seyahat formu" class="w-full rounded-lg border border-slate-700 mb-3" />
+
                 <p class="text-xs text-slate-300 leading-relaxed">
                   Harcama veya rezervasyon eklerken <strong class="text-emerald-300">"+ Yeni Seyahat Oluştur"</strong> seçeneğini kullanın.
                   <br/><br/>
@@ -3349,7 +3349,7 @@
                   <span class="text-lg">💰</span>
                   <h4 class="font-bold text-white text-sm">3. Harcama Ekleme</h4>
                 </div>
-                <img src="guide-images/add_expense.png" alt="Harcama formu" class="w-full rounded-lg border border-slate-700 mb-3" />
+
                 <p class="text-xs text-slate-300 leading-relaxed">
                   <strong class="text-cyan-300">+</strong> butonuna tıklayarak yeni harcama ekleyin.
                   <br/><br/>
@@ -3368,7 +3368,7 @@
                   <span class="text-lg">👥</span>
                   <h4 class="font-bold text-white text-sm">4. Bireysel / Ortak Harcama</h4>
                 </div>
-                <img src="guide-images/shared.png" alt="Bireysel ortak seçimi" class="w-full rounded-lg border border-slate-700 mb-3" />
+
                 <p class="text-xs text-slate-300 leading-relaxed">
                   <strong class="text-purple-300">Ortak:</strong> Tüm katılımcılar arasında eşit bölünür. Kimin ödediğini seçin.
                   <br/>
@@ -3386,7 +3386,7 @@
                   <span class="text-lg">📊</span>
                   <h4 class="font-bold text-white text-sm">5. Borç Dağılımı Raporu</h4>
                 </div>
-                <img src="guide-images/debt.png" alt="Borç dağılımı raporu" class="w-full rounded-lg border border-slate-700 mb-3" />
+
                 <p class="text-xs text-slate-300 leading-relaxed">
                   <strong class="text-white">Diğer → Rapor</strong> menüsünden bir seyahat seçtiğinizde:
                   <br/><br/>
@@ -3404,7 +3404,7 @@
                   <span class="text-lg">✈️</span>
                   <h4 class="font-bold text-white text-sm">6. Rezervasyonlar</h4>
                 </div>
-                <img src="guide-images/reservations.png" alt="Rezervasyonlar" class="w-full rounded-lg border border-slate-700 mb-3" />
+
                 <p class="text-xs text-slate-300 leading-relaxed">
                   Uçak, otel veya aktivite rezervasyonlarınızı ekleyin.
                   <br/><br/>
@@ -4471,6 +4471,14 @@
                     renderApp();
                 }
 
+                // YENİ: Seyahat Yönetimi popup'ından yeni seyahat ekleme
+                if (act === 'new-trip') {
+                    state.tripForm = getEmptyTripForm();
+                    state.modals.tripForm = true;
+                    window.location.hash = '#'; // Helper menüyü kapat
+                    renderApp();
+                }
+
                 if (act === 'cancel-trip') {
                     state.modals.tripForm = false;
                     if (state.tripFilter) state.resForm.trip = state.tripFilter;
@@ -4541,12 +4549,45 @@
                 if (act === 'del-trip') {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (confirm('Bu seyahati SİLMEK istediğinize emin misiniz?')) {
+
+                    // Silinecek seyahati bul
+                    const tripToDelete = state.trips.find(t => t.id === id);
+                    if (!tripToDelete) return;
+
+                    const tripName = tripToDelete.name;
+
+                    // İlişkili harcama ve rezervasyon sayısını hesapla
+                    const relatedExpCount = state.exp.filter(x => x.trip === tripName).length;
+                    const relatedResCount = state.res.filter(r => r.trip === tripName).length;
+                    const relatedNotesCount = state.criticalNotes.filter(n => n.trip === tripName).length;
+
+                    // Uyarı mesajını oluştur
+                    let warningMsg = `"${tripName}" seyahatini silmek istediğinize emin misiniz?\n\n`;
+                    if (relatedExpCount > 0 || relatedResCount > 0 || relatedNotesCount > 0) {
+                        warningMsg += `⚠️ DİKKAT: Bu işlem ile birlikte aşağıdaki kayıtlar da SİLİNECEK:\n`;
+                        if (relatedExpCount > 0) warningMsg += `• ${relatedExpCount} harcama kaydı\n`;
+                        if (relatedResCount > 0) warningMsg += `• ${relatedResCount} rezervasyon\n`;
+                        if (relatedNotesCount > 0) warningMsg += `• ${relatedNotesCount} not\n`;
+                        warningMsg += `\nBu işlem geri alınamaz!`;
+                    }
+
+                    if (confirm(warningMsg)) {
+                        // Seyahati sil
                         state.trips = state.trips.filter(t => t.id !== id);
+                        // İlişkili harcamaları sil
+                        state.exp = state.exp.filter(x => x.trip !== tripName);
+                        // İlişkili rezervasyonları sil
+                        state.res = state.res.filter(r => r.trip !== tripName);
+                        // İlişkili notları sil
+                        state.criticalNotes = state.criticalNotes.filter(n => n.trip !== tripName);
+
                         state.modals.tripForm = false;
                         save();
                         renderApp();
+                        // Silme sonrası seyahat yönetimi popup'ını aç
+                        setTimeout(() => { window.location.hash = 'helper-trips'; }, 50);
                     }
+                    return;
                 }
                 if (act === 'cancel-res') {
                     state.modals.resForm = false;
