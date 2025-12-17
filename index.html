@@ -969,7 +969,6 @@
             // YENİ FONKSİYON: ICS (iCalendar) Dosyası Oluştur ve İndir (Android + iOS uyumlu)
             function downloadCalendarEvent(reservation) {
                 const formatICSDate = (dateStr) => {
-                    // YYYY-MM-DD formatını YYYYMMDD formatına çevir
                     return dateStr.replace(/-/g, '');
                 };
 
@@ -982,27 +981,41 @@
                         .replace(/\n/g, '\\n');
                 };
 
-                const startDate = formatICSDate(reservation.startDate);
-                const endDate = reservation.endDate ? formatICSDate(reservation.endDate) : startDate;
+                // Türkçe karakterleri İngilizceye çevir (Safari dosya ismi uyumluluğu için)
+                const toEnglishChars = (str) => {
+                    const map = {
+                        'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'İ': 'i', 'ö': 'o', 'ç': 'c',
+                        'Ğ': 'G', 'Ü': 'U', 'Ş': 'S', 'I': 'I', 'Ö': 'O', 'Ç': 'C'
+                    };
+                    return str.replace(/[ğüşıİöçĞÜŞIÖÇ]/g, (match) => map[match]);
+                };
 
-                // Bitiş tarihini bir gün sonraya ayarla (iCalendar tüm gün etkinlikleri için)
-                const endDateObj = new Date(reservation.endDate || reservation.startDate);
-                endDateObj.setDate(endDateObj.getDate() + 1);
-                const endDateFormatted = endDateObj.toISOString().slice(0, 10).replace(/-/g, '');
+                const startDate = formatICSDate(reservation.startDate);
+
+                // Bitiş tarihi hesaplama (Daha güvenli yöntem)
+                // String'i manuel parse et (YYYY-MM-DD)
+                const parts = (reservation.endDate || reservation.startDate).split('-');
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1; // Ay 0-tabanlı
+                const day = parseInt(parts[2], 10);
+
+                const endDateObj = new Date(year, month, day);
+                endDateObj.setDate(endDateObj.getDate() + 1); // 1 gün ekle
+
+                const y = endDateObj.getFullYear();
+                const m = String(endDateObj.getMonth() + 1).padStart(2, '0');
+                const d = String(endDateObj.getDate()).padStart(2, '0');
+                const endDateFormatted = `${y}${m}${d}`;
 
                 const resTypeName = (RESERVATION_TYPES.find(t => t.id === reservation.type) || {}).l || 'Rezervasyon';
 
-                // Açıklama metnini oluştur
                 let description = `${resTypeName} - ${reservation.name}`;
                 if (reservation.code) description += `\\nKod: ${reservation.code}`;
                 if (reservation.trip) description += `\\nSeyahat: ${reservation.trip}`;
                 if (reservation.cost) description += `\\nMaliyet: ${reservation.cost} ${reservation.cur}`;
                 if (reservation.notes) description += `\\nNotlar: ${reservation.notes.replace(/\n/g, '\\n')}`;
 
-                // Başlık
                 const summary = `${resTypeName}: ${reservation.name}`;
-
-                // Benzersiz ID oluştur
                 const uid = `${reservation.id}@travel-expense-app`;
 
                 const icsContent = [
@@ -1013,7 +1026,7 @@
                     'METHOD:PUBLISH',
                     'BEGIN:VEVENT',
                     `UID:${uid}`,
-                    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`,
+                    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'}`,
                     `DTSTART;VALUE=DATE:${startDate}`,
                     `DTEND;VALUE=DATE:${endDateFormatted}`,
                     `SUMMARY:${escapeICS(summary)}`,
@@ -1021,23 +1034,32 @@
                     `LOCATION:${escapeICS(reservation.location)}`,
                     'BEGIN:VALARM',
                     'ACTION:DISPLAY',
-                    `DESCRIPTION:${escapeICS(summary)} - Yarın!`,
-                    'TRIGGER:-P1D', // 1 gün önce hatırlatma
+                    `DESCRIPTION:${escapeICS(summary)}`,
+                    'TRIGGER:-P1D',
                     'END:VALARM',
                     'END:VEVENT',
                     'END:VCALENDAR'
                 ].join('\r\n');
 
-                // Dosyayı indir
-                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const blob = new Blob([icsContent], { type: 'text/calendar' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `${reservation.name.replace(/[^a-zA-Z0-9ğüşöçıİĞÜŞÖÇ\s]/g, '').replace(/\s+/g, '_')}_rezervasyon.ics`;
+
+                // Dosya ismini tamamen ASCII karakterlere çevir
+                const safeName = toEnglishChars(reservation.name)
+                    .replace(/[^a-zA-Z0-9\s-_]/g, '')
+                    .trim()
+                    .replace(/\s+/g, '_');
+
+                link.download = `${safeName}_reservation.ics`;
+
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                setTimeout(() => { URL.revokeObjectURL(url); }, 100);
+
+                // Safari için daha uzun süre bekle
+                setTimeout(() => { URL.revokeObjectURL(url); }, 2000);
             }
 
             // YENİ FONKSİYON: Boş Seyahat Formu
