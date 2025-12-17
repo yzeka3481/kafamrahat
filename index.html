@@ -1016,7 +1016,8 @@
                 if (reservation.notes) description += `\\nNotlar: ${reservation.notes.replace(/\n/g, '\\n')}`;
 
                 const summary = `${resTypeName}: ${reservation.name}`;
-                const uid = `${reservation.id}@travel-expense-app`;
+                // Benzersiz ID oluştur (Timestamp eklenerek çakışma önlenir)
+                const uid = `${reservation.id}_${Date.now()}@travel-expense-app`;
 
                 const icsContent = [
                     'BEGIN:VCALENDAR',
