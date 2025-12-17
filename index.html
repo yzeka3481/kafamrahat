@@ -2725,10 +2725,30 @@
                 const labelPassiveCls = "text-[9px] font-extrabold uppercase leading-none text-slate-400 mt-1";
 
                 const tabs = [
-                    { id: 'sum', label: 'ÖZET', icon: ICONS.home, color: MENU_ICON_COLORS.sum },
-                    { id: 'exp', label: 'HARCAMA', icon: ICONS.wallet, color: MENU_ICON_COLORS.exp },
-                    { id: 'chk', label: 'CHECK LIST', icon: ICONS.briefcase, color: MENU_ICON_COLORS.chk },
-                    { id: 'other', label: 'DİĞER', icon: ICONS.more, color: MENU_ICON_COLORS.other },
+                    {
+                        id: 'sum',
+                        label: 'ÖZET',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" /><path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" /></svg>`,
+                        color: MENU_ICON_COLORS.sum
+                    },
+                    {
+                        id: 'exp',
+                        label: 'HARCAMA',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M4.5 3.75a3 3 0 00-3 3v.75h21v-.75a3 3 0 00-3-3h-15z" /><path fill-rule="evenodd" d="M22.5 9.75h-21v7.5a3 3 0 003 3h15a3 3 0 003-3v-7.5zm-18 3.75a.75.75 0 01.75-.75h6a.75.75 0 010 1.5h-6a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5h3a.75.75 0 000-1.5h-3z" clip-rule="evenodd" /></svg>`,
+                        color: MENU_ICON_COLORS.exp
+                    },
+                    {
+                        id: 'chk',
+                        label: 'CHECK LIST',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M2.625 6.75a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm4.875 0A.75.75 0 018.25 6h12a.75.75 0 010 1.5h-12a.75.75 0 01-.75-.75zM2.625 12a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zM7.5 12a.75.75 0 01.75-.75h12a.75.75 0 010 1.5h-12A.75.75 0 017.5 12zm-4.875 5.25a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0zm4.875 0a.75.75 0 01.75-.75h12a.75.75 0 010 1.5h-12a.75.75 0 01-.75-.75z" clip-rule="evenodd" /></svg>`,
+                        color: MENU_ICON_COLORS.chk
+                    },
+                    {
+                        id: 'other',
+                        label: 'DİĞER',
+                        icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M3 6a3 3 0 013-3h2.25a3 3 0 013 3v2.25a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm9.75 0a3 3 0 013-3H18a3 3 0 013 3v2.25a3 3 0 01-3 3h-2.25a3 3 0 01-3-3V6zM3 15.75a3 3 0 013-3h2.25a3 3 0 013 3V18a3 3 0 01-3 3H6a3 3 0 01-3-3v-2.25zm9.75 0a3 3 0 013-3H18a3 3 0 013 3V18a3 3 0 01-3 3h-2.25a3 3 0 01-3-3v-2.25z" clip-rule="evenodd" /></svg>`,
+                        color: MENU_ICON_COLORS.other
+                    },
                 ];
 
                 return `
@@ -2736,8 +2756,12 @@
         ${tabs.map(tab => {
                     const isActive = t === tab.id;
                     const btnCls = isActive ? activeBtnCls : passiveBtnCls;
-                    const iconGradient = isActive ? tab.color : 'from-slate-900/80 to-slate-800/80';
-                    const iconTextCls = isActive ? 'text-cyan-900' : 'text-slate-100';
+                    // YENİ: Pasifken de rengi göster ama soft ve biraz soluk olsun
+                    const iconGradient = isActive ? tab.color : tab.color + ' opacity-40 saturate-[0.6]';
+
+                    // YENİ: İkon her zaman beyaz olsun (renkli zemin üzerinde)
+                    const iconTextCls = 'text-white drop-shadow-sm';
+
                     const labelCls = isActive ? labelActiveCls : labelPassiveCls;
 
                     return `
