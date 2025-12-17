@@ -1037,10 +1037,18 @@
                 ].join('\r\n');
 
                 const link = document.createElement('a');
-                // Blob yerine Data URI kullan (Safari ve iOS için daha güvenilir)
-                link.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
 
-                // Dosya ismini sabitle (Test için)
+                // Base64 Encoding (En güvenli yöntem - Safari uyumlu)
+                // UTF-8 karakter desteği için encodeURIComponent trick'i kullanılır
+                try {
+                    const base64Content = btoa(unescape(encodeURIComponent(icsContent)));
+                    link.href = `data:text/calendar;base64,${base64Content}`;
+                } catch (e) {
+                    console.error('ICS encoding hatası:', e);
+                    // Fallback
+                    link.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
+                }
+
                 link.download = 'rezervasyon.ics';
 
                 document.body.appendChild(link);
