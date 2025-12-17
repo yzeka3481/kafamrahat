@@ -963,99 +963,7 @@
                 notes: '',
                 completed: false,
                 isIndividual: false,
-                addToCalendar: false, // YENİ: Takvime ekle seçeneği
             });
-
-            // YENİ FONKSİYON: ICS (iCalendar) Dosyası Oluştur ve İndir (Android + iOS uyumlu)
-            function downloadCalendarEvent(reservation) {
-                const formatICSDate = (dateStr) => {
-                    return dateStr.replace(/-/g, '');
-                };
-
-                const escapeICS = (text) => {
-                    if (!text) return '';
-                    return text
-                        .replace(/\\/g, '\\\\')
-                        .replace(/;/g, '\\;')
-                        .replace(/,/g, '\\,')
-                        .replace(/\n/g, '\\n');
-                };
-
-                // Türkçe karakterleri İngilizceye çevir (Safari dosya ismi uyumluluğu için)
-                const toEnglishChars = (str) => {
-                    const map = {
-                        'ğ': 'g', 'ü': 'u', 'ş': 's', 'ı': 'i', 'İ': 'i', 'ö': 'o', 'ç': 'c',
-                        'Ğ': 'G', 'Ü': 'U', 'Ş': 'S', 'I': 'I', 'Ö': 'O', 'Ç': 'C'
-                    };
-                    return str.replace(/[ğüşıİöçĞÜŞIÖÇ]/g, (match) => map[match]);
-                };
-
-                const startDate = formatICSDate(reservation.startDate);
-
-                // Bitiş tarihi hesaplama (Daha güvenli yöntem)
-                // String'i manuel parse et (YYYY-MM-DD)
-                const parts = (reservation.endDate || reservation.startDate).split('-');
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1; // Ay 0-tabanlı
-                const day = parseInt(parts[2], 10);
-
-                const endDateObj = new Date(year, month, day);
-                endDateObj.setDate(endDateObj.getDate() + 1); // 1 gün ekle
-
-                const y = endDateObj.getFullYear();
-                const m = String(endDateObj.getMonth() + 1).padStart(2, '0');
-                const d = String(endDateObj.getDate()).padStart(2, '0');
-                const endDateFormatted = `${y}${m}${d}`;
-
-                const resTypeName = (RESERVATION_TYPES.find(t => t.id === reservation.type) || {}).l || 'Rezervasyon';
-
-                let description = `${resTypeName} - ${reservation.name}`;
-                if (reservation.code) description += `\\nKod: ${reservation.code}`;
-                if (reservation.trip) description += `\\nSeyahat: ${reservation.trip}`;
-                if (reservation.cost) description += `\\nMaliyet: ${reservation.cost} ${reservation.cur}`;
-                if (reservation.notes) description += `\\nNotlar: ${reservation.notes.replace(/\n/g, '\\n')}`;
-
-                const summary = `${resTypeName}: ${reservation.name}`;
-                // Benzersiz ID oluştur (Timestamp eklenerek çakışma önlenir)
-                const uid = `${reservation.id}_${Date.now()}@travel-expense-app`;
-
-                const icsContent = [
-                    'BEGIN:VCALENDAR',
-                    'VERSION:2.0',
-                    'PRODID:-//Travel Expense Tracker//TR',
-                    'CALSCALE:GREGORIAN',
-                    'METHOD:PUBLISH',
-                    'BEGIN:VEVENT',
-                    `UID:${uid}`,
-                    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'}`,
-                    `DTSTART;VALUE=DATE:${startDate}`,
-                    `DTEND;VALUE=DATE:${endDateFormatted}`,
-                    `SUMMARY:${escapeICS(summary)}`,
-                    `DESCRIPTION:${escapeICS(description)}`,
-                    `LOCATION:${escapeICS(reservation.location)}`,
-                    'END:VEVENT',
-                    'END:VCALENDAR'
-                ].join('\r\n');
-
-                const link = document.createElement('a');
-
-                // Base64 Encoding (En güvenli yöntem - Safari uyumlu)
-                // UTF-8 karakter desteği için encodeURIComponent trick'i kullanılır
-                try {
-                    const base64Content = btoa(unescape(encodeURIComponent(icsContent)));
-                    link.href = `data:text/calendar;base64,${base64Content}`;
-                } catch (e) {
-                    console.error('ICS encoding hatası:', e);
-                    // Fallback
-                    link.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
-                }
-
-                link.download = 'rezervasyon.ics';
-
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
 
             // YENİ FONKSİYON: Boş Seyahat Formu
             const getEmptyTripForm = () => ({
@@ -1677,14 +1585,7 @@
               <!-- NOTLAR -->
               <textarea id="i-res-notes" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none resize-none" placeholder="Ekstra Notlar (Check-in saati, koltuk no, vb.)">${esc(f.notes)}</textarea>
 
-              <!-- TAKVİME EKLE -->
-              <div class="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-                <input type="checkbox" id="i-res-calendar" ${f.addToCalendar ? 'checked' : ''} class="custom-checkbox w-5 h-5 rounded border-slate-600 bg-slate-700 cursor-pointer">
-                <label for="i-res-calendar" class="flex-1 text-sm text-slate-200 cursor-pointer">
-                  <span class="font-semibold">📅 Takvime Ekle</span>
-                  <span class="block text-xs text-slate-400 mt-0.5">Kaydettiğinizde telefon takviminize otomatik eklenecek</span>
-                </label>
-              </div>
+
 
               <button type="button" data-act="save-res" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow-lg shadow-blue-500/30 transition">Kaydet</button>
             </div>
@@ -5018,9 +4919,7 @@
                     const payerInput = document.getElementById('i-res-payer');
                     f.payer = (payerInput && !f.isIndividual) ? payerInput.value : '';
 
-                    // Takvime ekle seçeneğini al
-                    const calendarInput = document.getElementById('i-res-calendar');
-                    f.addToCalendar = calendarInput ? calendarInput.checked : false;
+
 
                     // Maliyet alanını temizle ve state'e kaydet (input eventinde bu işlem yapılmadığı için)
                     f.cost = f.cost.replace(',', '.').replace(/[^0-9.]/g, '');
@@ -5056,10 +4955,7 @@
 
                     save();
 
-                    // Takvime ekle seçeneği işaretliyse ICS dosyasını indir
-                    if (f.addToCalendar) {
-                        downloadCalendarEvent(rec);
-                    }
+
 
                     state.err = '';
                     state.modals.resForm = false;
