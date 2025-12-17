@@ -3295,63 +3295,196 @@
     </div>
       <!-- YARDIM / KULLANIM KILAVUZU POPUP -->
       <div id="helper-help" class="helper-modal">
-        <div class="helper-modal-inner relative">
+        <div class="helper-modal-inner relative" style="max-width: 32rem; max-height: 85vh;">
           <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
             ${ICONS.x}
           </a>
           <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">
-            Yardım / Kullanım Kılavuzu
+            📖 Kullanım Kılavuzu
           </h3>
 
-          <div class="space-y-3 text-xs leading-relaxed text-slate-200">
-            <p>
-              <strong>1. Amaç</strong><br>
-              Bu uygulama; seyahat harcamalarınızı, rezervasyonlarınızı ve kimin kime ne kadar borcu olduğunu tek bir
-              yerden takip etmenizi sağlar.
-            </p>
+          <div class="space-y-6 overflow-y-auto max-h-[70vh] pr-2 scrl">
+            
+            <!-- 1. UYGULAMA TANITIMI -->
+            <div class="bg-gradient-to-br from-blue-900/40 to-slate-800/40 rounded-xl border border-blue-500/30 overflow-hidden">
+              <div class="p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">🏠</span>
+                  <h4 class="font-bold text-white text-sm">1. Uygulama Tanıtımı</h4>
+                </div>
+                <img src="guide-images/intro.png" alt="Uygulama tanıtımı" class="w-full rounded-lg border border-slate-700 mb-3" />
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Bu uygulama; seyahat harcamalarınızı, rezervasyonlarınızı ve kimin kime ne kadar borcu olduğunu tek bir yerden takip etmenizi sağlar.
+                  <br/><br/>
+                  <strong class="text-white">4 Ana Sekme:</strong>
+                  <span class="text-cyan-300">Özet</span> (genel bakış), 
+                  <span class="text-emerald-300">Harcamalar</span> (kayıtlar), 
+                  <span class="text-amber-300">Kontrol Listesi</span> (yapılacaklar), 
+                  <span class="text-purple-300">Diğer</span> (yardımcı araçlar)
+                </p>
+              </div>
+            </div>
 
-            <p>
-              <strong>2. Seyahat Yönetimi (Önemli!)</strong><br>
-              Harcama veya rezervasyon eklerken <em>"Seyahat"</em> kutusundan <strong>"+ Yeni Seyahat Oluştur"</strong> diyerek
-              seyahatinizi tanımlayabilirsiniz. Seyahate katılacak kişileri (Örn: Ali, Veli) virgülle ayırarak yazın.
-              Bu sayede uygulamanın <strong>Borç Hesaplama</strong> özelliği çalışacaktır.<br>
-              <br>
-              <em>Seyahat isimlerini veya katılımcılarını sonradan düzenlemek için <strong>Diğer -> Seyahat Yönetimi</strong> menüsünü kullanabilirsiniz.</em>
-            </p>
+            <!-- 2. SEYAHAT YÖNETİMİ -->
+            <div class="bg-gradient-to-br from-emerald-900/40 to-slate-800/40 rounded-xl border border-emerald-500/30 overflow-hidden">
+              <div class="p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">🧳</span>
+                  <h4 class="font-bold text-white text-sm">2. Seyahat Oluşturma</h4>
+                </div>
+                <img src="guide-images/new_trip.png" alt="Yeni seyahat formu" class="w-full rounded-lg border border-slate-700 mb-3" />
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Harcama veya rezervasyon eklerken <strong class="text-emerald-300">"+ Yeni Seyahat Oluştur"</strong> seçeneğini kullanın.
+                  <br/><br/>
+                  <strong class="text-white">Önemli:</strong> Seyahate katılacak kişileri <span class="text-amber-300">(Örn: Ali, Veli, Ayşe)</span> virgülle ayırarak yazın. 
+                  Bu sayede <strong class="text-cyan-300">Borç Hesaplama</strong> özelliği çalışacaktır.
+                </p>
+              </div>
+            </div>
 
-            <p>
-              <strong>3. Harcama Ekleme & Paylaşım</strong><br>
-              Harcama eklerken <strong>"Bireysel"</strong> veya <strong>"Ortak"</strong> seçimi yapabilirsiniz:<br>
-              • <strong>Ortak:</strong> Tüm seyahat katılımcıları arasında eşit bölünür. Kimin ödediğini seçersiniz (Örn: Ali ödedi).<br>
-              • <strong>Bireysel:</strong> Sadece sizi ilgilendirir, hesaplamaya dahil edilmez.
-            </p>
+            <!-- 3. HARCAMA EKLEME -->
+            <div class="bg-gradient-to-br from-cyan-900/40 to-slate-800/40 rounded-xl border border-cyan-500/30 overflow-hidden">
+              <div class="p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">💰</span>
+                  <h4 class="font-bold text-white text-sm">3. Harcama Ekleme</h4>
+                </div>
+                <img src="guide-images/add_expense.png" alt="Harcama formu" class="w-full rounded-lg border border-slate-700 mb-3" />
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  <strong class="text-cyan-300">+</strong> butonuna tıklayarak yeni harcama ekleyin.
+                  <br/><br/>
+                  • <strong class="text-white">Seyahat:</strong> Hangi seyahate ait olduğunu seçin<br/>
+                  • <strong class="text-white">Tutar:</strong> Harcama miktarını ve para birimini girin<br/>
+                  • <strong class="text-white">Kategori:</strong> Yemek, ulaşım, konaklama vb. seçin<br/>
+                  • <strong class="text-white">Fotoğraf:</strong> Fiş/fatura fotoğrafı ekleyebilirsiniz
+                </p>
+              </div>
+            </div>
 
-            <p>
-              <strong>4. Borç Dağılımı Raporu</strong><br>
-              <em>Diğer -> Rapor</em> menüsünden bir seyahat seçtiğinizde, sayfanın altında <strong>"Borç Dağılımı"</strong> tablosunu görürsünüz.
-              Burada kimin kime ne kadar ödemesi gerektiği otomatik hesaplanır.
-            </p>
+            <!-- 4. BİREYSEL / ORTAK SEÇİMİ -->
+            <div class="bg-gradient-to-br from-purple-900/40 to-slate-800/40 rounded-xl border border-purple-500/30 overflow-hidden">
+              <div class="p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">👥</span>
+                  <h4 class="font-bold text-white text-sm">4. Bireysel / Ortak Harcama</h4>
+                </div>
+                <img src="guide-images/shared.png" alt="Bireysel ortak seçimi" class="w-full rounded-lg border border-slate-700 mb-3" />
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  <strong class="text-purple-300">Ortak:</strong> Tüm katılımcılar arasında eşit bölünür. Kimin ödediğini seçin.
+                  <br/>
+                  <strong class="text-blue-300">Bireysel:</strong> Sadece sizi ilgilendirir, hesaplamaya dahil edilmez.
+                  <br/><br/>
+                  <span class="text-amber-300 italic">💡 İpucu: Ortak seçtiğinizde "Harcayan" alanı görünür ve ödemeyi yapan kişiyi seçebilirsiniz.</span>
+                </p>
+              </div>
+            </div>
 
-            <p>
-              <strong>5. Rezervasyonlar</strong><br>
-              Uçak, otel veya araç kiralama rezervasyonlarınızı eklerken ilgili seyahati seçmeyi unutmayın.
-              Böylece tüm harcamalarınız ve planlarınız tek bir çatı altında toplanır.<br>
-              <br>
-              <em>Rezervasyon ücreti ortak ödenmişse, <strong>"Ortak"</strong> seçeneğini işaretleyip ödemeyi yapan kişiyi seçebilirsiniz.</em>
-            </p>
+            <!-- 5. BORÇ DAĞILIMI -->
+            <div class="bg-gradient-to-br from-rose-900/40 to-slate-800/40 rounded-xl border border-rose-500/30 overflow-hidden">
+              <div class="p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">📊</span>
+                  <h4 class="font-bold text-white text-sm">5. Borç Dağılımı Raporu</h4>
+                </div>
+                <img src="guide-images/debt.png" alt="Borç dağılımı raporu" class="w-full rounded-lg border border-slate-700 mb-3" />
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  <strong class="text-white">Diğer → Rapor</strong> menüsünden bir seyahat seçtiğinizde:
+                  <br/><br/>
+                  • Toplam harcama özeti görüntülenir<br/>
+                  • <strong class="text-emerald-300">Kimin kime ne kadar ödemesi gerektiği</strong> otomatik hesaplanır<br/>
+                  • PDF olarak dışa aktarabilirsiniz
+                </p>
+              </div>
+            </div>
 
-            <p>
-              <strong>6. Giriş ve Yedekleme</strong><br>
-              Verileriniz tarayıcınızda saklanır. Kaybolmaması için sağ üstten <strong>Google ile Giriş</strong> yapabilir
-              veya <em>Diğer -> Veri Yönetimi</em> menüsünden yedeğinizi alabilirsiniz.
-            </p>
+            <!-- 6. REZERVASYONLAR -->
+            <div class="bg-gradient-to-br from-amber-900/40 to-slate-800/40 rounded-xl border border-amber-500/30 overflow-hidden">
+              <div class="p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">✈️</span>
+                  <h4 class="font-bold text-white text-sm">6. Rezervasyonlar</h4>
+                </div>
+                <img src="guide-images/reservations.png" alt="Rezervasyonlar" class="w-full rounded-lg border border-slate-700 mb-3" />
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Uçak, otel veya aktivite rezervasyonlarınızı ekleyin.
+                  <br/><br/>
+                  • <strong class="text-white">Seyahat:</strong> İlgili seyahati seçmeyi unutmayın<br/>
+                  • <strong class="text-white">Onay Kodu:</strong> Rezervasyon numarasını kaydedin<br/>
+                  • Ortak ödenen rezervasyonlar için <strong class="text-purple-300">"Ortak"</strong> seçip ödeyeni belirtin
+                </p>
+              </div>
+            </div>
 
-            <p>
-              <strong>7. İpuçları</strong><br>
-              • ⚡ butonu ile çok hızlı harcama ekleyebilirsiniz.<br>
-              • <em>Özet</em> ekranında yaklaşan seyahatlerinizi ve toplam bakiyenizi görebilirsiniz.<br>
-              • Harcamaları şehirlere göre gruplayıp detaylı inceleyebilirsiniz.
-            </p>
+            <!-- 7. VERİ YEDEKLEMİ -->
+            <div class="bg-gradient-to-br from-slate-700/40 to-slate-800/40 rounded-xl border border-slate-500/30 overflow-hidden">
+              <div class="p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">💾</span>
+                  <h4 class="font-bold text-white text-sm">7. Giriş ve Yedekleme</h4>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 mb-3 border border-slate-700">
+                  <div class="flex items-center justify-center gap-4">
+                    <div class="text-center">
+                      <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-1 mx-auto border border-red-500/50">
+                        <span class="text-xl">G</span>
+                      </div>
+                      <span class="text-[10px] text-slate-400">Google Giriş</span>
+                    </div>
+                    <div class="text-2xl text-slate-600">→</div>
+                    <div class="text-center">
+                      <div class="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mb-1 mx-auto border border-emerald-500/50">
+                        <span class="text-xl">☁️</span>
+                      </div>
+                      <span class="text-[10px] text-slate-400">Bulut Senkron</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  Verileriniz tarayıcınızda saklanır. Kaybolmaması için:
+                  <br/><br/>
+                  • Sağ üstten <strong class="text-red-400">Google ile Giriş</strong> yapın (otomatik senkronizasyon)<br/>
+                  • Veya <strong class="text-white">Diğer → Veri Yönetimi</strong>'nden manuel yedek alın
+                </p>
+              </div>
+            </div>
+
+            <!-- 8. İPUÇLARI -->
+            <div class="bg-gradient-to-br from-teal-900/40 to-slate-800/40 rounded-xl border border-teal-500/30 overflow-hidden">
+              <div class="p-3">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-lg">💡</span>
+                  <h4 class="font-bold text-white text-sm">8. Hızlı İpuçları</h4>
+                </div>
+                <div class="bg-slate-800/50 rounded-lg p-3 mb-3 border border-slate-700">
+                  <div class="grid grid-cols-3 gap-3 text-center">
+                    <div>
+                      <div class="w-10 h-10 bg-amber-500/30 rounded-full flex items-center justify-center mb-1 mx-auto border border-amber-500/50">
+                        <span class="text-lg">⚡</span>
+                      </div>
+                      <span class="text-[10px] text-slate-300">Hızlı Ekle</span>
+                    </div>
+                    <div>
+                      <div class="w-10 h-10 bg-cyan-500/30 rounded-full flex items-center justify-center mb-1 mx-auto border border-cyan-500/50">
+                        <span class="text-lg">+</span>
+                      </div>
+                      <span class="text-[10px] text-slate-300">Yeni Kayıt</span>
+                    </div>
+                    <div>
+                      <div class="w-10 h-10 bg-purple-500/30 rounded-full flex items-center justify-center mb-1 mx-auto border border-purple-500/50">
+                        <span class="text-lg">📊</span>
+                      </div>
+                      <span class="text-[10px] text-slate-300">Grafik</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                  • <strong class="text-amber-300">⚡ Hızlı Ekle:</strong> Seyahat, kategori ve tutar ile anında harcama ekleyin<br/>
+                  • <strong class="text-white">Özet ekranı:</strong> Yaklaşan seyahatler ve bakiyenizi görün<br/>
+                  • <strong class="text-white">Şehir grupları:</strong> Harcamaları şehirlere göre filtreleyin
+                </p>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
