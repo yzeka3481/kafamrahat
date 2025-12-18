@@ -508,6 +508,48 @@
         </tr>
     `).join('');
 
+                // BORÇ HESAPLAMA (YENİ)
+                const debtInfo = payload.debtInfo;
+                let debtSection = '';
+
+                if (debtInfo && debtInfo.transactions && debtInfo.transactions.length > 0) {
+                    const debtRows = debtInfo.transactions.map(t => `
+        <tr>
+          <td style="color:#dc2626; font-weight:600;">${esc(t.from)}</td>
+          <td style="text-align:center;">→</td>
+          <td style="color:#059669; font-weight:600;">${esc(t.to)}</td>
+          <td style="text-align:right; font-weight:700; background:#dbeafe;">${fmt(t.amount)} ${esc(debtInfo.currency)}</td>
+        </tr>
+    `).join('');
+
+                    debtSection = `
+  <div class="card debt-card">
+    <h2 style="color:#7c3aed;">💰 Kim Kime Ne Kadar Verecek?</h2>
+    <div class="debt-summary">
+      <div><strong>Toplam Ortak Harcama:</strong> ${fmt(debtInfo.totalShared)} ${esc(debtInfo.currency)}</div>
+      <div><strong>Kişi Başı Düşen Pay:</strong> ${fmt(debtInfo.sharePerPerson)} ${esc(debtInfo.currency)}</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Borçlu (Ödeyecek)</th>
+          <th style="width:60px; text-align:center;">→</th>
+          <th>Alacaklı (Alacak)</th>
+          <th style="text-align:right; width:150px;">Tutar</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${debtRows}
+      </tbody>
+    </table>
+    <div class="footer-note" style="margin-top:8px;">
+      <span style="color:#dc2626;">●</span> Kırmızı: Borçlu (ödeyecek kişi) &nbsp;|&nbsp; 
+      <span style="color:#059669;">●</span> Yeşil: Alacaklı (alacak kişi)
+    </div>
+  </div>
+`;
+                }
+
                 const html = `<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -519,60 +561,116 @@
       margin: 24px;
       color: #111827;
       background: #f3f4f6;
+      line-height: 1.5;
     }
-    h1,h2,h3 { margin: 0 0 8px 0; }
+    h1 { 
+      margin: 0 0 12px 0; 
+      font-size: 24px;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    h2 { 
+      margin: 0 0 10px 0; 
+      font-size: 18px;
+      color: #1f2937;
+    }
+    h3 { margin: 0 0 8px 0; font-size: 14px; }
     .small { font-size: 11px; color: #4b5563; }
     .card {
       background: #ffffff;
       border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 10px rgba(15,23,42,0.08);
+      padding: 18px 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 12px rgba(15,23,42,0.1);
+      border: 1px solid #e5e7eb;
+    }
+    .debt-card {
+      background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+      border: 2px solid #c084fc;
+    }
+    .debt-summary {
+      background: #ffffff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      border: 1px solid #e9d5ff;
+    }
+    .debt-summary div {
+      margin: 4px 0;
     }
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 14px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 6px;
-      font-size: 12px;
+      margin-top: 8px;
+      font-size: 11px;
     }
     th, td {
       border: 1px solid #e5e7eb;
-      padding: 6px 8px;
+      padding: 7px 9px;
     }
     th {
       background: #f9fafb;
       text-align: left;
       font-weight: 600;
+      font-size: 11px;
     }
     .tag {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 999px;
       font-size: 11px;
       background: #e5e7eb;
       color: #111827;
+      font-weight: 500;
     }
-    .tag-scope { background:#dbebff; color:#1d4ed8; }
+    .tag-scope { background:#dbeafe; color:#1e40af; }
     .tag-cur   { background:#dcfce7; color:#166534; }
     .footer-note {
       font-size: 10px;
       color: #6b7280;
-      margin-top: 4px;
+      margin-top: 6px;
+      line-height: 1.6;
+    }
+    .notes-section {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+    }
+    .note-item {
+      background: #ffffff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border-left: 3px solid #f59e0b;
+    }
+    .note-item h3 {
+      color: #92400e;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .note-item p {
+      margin: 0;
+      font-size: 10px;
+      color: #1f2937;
+      line-height: 1.6;
     }
     @media print {
-      body { margin: 0; }
+      body { margin: 0; background: white; }
       .no-print { display: none; }
+      .card { page-break-inside: avoid; }
     }
   </style>
 </head>
 <body>
-  <div class="no-print" style="margin-bottom:12px; font-size:11px; color:#6b7280;">
-    Bu sayfayı tarayıcınızdan <strong>Yazdır → PDF olarak kaydet</strong> seçeneği ile PDF’e dönüştürebilirsiniz.
+  <div class="no-print" style="margin-bottom:14px; font-size:11px; color:#6b7280; background:#fef3c7; padding:10px; border-radius:8px; border:1px solid #fbbf24;">
+    💡 <strong>İpucu:</strong> Bu sayfayı tarayıcınızdan <strong>Yazdır → PDF olarak kaydet</strong> seçeneği ile PDF'e dönüştürebilirsiniz.
   </div>
 
   <div class="card">
@@ -600,12 +698,14 @@
         <div><strong>İşlem Sayısı:</strong> ${s.expenseCount || 0} harcama + ${s.reservationCount || 0} rezervasyon</div>
       </div>
     </div>
-    <div style="margin-top:8px; font-size:11px;">
+    <div style="margin-top:10px; font-size:11px; padding-top:10px; border-top:1px solid #e5e7eb;">
       <strong>Bireysel:</strong> ${fmt(s.indivTotal || 0)} ${esc(payload.reportCurrency)}
       &nbsp;·&nbsp;
       <strong>Ortak:</strong> ${fmt(s.sharedTotal || 0)} ${esc(payload.reportCurrency)}
     </div>
   </div>
+
+  ${debtSection}
 
   <div class="card">
     <h2>2) Rezervasyon Özeti</h2>
@@ -649,13 +749,38 @@
     </table>
   </div>
 
-  <div class="card">
-    <h2>4) Notlar</h2>
-    <p class="footer-note">
-      • Rezervasyon maliyetleri toplam harcamaya dahil edilmiştir.<br/>
-      • Bireysel/ortak ayrımı seyahat cüzdanı uygulamasındaki işaretlemelere göre yapılmıştır.<br/>
-      • Rapor para birimi ${esc(payload.reportCurrency)}’dir; diğer para birimlerindeki harcamalar uygulamadaki kur bilgilerine göre dönüştürülmüştür.
-    </p>
+  <div class="card notes-section">
+    <h2 style="color:#92400e;">📋 Rapor Hakkında Bilinmesi Gerekenler</h2>
+    
+    <div class="note-item">
+      <h3>💱 Para Birimi Dönüşümleri</h3>
+      <p>Tüm harcamalar seçtiğiniz rapor para birimine (${esc(payload.reportCurrency)}) dönüştürülmüştür. Dönüşüm işlemi uygulamada kayıtlı güncel kur bilgilerine göre yapılmaktadır. Orijinal para birimlerindeki tutarlar "Günlük Harcama Dökümü" tablosunda gösterilmektedir.</p>
+    </div>
+    
+    <div class="note-item">
+      <h3>👥 Borç Hesaplama Mantığı</h3>
+      <p>Borç hesaplaması sadece "Ortak" olarak işaretlenmiş harcamalar için yapılır. Sistem, her kişinin ödediği toplam tutarı hesaplar ve kişi başına düşen payı belirler. Fazla ödeyenler alacaklı, az ödeyenler borçlu olarak listelenir. Hesaplama algoritması minimum işlem sayısıyla dengeyi sağlamayı hedefler. Rezervasyon maliyetleri de ortak harcamalara dahil edilir.</p>
+    </div>
+    
+    <div class="note-item">
+      <h3>📊 Harcama Kategorileri</h3>
+      <p>Harcamalar kategorilere ayrılarak raporlanır. Her harcama kaydı sırasında seçilen kategori bilgisi bu raporda gösterilir. Kategoriler: Yeme-İçme, Ulaşım, Konaklama, Akaryakıt, Alışveriş, Müze & Aktivite ve Diğer.</p>
+    </div>
+    
+    <div class="note-item">
+      <h3>🔍 Bireysel ve Ortak Harcamalar</h3>
+      <p>Harcamalar "Bireysel" veya "Ortak" olarak işaretlenebilir. Bireysel harcamalar sadece ilgili kişiye ait olup borç hesaplamasına dahil edilmez. Ortak harcamalar tüm seyahat katılımcıları arasında eşit olarak paylaştırılır ve borç hesaplamasında kullanılır.</p>
+    </div>
+    
+    <div class="note-item">
+      <h3>⚠️ Önemli Uyarılar</h3>
+      <p>
+        • Rezervasyon maliyetleri de ortak harcamalara dahil edilir.<br/>
+        • Kur bilgileri uygulamada kayıtlı verilerden alınır, güncel piyasa kurlarından farklılık gösterebilir.<br/>
+        • Rapor verileri anlık olarak hesaplanır ve değişiklikler otomatik yansıtılır.<br/>
+        • Günlük ortalama hesaplaması, seyahat başlangıç ve bitiş tarihleri arasındaki gün sayısına göre yapılır.
+      </p>
+    </div>
   </div>
 </body>
 </html>`;
@@ -5649,6 +5774,9 @@
                     }
                     const finalDailyAvg = finalDayCount > 0 ? totalReport / finalDayCount : 0;
 
+                    // BORÇ HESAPLAMA (YENİ - PDF için)
+                    const debtInfo = calculateDebts(selectedTrip);
+
                     // 6) Payload hazırla
                     const payload = {
                         trip: selectedTrip,
@@ -5658,6 +5786,7 @@
                         generatedAt: new Date().toISOString(),
                         dateFrom,
                         dateTo,
+                        debtInfo, // YENİ: Borç bilgisini ekle
                         summary: {
                             totalReport,
                             totalExpReport,
