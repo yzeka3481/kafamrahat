@@ -2045,20 +2045,23 @@
                 // REZERVASYONLARI DA DAHİL ET (YENİ)
                 const sharedRes = state.res.filter(r => r.trip === tripName && !r.isIndividual);
                 sharedRes.forEach(r => {
-                    // Eğer "Ödendi/Settled" ise borç hesabına katma (genel bütçede durur ama dağıtılmaz)
-                    if (r.isSettled) return;
-
                     const cost = Number(r.cost);
                     if (!cost || cost <= 0) return;
 
                     const amtCtx = convertToBase(cost, r.cur, state.baseCurrency || BASE_CURRENCY);
-                    totalSharedCost += amtCtx;
 
-                    const payer = r.payer || persons[0];
-                    if (balances.hasOwnProperty(payer)) {
-                        balances[payer] += amtCtx;
-                        personPayments[payer] += amtCtx; // YENİ: Ödemeyi kaydet
+                    // Settled rezervasyonlar: Toplam maliyete dahil et ama borç hesaplamasına dahil etme
+                    totalSharedCost += amtCtx; // Her durumda toplam maliyete ekle
+
+                    if (!r.isSettled) {
+                        // Sadece settled OLMAYAN rezervasyonlar borç hesaplamasına dahil
+                        const payer = r.payer || persons[0];
+                        if (balances.hasOwnProperty(payer)) {
+                            balances[payer] += amtCtx;
+                            personPayments[payer] += amtCtx;
+                        }
                     }
+                    // Settled ise: Toplam maliyete eklendi ama bakiye/borç hesaplamasına eklenmedi
                 });
 
                 const sharePerPerson = totalSharedCost / persons.length;
@@ -2440,7 +2443,7 @@
                       
                       <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
                           <div class="font-semibold text-emerald-300 mb-1.5">👥 Borç Hesaplama Mantığı</div>
-                          <p class="leading-relaxed">Borç hesaplaması sadece "Ortak" olarak işaretlenmiş harcamalar için yapılır. Sistem, her kişinin ödediği toplam tutarı hesaplar ve kişi başına düşen payı belirler. Fazla ödeyenler alacaklı, az ödeyenler borçlu olarak listelenir. Hesaplama algoritması minimum işlem sayısıyla dengeyi sağlamayı hedefler.</p>
+                          <p class="leading-relaxed">Borç hesaplaması sadece "Ortak" olarak işaretlenmiş harcamalar ve rezervasyonlar için yapılır. "Ödendi/Settled" işaretli rezervasyonlar toplam maliyete ve kişi başı paya dahil edilir ancak borç hesaplamasına dahil edilmez (çünkü zaten ödenmiş ve mahsuplaşılmıştır). Sistem, her kişinin ödediği toplam tutarı hesaplar ve kişi başına düşen payı belirler. Fazla ödeyenler alacaklı, az ödeyenler borçlu olarak listelenir. Hesaplama algoritması minimum işlem sayısıyla dengeyi sağlamayı hedefler.</p>
                       </div>
                       
                       <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
