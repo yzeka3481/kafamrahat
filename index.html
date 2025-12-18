@@ -2111,26 +2111,41 @@
 
                 if (debtInfo && debtInfo.transactions.length > 0) {
                     const debtRows = debtInfo.transactions.map(t => `
-                <div class="flex justify-between items-center bg-slate-700/50 p-2 rounded text-xs border border-slate-600/50">
-                    <span class="text-red-400 font-bold w-1/3 truncate">${esc(t.from)}</span>
-                    <span class="text-slate-500 text-center w-8">➡️</span>
-                    <span class="text-emerald-400 font-bold w-1/3 truncate text-right">${esc(t.to)}</span>
-                    <span class="font-bold text-white w-1/4 text-right">${fmtNum(t.amount)} ${debtInfo.currency}</span>
+                <div class="flex justify-between items-center bg-gradient-to-r from-slate-800/80 to-slate-700/60 p-3 rounded-lg border border-slate-600/40 hover:border-slate-500/60 transition">
+                    <span class="text-red-300 font-bold w-1/3 truncate text-sm">${esc(t.from)}</span>
+                    <span class="text-slate-400 text-center w-12 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </span>
+                    <span class="text-emerald-300 font-bold w-1/3 truncate text-right text-sm">${esc(t.to)}</span>
+                    <span class="font-bold text-white w-1/4 text-right bg-blue-600/30 px-2 py-1 rounded text-sm">${fmtNum(t.amount)} ${debtInfo.currency}</span>
                 </div>
              `).join('');
 
                     debtHtml = `
             <!-- Borç Dağılımı (YENİ) -->
-            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
-                <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
-                   👥 Borç / Alacak Durumu (Hesaplaşma)
+            <div class="bg-gradient-to-br from-purple-900/30 via-slate-800/50 to-blue-900/30 border border-purple-500/30 rounded-xl p-5 space-y-4 shadow-lg">
+                <h4 class="text-base font-bold text-white uppercase flex items-center gap-2">
+                   <span class="text-2xl">💰</span> Kim Kime Ne Kadar Verecek?
                 </h4>
-                <div class="space-y-2">
-                    <div class="text-[10px] text-slate-400 mb-2 p-2 bg-slate-900/50 rounded border border-slate-800">
-                        <div class="flex justify-between"><span>Toplam Ortak Harcama:</span> <span class="text-slate-200 font-mono">${fmtNum(debtInfo.totalShared)} ${debtInfo.currency}</span></div>
-                        <div class="flex justify-between"><span>Kişi Başı Düşen Pay:</span> <span class="text-slate-200 font-mono">${fmtNum(debtInfo.sharePerPerson)} ${debtInfo.currency}</span></div>
+                <div class="bg-slate-900/60 rounded-lg p-3 border border-slate-700/50 space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Toplam Ortak Harcama:</span> 
+                        <span class="text-white font-bold font-mono">${fmtNum(debtInfo.totalShared)} ${debtInfo.currency}</span>
                     </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Kişi Başı Düşen Pay:</span> 
+                        <span class="text-emerald-400 font-bold font-mono">${fmtNum(debtInfo.sharePerPerson)} ${debtInfo.currency}</span>
+                    </div>
+                </div>
+                <div class="space-y-2">
                     ${debtRows}
+                </div>
+                <div class="text-xs text-slate-400 bg-slate-900/40 p-2 rounded border border-slate-700/30">
+                    <span class="text-red-300 font-semibold">●</span> Borçlu (ödeyecek) 
+                    <span class="mx-2">→</span>
+                    <span class="text-emerald-300 font-semibold">●</span> Alacaklı (alacak)
                 </div>
             </div>
              `;
@@ -2231,6 +2246,42 @@
                      📸 Eklenen Fotoğraflar (İlk 10)
                   </h4>
                   ${imagePreview}
+              </div>
+              
+              <!-- YENİ: RAPOR NOTLARI VE AÇIKLAMALAR -->
+              <div class="bg-gradient-to-br from-amber-900/20 via-slate-800/50 to-orange-900/20 border border-amber-600/30 rounded-xl p-5 space-y-3">
+                  <h4 class="text-base font-bold text-amber-200 uppercase flex items-center gap-2">
+                     📋 Rapor Hakkında Bilinmesi Gerekenler
+                  </h4>
+                  <div class="space-y-3 text-xs text-slate-300">
+                      <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
+                          <div class="font-semibold text-amber-300 mb-1.5">💱 Para Birimi Dönüşümleri</div>
+                          <p class="leading-relaxed">Tüm harcamalar seçtiğiniz rapor para birimine (${reportCur}) dönüştürülmüştür. Dönüşüm işlemi uygulamada kayıtlı güncel kur bilgilerine göre yapılmaktadır. Orijinal para birimlerindeki tutarlar "Orijinal Para Birimi Bazında Toplam Harcama" bölümünde gösterilmektedir.</p>
+                      </div>
+                      
+                      <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
+                          <div class="font-semibold text-emerald-300 mb-1.5">👥 Borç Hesaplama Mantığı</div>
+                          <p class="leading-relaxed">Borç hesaplaması sadece "Ortak" olarak işaretlenmiş harcamalar için yapılır. Sistem, her kişinin ödediği toplam tutarı hesaplar ve kişi başına düşen payı belirler. Fazla ödeyenler alacaklı, az ödeyenler borçlu olarak listelenir. Hesaplama algoritması minimum işlem sayısıyla dengeyi sağlamayı hedefler.</p>
+                      </div>
+                      
+                      <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
+                          <div class="font-semibold text-blue-300 mb-1.5">📊 Kategori ve Mekan Sıralaması</div>
+                          <p class="leading-relaxed">En çok harcanan kategoriler ve mekanlar, seçilen rapor para birimine dönüştürülmüş tutarlara göre sıralanmaktadır. Sadece ilk 3 sıra gösterilir. Birden fazla para birimi kullanıldıysa, tüm tutarlar rapor para birimine çevrilerek karşılaştırılır.</p>
+                      </div>
+                      
+                      <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
+                          <div class="font-semibold text-purple-300 mb-1.5">🔍 Bireysel ve Ortak Harcamalar</div>
+                          <p class="leading-relaxed">Harcamalar "Bireysel" veya "Ortak" olarak işaretlenebilir. Bireysel harcamalar sadece ilgili kişiye ait olup borç hesaplamasına dahil edilmez. Ortak harcamalar tüm seyahat katılımcıları arasında eşit olarak paylaştırılır ve borç hesaplamasında kullanılır.</p>
+                      </div>
+                      
+                      <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
+                          <div class="font-semibold text-rose-300 mb-1.5">⚠️ Önemli Uyarılar</div>
+                          <p class="leading-relaxed">• Rezervasyon maliyetleri de ortak harcamalara dahil edilir.<br/>
+                          • Kur bilgileri uygulamada kayıtlı verilerden alınır, güncel piyasa kurlarından farklılık gösterebilir.<br/>
+                          • PDF dökümü için giriş yapmanız gerekmektedir.<br/>
+                          • Rapor verileri anlık olarak hesaplanır ve değişiklikler otomatik yansıtılır.</p>
+                      </div>
+                  </div>
               </div>
           </div>
       `;
