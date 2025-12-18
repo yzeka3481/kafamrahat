@@ -4498,21 +4498,19 @@
                         state.modals.resForm = false;
                         state.err = '';
                         state.tab = 'other';
-                        state.helpersAccordion.reservations = true;
                         renderApp();
                         requestAnimationFrame(() => {
-                            // Render sonrası accordion state'ini tekrar garanti et
-                            state.helpersAccordion.reservations = true;
                             requestAnimationFrame(() => {
-                                const el = document.getElementById('helper-reservations');
-                                if (el) {
-                                    el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                } else {
-                                    setTimeout(() => {
-                                        const retry = document.getElementById('helper-reservations');
-                                        if (retry) retry.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                    }, 300);
+                                // Accordion'u doğal yolla açmak için butona tıkla
+                                const accordionBtn = document.querySelector('[data-act="tog-accordion"][data-val="reservations"]');
+                                if (accordionBtn && !state.helpersAccordion.reservations) {
+                                    accordionBtn.click();
                                 }
+                                // Sonra scroll yap
+                                setTimeout(() => {
+                                    const el = document.getElementById('helper-reservations');
+                                    if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
+                                }, 100);
                             });
                         });
                         return;
@@ -4560,21 +4558,19 @@
                         state.modals.resDetail = false;
                         state.modals.resForm = false;
                         state.tab = 'other';
-                        state.helpersAccordion.reservations = true;
                         renderApp();
                         requestAnimationFrame(() => {
-                            // Render sonrası accordion state'ini tekrar garanti et
-                            state.helpersAccordion.reservations = true;
                             requestAnimationFrame(() => {
-                                const el = document.getElementById('helper-reservations');
-                                if (el) {
-                                    el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                } else {
-                                    setTimeout(() => {
-                                        const retry = document.getElementById('helper-reservations');
-                                        if (retry) retry.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                    }, 300);
+                                // Accordion'u doğal yolla açmak için butona tıkla
+                                const accordionBtn = document.querySelector('[data-act="tog-accordion"][data-val="reservations"]');
+                                if (accordionBtn && !state.helpersAccordion.reservations) {
+                                    accordionBtn.click();
                                 }
+                                // Sonra scroll yap
+                                setTimeout(() => {
+                                    const el = document.getElementById('helper-reservations');
+                                    if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
+                                }, 100);
                             });
                         });
                         return;
@@ -5353,21 +5349,19 @@
                             save();
                             state.modals.resDetail = false;
                             state.tab = 'other';
-                            state.helpersAccordion.reservations = true;
                             renderApp();
                             requestAnimationFrame(() => {
-                                // Render sonrası accordion state'ini tekrar garanti et
-                                state.helpersAccordion.reservations = true;
                                 requestAnimationFrame(() => {
-                                    const el = document.getElementById('helper-reservations');
-                                    if (el) {
-                                        el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                    } else {
-                                        setTimeout(() => {
-                                            const retry = document.getElementById('helper-reservations');
-                                            if (retry) retry.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                        }, 300);
+                                    // Accordion'u doğal yolla açmak için butona tıkla
+                                    const accordionBtn = document.querySelector('[data-act="tog-accordion"][data-val="reservations"]');
+                                    if (accordionBtn && !state.helpersAccordion.reservations) {
+                                        accordionBtn.click();
                                     }
+                                    // Sonra scroll yap
+                                    setTimeout(() => {
+                                        const el = document.getElementById('helper-reservations');
+                                        if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
+                                    }, 100);
                                 });
                             });
                         }
