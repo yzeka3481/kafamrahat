@@ -4498,21 +4498,23 @@
                         state.modals.resForm = false;
                         state.err = '';
                         state.tab = 'other';
+                        // Tüm accordion'ları kapat, sadece reservations'u aç
+                        state.helpersAccordion = {
+                            critical: false,
+                            places: false,
+                            health: false,
+                            transport: false,
+                            flightCheck: false,
+                            route: false,
+                            report: false,
+                            data: false,
+                            reservations: true
+                        };
                         renderApp();
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                                // Accordion'u doğal yolla açmak için butona tıkla
-                                const accordionBtn = document.querySelector('[data-act="tog-accordion"][data-val="reservations"]');
-                                if (accordionBtn && !state.helpersAccordion.reservations) {
-                                    accordionBtn.click();
-                                }
-                                // Sonra scroll yap
-                                setTimeout(() => {
-                                    const el = document.getElementById('helper-reservations');
-                                    if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                }, 100);
-                            });
-                        });
+                        setTimeout(() => {
+                            const el = document.getElementById('helper-reservations');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
                         return;
                     }
                     return;
@@ -4558,21 +4560,23 @@
                         state.modals.resDetail = false;
                         state.modals.resForm = false;
                         state.tab = 'other';
+                        // Tüm accordion'ları kapat, sadece reservations'u aç
+                        state.helpersAccordion = {
+                            critical: false,
+                            places: false,
+                            health: false,
+                            transport: false,
+                            flightCheck: false,
+                            route: false,
+                            report: false,
+                            data: false,
+                            reservations: true
+                        };
                         renderApp();
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                                // Accordion'u doğal yolla açmak için butona tıkla
-                                const accordionBtn = document.querySelector('[data-act="tog-accordion"][data-val="reservations"]');
-                                if (accordionBtn && !state.helpersAccordion.reservations) {
-                                    accordionBtn.click();
-                                }
-                                // Sonra scroll yap
-                                setTimeout(() => {
-                                    const el = document.getElementById('helper-reservations');
-                                    if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                }, 100);
-                            });
-                        });
+                        setTimeout(() => {
+                            const el = document.getElementById('helper-reservations');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
                         return;
                     }
                     // Diğer modallar için genel kapatma
@@ -4935,23 +4939,23 @@
                     state.modals.resForm = false;
                     state.err = '';
                     state.tab = 'other';
-                    state.helpersAccordion.reservations = true;
+                    // Tüm accordion'ları kapat, sadece reservations'u aç
+                    state.helpersAccordion = {
+                        critical: false,
+                        places: false,
+                        health: false,
+                        transport: false,
+                        flightCheck: false,
+                        route: false,
+                        report: false,
+                        data: false,
+                        reservations: true
+                    };
                     renderApp();
-                    requestAnimationFrame(() => {
-                        // Render sonrası accordion state'ini tekrar garanti et
-                        state.helpersAccordion.reservations = true;
-                        requestAnimationFrame(() => {
-                            const el = document.getElementById('helper-reservations');
-                            if (el) {
-                                el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                            } else {
-                                setTimeout(() => {
-                                    const retry = document.getElementById('helper-reservations');
-                                    if (retry) retry.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                }, 300);
-                            }
-                        });
-                    });
+                    setTimeout(() => {
+                        const el = document.getElementById('helper-reservations');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
                 }
 
                 // Not İşlemleri
@@ -5318,23 +5322,23 @@
                     state.err = '';
                     state.modals.resForm = false;
                     state.tab = 'other';
-                    state.helpersAccordion.reservations = true;
+                    // Tüm accordion'ları kapat, sadece reservations'u aç
+                    state.helpersAccordion = {
+                        critical: false,
+                        places: false,
+                        health: false,
+                        transport: false,
+                        flightCheck: false,
+                        route: false,
+                        report: false,
+                        data: false,
+                        reservations: true
+                    };
                     renderApp();
-                    requestAnimationFrame(() => {
-                        // Render sonrası accordion state'ini tekrar garanti et
-                        state.helpersAccordion.reservations = true;
-                        requestAnimationFrame(() => {
-                            const el = document.getElementById('helper-reservations');
-                            if (el) {
-                                el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                            } else {
-                                setTimeout(() => {
-                                    const retry = document.getElementById('helper-reservations');
-                                    if (retry) retry.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                }, 300);
-                            }
-                        });
-                    });
+                    setTimeout(() => {
+                        const el = document.getElementById('helper-reservations');
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
                 }
 
                 // Rezervasyon Listesi İşlemleri
@@ -5349,21 +5353,23 @@
                             save();
                             state.modals.resDetail = false;
                             state.tab = 'other';
+                            // Tüm accordion'ları kapat, sadece reservations'u aç
+                            state.helpersAccordion = {
+                                critical: false,
+                                places: false,
+                                health: false,
+                                transport: false,
+                                flightCheck: false,
+                                route: false,
+                                report: false,
+                                data: false,
+                                reservations: true
+                            };
                             renderApp();
-                            requestAnimationFrame(() => {
-                                requestAnimationFrame(() => {
-                                    // Accordion'u doğal yolla açmak için butona tıkla
-                                    const accordionBtn = document.querySelector('[data-act="tog-accordion"][data-val="reservations"]');
-                                    if (accordionBtn && !state.helpersAccordion.reservations) {
-                                        accordionBtn.click();
-                                    }
-                                    // Sonra scroll yap
-                                    setTimeout(() => {
-                                        const el = document.getElementById('helper-reservations');
-                                        if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' });
-                                    }, 100);
-                                });
-                            });
+                            setTimeout(() => {
+                                const el = document.getElementById('helper-reservations');
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 300);
                         }
                     } catch (err) { console.error(err); }
                     return;
