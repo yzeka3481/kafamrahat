@@ -5335,10 +5335,12 @@
                         reservations: true
                     };
                     renderApp();
+                    // KRİTİK DÜZELTME: Sayfanın rezervasyonlara dönmesini zorla (Hash güncellemesi)
                     setTimeout(() => {
+                        window.location.hash = 'helper-reservations';
                         const el = document.getElementById('helper-reservations');
                         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 300);
+                    }, 50);
                 }
 
                 // Rezervasyon Listesi İşlemleri
@@ -5701,6 +5703,8 @@
                     state.routeTrip = t.value;
                     state.helpersAccordion.route = true;
                     renderApp();
+                    // KRİTİK DÜZELTME: Rota seçiminde sayfanın kapanmasını engelle
+                    setTimeout(() => { window.location.hash = 'helper-route'; }, 10);
                 }
 
                 if (t.dataset.act === 'set-note-trip') {
