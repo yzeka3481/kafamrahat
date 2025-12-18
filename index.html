@@ -2023,7 +2023,11 @@
 
                 // Herkesin bakiyesi (pozitif: alacaklı, negatif: borçlu)
                 const balances = {};
-                persons.forEach(p => balances[p] = 0);
+                const personPayments = {}; // YENİ: Her kişinin ne kadar ödediğini takip et
+                persons.forEach(p => {
+                    balances[p] = 0;
+                    personPayments[p] = 0; // Başlangıçta herkes 0 ödemiş
+                });
 
                 let totalSharedCost = 0;
 
@@ -2034,6 +2038,7 @@
                     const payer = x.payer || persons[0]; // Payer seçilmediyse ilk kişiyi varsay (veya hata yapmamak için)
                     if (balances.hasOwnProperty(payer)) {
                         balances[payer] += amtCtx;
+                        personPayments[payer] += amtCtx; // YENİ: Ödemeyi kaydet
                     }
                 });
 
@@ -2052,6 +2057,7 @@
                     const payer = r.payer || persons[0];
                     if (balances.hasOwnProperty(payer)) {
                         balances[payer] += amtCtx;
+                        personPayments[payer] += amtCtx; // YENİ: Ödemeyi kaydet
                     }
                 });
 
@@ -2105,7 +2111,9 @@
                     totalShared: totalSharedCost,
                     sharePerPerson,
                     transactions,
-                    currency: state.baseCurrency || BASE_CURRENCY
+                    currency: state.baseCurrency || BASE_CURRENCY,
+                    personPayments, // YENİ: Her kişinin ödediği tutar
+                    persons // YENİ: Kişi listesi
                 };
             }
 
@@ -2249,7 +2257,52 @@
                 </div>
              `).join('');
 
+                    // YENİ: Kişi Bazlı Ödeme Özeti
+                    const personSummaryRows = debtInfo.persons.map(person => {
+                        const paid = debtInfo.personPayments[person] || 0;
+                        const share = debtInfo.sharePerPerson;
+                        const balance = paid - share;
+                        const isCreditor = balance > 0.01;
+                        const isDebtor = balance < -0.01;
+                        const statusText = isCreditor ? 'Alacaklı' : isDebtor ? 'Borçlu' : 'Dengede';
+                        const statusColor = isCreditor ? 'text-emerald-400' : isDebtor ? 'text-red-400' : 'text-slate-400';
+                        const balanceSign = balance > 0 ? '+' : '';
+
+                        return `
+                <div class="bg-slate-800/60 rounded-lg p-3 border border-slate-700/40 hover:border-slate-600/60 transition">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-white font-bold text-sm">${esc(person)}</span>
+                        <span class="${statusColor} text-xs font-semibold">${statusText}</span>
+                    </div>
+                    <div class="space-y-1 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Ödediği:</span>
+                            <span class="text-white font-mono">${fmtNum(paid)} ${debtInfo.currency}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Payı:</span>
+                            <span class="text-slate-300 font-mono">${fmtNum(share)} ${debtInfo.currency}</span>
+                        </div>
+                        <div class="flex justify-between pt-1 border-t border-slate-700/50">
+                            <span class="text-slate-400 font-semibold">Durum:</span>
+                            <span class="${statusColor} font-bold font-mono">${balanceSign}${fmtNum(Math.abs(balance))} ${debtInfo.currency}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+                    }).join('');
+
                     debtHtml = `
+            <!-- Kişi Bazlı Ödeme Özeti (YENİ) -->
+            <div class="bg-gradient-to-br from-indigo-900/30 via-slate-800/50 to-cyan-900/30 border border-indigo-500/30 rounded-xl p-5 space-y-4 shadow-lg">
+                <h4 class="text-base font-bold text-white uppercase flex items-center gap-2">
+                   <span class="text-2xl">👥</span> Kişi Bazlı Ödeme Özeti
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    ${personSummaryRows}
+                </div>
+            </div>
+
             <!-- Borç Dağılımı (YENİ) -->
             <div class="bg-gradient-to-br from-purple-900/30 via-slate-800/50 to-blue-900/30 border border-purple-500/30 rounded-xl p-5 space-y-4 shadow-lg">
                 <h4 class="text-base font-bold text-white uppercase flex items-center gap-2">
@@ -5355,6 +5408,16 @@
                         return;
                     }
 
+                    // YENİ VALIDASYON: Ortak harcamalarda payer zorunlu
+                    if (!f.isIndividual && f.trip) {
+                        const tripObj = state.trips.find(t => t.name === f.trip);
+                        if (tripObj && tripObj.persons && !f.payer) {
+                            state.err = 'Ortak harcamalarda "Ödeyen" alanı zorunludur. Lütfen ödemeyi yapan kişiyi seçin.';
+                            renderApp();
+                            return;
+                        }
+                    }
+
                     if (isFuelActive && (!f.startKm || !f.endKm || !f.fuelAmount)) {
                         state.err = 'Yakıt harcaması için Başlangıç Km, Bitiş Km ve Yakıt Miktarı alanları zorunludur.';
                         renderApp();
@@ -5458,6 +5521,16 @@
                         state.err = 'Rezervasyon Adı, Konum, Tarih ve Seyahat alanları zorunludur.';
                         renderApp();
                         return;
+                    }
+
+                    // YENİ VALIDASYON: Ortak rezervasyonlarda payer zorunlu
+                    if (!f.isIndividual && f.trip && f.cost && Number(f.cost) > 0) {
+                        const tripObj = state.trips.find(t => t.name === f.trip);
+                        if (tripObj && tripObj.persons && !f.payer && !f.isSettled) {
+                            state.err = 'Ortak rezervasyonlarda "Ödeyen" alanı zorunludur. Lütfen ödemeyi yapan kişiyi seçin veya "Ödendi/Settled" işaretleyin.';
+                            renderApp();
+                            return;
+                        }
                     }
 
                     // Misafir kullanıcı için seyahat sayısı limiti (rezervasyon tarafı)
