@@ -470,8 +470,6 @@
                 return state.exp.filter(x => x.trip === tripName && !isNaN(Number(x.amt)) && Number(x.amt) > 0);
             }
             function buildReportHtml(payload) {
-                console.log("🔥 YENİ buildReportHtml ÇAĞRILDI - 2024-12-18 v2");
-                alert("YENİ PDF FONKSİYONU ÇALIŞIYOR!");
                 const fmt = (n) => n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const dateRange = (payload.dateFrom && payload.dateTo)
                     ? `${payload.dateFrom} – ${payload.dateTo}`
