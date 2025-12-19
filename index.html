@@ -5912,7 +5912,9 @@
                     const html = buildReportHtml(payload);
                     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                     const url = URL.createObjectURL(blob);
-                    window.open(url, '_blank');
+                    // Cache-busting: Her PDF için benzersiz pencere adı kullan
+                    const windowName = `pdf_report_${Date.now()}`;
+                    window.open(url, windowName);
                 }
 
                 if (act === 'copy-json') {
