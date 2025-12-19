@@ -487,12 +487,12 @@
 
                 const expRows = payload.expenses.map(e => `
         <tr>
-          <td>${esc(e.date || '')} ${esc(e.time || '')}</td>
+          <td>${esc(e.date || '')} <span style="color:#94a3b8; font-size:10px;">${esc(e.time || '')}</span></td>
           <td>${esc(e.cat || '')}</td>
-          <td>${esc(e.place || '')}</td>
+          <td><strong>${esc(e.place || '')}</strong></td>
           <td>${esc(e.city || '')}</td>
-          <td style="text-align:right;">${fmt(e.amt)} ${esc(e.cur)}</td>
-          <td>${e.isIndividual ? 'Bireysel' : 'Ortak'}</td>
+          <td class="amt-cell">${fmt(e.amt)} <span style="font-size:10px; color:#64748b;">${esc(e.cur)}</span></td>
+          <td><span class="badge ${e.isIndividual ? 'badge-ind' : 'badge-shared'}">${e.isIndividual ? 'Bireysel' : 'Ortak'}</span></td>
         </tr>
     `).join('');
 
@@ -500,11 +500,11 @@
         <tr>
           <td>${esc(r.startDate || '')}</td>
           <td>${esc(r.type || '')}</td>
-          <td>${esc(r.name || '')}</td>
+          <td><strong>${esc(r.name || '')}</strong></td>
           <td>${esc(r.location || '')}</td>
-          <td>${esc(r.code || '')}</td>
-          <td style="text-align:right;">${fmt(r.cost)} ${esc(r.cur)}</td>
-          <td>${r.isIndividual ? 'Bireysel' : 'Ortak'}</td>
+          <td><span style="font-family:monospace; background:#f1f5f9; padding:2px 4px; border-radius:4px;">${esc(r.code || '')}</span></td>
+          <td class="amt-cell">${fmt(r.cost)} <span style="font-size:10px; color:#64748b;">${esc(r.cur)}</span></td>
+          <td><span class="badge ${r.isIndividual ? 'badge-ind' : 'badge-shared'}">${r.isIndividual ? 'Bireysel' : 'Ortak'}</span></td>
         </tr>
     `).join('');
 
@@ -515,37 +515,44 @@
                 if (debtInfo && debtInfo.transactions && debtInfo.transactions.length > 0) {
                     const debtRows = debtInfo.transactions.map(t => `
         <tr>
-          <td style="color:#dc2626; font-weight:600;">${esc(t.from)}</td>
-          <td style="text-align:center;">→</td>
-          <td style="color:#059669; font-weight:600;">${esc(t.to)}</td>
-          <td style="text-align:right; font-weight:700; background:#dbeafe;">${fmt(t.amount)} ${esc(debtInfo.currency)}</td>
+          <td><span style="font-weight:600; color:#dc2626;">${esc(t.from)}</span></td>
+          <td style="text-align:center; color:#94a3b8;">→</td>
+          <td><span style="font-weight:600; color:#059669;">${esc(t.to)}</span></td>
+          <td class="amt-cell" style="background:#f0f9ff; color:#0369a1;">${fmt(t.amount)} ${esc(debtInfo.currency)}</td>
         </tr>
     `).join('');
 
                     debtSection = `
   <div class="card debt-card">
-    <h2 style="color:#7c3aed;">💰 Kim Kime Ne Kadar Verecek?</h2>
-    <div class="debt-summary">
-      <div><strong>Toplam Ortak Harcama:</strong> ${fmt(debtInfo.totalShared)} ${esc(debtInfo.currency)}</div>
-      <div><strong>Kişi Başı Düşen Pay:</strong> ${fmt(debtInfo.sharePerPerson)} ${esc(debtInfo.currency)}</div>
+    <div class="section-title" style="margin-top:0;">
+        <span style="background:#f3e8ff; color:#7c3aed;">💰</span>
+        <div style="font-size:16px; color:#581c87;">Kim Kime Ne Kadar Verecek?</div>
     </div>
+    
+    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:20px;">
+      <div class="stat-box" style="background:white; border-color:#e9d5ff;">
+        <div class="stat-label" style="color:#7c3aed;">Toplam Ortak Harcama</div>
+        <div class="stat-value" style="color:#581c87;">${fmt(debtInfo.totalShared)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
+      </div>
+      <div class="stat-box" style="background:white; border-color:#e9d5ff;">
+        <div class="stat-label" style="color:#7c3aed;">Kişi Başı Pay</div>
+        <div class="stat-value" style="color:#581c87;">${fmt(debtInfo.sharePerPerson)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
+      </div>
+    </div>
+
     <table>
       <thead>
         <tr>
           <th>Borçlu (Ödeyecek)</th>
-          <th style="width:60px; text-align:center;">→</th>
+          <th style="width:40px;"></th>
           <th>Alacaklı (Alacak)</th>
-          <th style="text-align:right; width:150px;">Tutar</th>
+          <th style="text-align:right;">Tutar</th>
         </tr>
       </thead>
       <tbody>
         ${debtRows}
       </tbody>
     </table>
-    <div class="footer-note" style="margin-top:8px;">
-      <span style="color:#dc2626;">●</span> Kırmızı: Borçlu (ödeyecek kişi) &nbsp;|&nbsp; 
-      <span style="color:#059669;">●</span> Yeşil: Alacaklı (alacak kişi)
-    </div>
   </div>
 `;
                 }
@@ -556,232 +563,393 @@
   <meta charset="UTF-8">
   <!-- Cache-Buster: ${Date.now()} -->
   <title>Seyahat Cüzdanı – ${esc(payload.trip)} Raporu</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 24px;
-      color: #111827;
-      background: #f3f4f6;
-      line-height: 1.5;
-    }
-    h1 { 
-      margin: 0 0 12px 0; 
-      font-size: 24px;
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    h2 { 
-      margin: 0 0 10px 0; 
-      font-size: 18px;
-      color: #1f2937;
-    }
-    h3 { margin: 0 0 8px 0; font-size: 14px; }
-    .small { font-size: 11px; color: #4b5563; }
-    .card {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 18px 22px;
-      margin-bottom: 18px;
-      box-shadow: 0 4px 12px rgba(15,23,42,0.1);
-      border: 1px solid #e5e7eb;
-    }
-    .debt-card {
-      background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-      border: 2px solid #c084fc;
-    }
-    .debt-summary {
-      background: #ffffff;
-      padding: 10px 14px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      font-size: 12px;
-      border: 1px solid #e9d5ff;
-    }
-    .debt-summary div {
-      margin: 4px 0;
-    }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 8px;
-      font-size: 11px;
-    }
-    th, td {
-      border: 1px solid #e5e7eb;
-      padding: 7px 9px;
-    }
-    th {
-      background: #f9fafb;
-      text-align: left;
-      font-weight: 600;
-      font-size: 11px;
-    }
-    .tag {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      background: #e5e7eb;
-      color: #111827;
-      font-weight: 500;
-    }
-    .tag-scope { background:#dbeafe; color:#1e40af; }
-    .tag-cur   { background:#dcfce7; color:#166534; }
-    .footer-note {
-      font-size: 10px;
-      color: #6b7280;
-      margin-top: 6px;
-      line-height: 1.6;
-    }
-    .notes-section {
-      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-      border: 2px solid #f59e0b;
-    }
-    .note-item {
-      background: #ffffff;
-      padding: 10px 12px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      border-left: 3px solid #f59e0b;
-    }
-    .note-item h3 {
-      color: #92400e;
-      font-size: 12px;
-      margin-bottom: 4px;
-    }
-    .note-item p {
-      margin: 0;
-      font-size: 10px;
-      color: #1f2937;
-      line-height: 1.6;
-    }
-    @media print {
-      body { margin: 0; background: white; }
-      .no-print { display: none; }
-      .card { page-break-inside: avoid; }
-    }
-  </style>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 40px;
+            color: #1e293b;
+            background: #f8fafc;
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* Modern Grid Layout */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Header Section */
+        header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .meta-item strong {
+            color: #334155;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* Sections & Cards */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 30px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: #e0e7ff;
+            color: #4f46e5;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+            border: 1px solid #f1f5f9;
+            margin-bottom: 20px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .stat-sub {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        th {
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 12px;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th:first-child { border-top-left-radius: 8px; border-left: 1px solid #e2e8f0; }
+        th:last-child { border-top-right-radius: 8px; border-right: 1px solid #e2e8f0; }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+        
+        td:first-child { border-left: 1px solid #f1f5f9; }
+        td:last-child { border-right: 1px solid #f1f5f9; }
+
+        tr:last-child td { border-bottom: 1px solid #e2e8f0; }
+        tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+        tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+
+        tr:nth-child(even) td {
+            background: #fcfcfc;
+        }
+
+        .amt-cell {
+            text-align: right;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        /* Debt Section */
+        .debt-card {
+            background: linear-gradient(145deg, #ffffff 0%, #fbfdff 100%);
+            border: 1px solid #bfdbfe;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .debt-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: #3b82f6;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .badge-ind { background: #e0f2fe; color: #0284c7; }
+        .badge-shared { background: #f1f5f9; color: #475569; }
+        .badge-cur { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+
+        /* Notes Box */
+        .notes-box {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 15px;
+        }
+        
+        .notes-title {
+            color: #92400e;
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .note-text {
+            color: #78350f;
+            font-size: 11px;
+            margin-bottom: 6px;
+            padding-left: 10px;
+            border-left: 2px solid #f59e0b;
+        }
+
+        /* Footer */
+        .report-footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 10px;
+            color: #94a3b8;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        @media print {
+            body { 
+                background: white; 
+                padding: 0; 
+                margin: 15mm;
+            }
+            .no-print { display: none !important; }
+            .card, .debt-card, table { page-break-inside: avoid; }
+            .section-title { margin-top: 20px; }
+            box-shadow: none !important;
+        }
+    </style>
 </head>
 <body>
-  <div class="no-print" style="margin-bottom:14px; font-size:11px; color:#6b7280; background:#fef3c7; padding:10px; border-radius:8px; border:1px solid #fbbf24;">
-    💡 <strong>İpucu:</strong> Bu sayfayı tarayıcınızdan <strong>Yazdır → PDF olarak kaydet</strong> seçeneği ile PDF'e dönüştürebilirsiniz.
+  <div class="no-print" style="max-width:800px; margin:0 auto 20px auto; font-size:11px; color:#b45309; background:#fffbeb; padding:12px; border-radius:10px; border:1px solid #fcd34d; display:flex; align-items:center; gap:8px;">
+    <span>💡</span> 
+    <span><strong>İpucu:</strong> Bu sayfayı tarayıcınızdan <strong>Yazdır → PDF olarak kaydet</strong> seçeneği ile temiz bir PDF'e dönüştürebilirsiniz.</span>
   </div>
 
-  <div class="card">
-    <h1>Seyahat Cüzdanı – Harcama Raporu</h1>
-    <div class="small">
-      <div><strong>Seyahat:</strong> ${esc(payload.trip)}</div>
-      <div><strong>Tarih Aralığı:</strong> ${esc(dateRange)}</div>
-      <div><strong>Rapor Para Birimi:</strong> <span class="tag tag-cur">${esc(payload.reportCurrency)}</span></div>
-      <div><strong>Harcama Kapsamı:</strong> <span class="tag tag-scope">${esc(scopeLabel)}</span></div>
-      <div><strong>Oluşturulma Tarihi:</strong> ${esc(payload.generatedAt)}</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>1) Genel Özet</h2>
-    <div class="grid-2">
-      <div>
-        <div><strong>Toplam Harcama:</strong> ${fmt(s.totalReport || 0)} ${esc(payload.reportCurrency)}</div>
-        <div><strong>Rezervasyon Maliyetleri:</strong> ${fmt(s.totalResReport || 0)} ${esc(payload.reportCurrency)}</div>
-        <div><strong>Harcamalar (Gün içi):</strong> ${fmt(s.totalExpReport || 0)} ${esc(payload.reportCurrency)}</div>
+  <div class="container">
+      <header>
+          <h1>Seyahat Cüzdanı – Harcama Raporu</h1>
+          <div class="meta-grid">
+              <div class="meta-item">
+                  <strong>Seyahat</strong>
+                  ${esc(payload.trip)}
+              </div>
+              <div class="meta-item">
+                  <strong>Tarih Aralığı</strong>
+                  ${esc(dateRange)}
+              </div>
+              <div class="meta-item">
+                  <strong>Rapor Para Birimi</strong>
+                  <span class="badge badge-cur">${esc(payload.reportCurrency)}</span>
+              </div>
+              <div class="meta-item">
+                  <strong>Kapsam</strong>
+                  <span class="badge badge-shared" style="background:#f1f5f9;">${esc(scopeLabel)}</span>
+              </div>
+              <div class="meta-item">
+                  <strong>Oluşturulma</strong>
+                  ${esc(new Date(payload.generatedAt).toLocaleDateString('tr-TR'))}
+              </div>
+          </div>
+      </header>
+    
+      <!-- 1) Genel Özet -->
+      <div class="section-title">
+          <span>📊</span> Genel Özet
       </div>
-      <div>
-        <div><strong>Günlük Ortalama:</strong> ${fmt(s.dailyAvg || 0)} ${esc(payload.reportCurrency)} / gün</div>
-        <div><strong>Gün Sayısı:</strong> ${s.dayCount || 0}</div>
-        <div><strong>İşlem Sayısı:</strong> ${s.expenseCount || 0} harcama + ${s.reservationCount || 0} rezervasyon</div>
+      
+      <div class="stats-grid">
+          <div class="stat-box">
+              <div class="stat-label">Toplam Harcama</div>
+              <div class="stat-value" style="color:#4f46e5;">${fmt(s.totalReport || 0)}</div>
+              <div class="stat-sub">${esc(payload.reportCurrency)}</div>
+          </div>
+          <div class="stat-box">
+              <div class="stat-label">Günlük Ortalama</div>
+              <div class="stat-value">${fmt(s.dailyAvg || 0)}</div>
+              <div class="stat-sub">${esc(payload.reportCurrency)} / gün</div>
+          </div>
+          <div class="stat-box">
+              <div class="stat-label">İşlem Hacmi</div>
+              <div class="stat-value">${s.expenseCount || 0} <span style="font-size:12px; color:#94a3b8; font-weight:normal;">Harcama</span></div>
+              <div class="stat-sub">+ ${s.reservationCount || 0} Rezervasyon</div>
+          </div>
       </div>
-    </div>
-    <div style="margin-top:10px; font-size:11px; padding-top:10px; border-top:1px solid #e5e7eb;">
-      <strong>Bireysel:</strong> ${fmt(s.indivTotal || 0)} ${esc(payload.reportCurrency)}
-      &nbsp;·&nbsp;
-      <strong>Ortak:</strong> ${fmt(s.sharedTotal || 0)} ${esc(payload.reportCurrency)}
-    </div>
-  </div>
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:15px;">
+           <div class="stat-box" style="padding:10px; background:white; border-color:#e2e8f0;">
+               <div class="stat-label">Bireysel Harcamalar</div>
+               <div class="stat-value" style="font-size:15px; color:#0284c7;">${fmt(s.indivTotal || 0)} ${esc(payload.reportCurrency)}</div>
+           </div>
+           <div class="stat-box" style="padding:10px; background:white; border-color:#e2e8f0;">
+               <div class="stat-label">Ortak Harcamalar</div>
+               <div class="stat-value" style="font-size:15px; color:#475569;">${fmt(s.sharedTotal || 0)} ${esc(payload.reportCurrency)}</div>
+           </div>
+      </div>
 
-  ${debtSection}
+      <!-- BORÇ BÖLÜMÜ -->
+      <div style="margin-top:30px;">
+        ${debtSection}
+      </div>
 
-  <div class="card">
-    <h2>2) Rezervasyon Özeti</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Tarih</th>
-          <th>Tip</th>
-          <th>Başlık</th>
-          <th>Lokasyon</th>
-          <th>Kod</th>
-          <th style="text-align:right;">Maliyet</th>
-          <th>Kapsam</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${resRows || '<tr><td colspan="7">Kayıtlı rezervasyon bulunmamaktadır.</td></tr>'}
-      </tbody>
-    </table>
-    <div class="footer-note">
-      Rezervasyon maliyetleri toplam harcamaya dahildir. Bireysel/ortak bilgisi uygulamadaki işaretlemelere göre alınmıştır.
-    </div>
-  </div>
+      <!-- 2) Rezervasyonlar -->
+      <div class="section-title">
+         <span>🏨</span> Rezervasyon Özeti
+      </div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table>
+          <thead>
+            <tr>
+              <th>Tarih</th>
+              <th>Tip</th>
+              <th>Başlık</th>
+              <th>Lokasyon</th>
+              <th>Kod</th>
+              <th style="text-align:right;">Maliyet</th>
+              <th>Kapsam</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${resRows || '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">Kayıtlı rezervasyon bulunmamaktadır.</td></tr>'}
+          </tbody>
+        </table>
+        ${resRows ? '' : ''}
+      </div>
 
-  <div class="card">
-    <h2>3) Günlük Harcama Dökümü</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Tarih / Saat</th>
-          <th>Kategori</th>
-          <th>Yer / Açıklama</th>
-          <th>Şehir</th>
-          <th style="text-align:right;">Tutar (Orijinal)</th>
-          <th>Kapsam</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${expRows || '<tr><td colspan="6">Kayıtlı harcama bulunmamaktadır.</td></tr>'}
-      </tbody>
-    </table>
-  </div>
+      <!-- 3) Harcamalar -->
+      <div class="section-title">
+         <span>💳</span> Günlük Harcama Dökümü
+      </div>
+      <div class="card" style="padding:0; overflow:hidden;">
+        <table>
+          <thead>
+            <tr>
+              <th>Tarih / Saat</th>
+              <th>Kategori</th>
+              <th>Yer / Açıklama</th>
+              <th>Şehir</th>
+              <th style="text-align:right;">Tutar (Orijinal)</th>
+              <th>Kapsam</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${expRows || '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">Kayıtlı harcama bulunmamaktadır.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
 
-  <div class="card notes-section">
-    <h2 style="color:#92400e;">📋 Rapor Hakkında Bilinmesi Gerekenler</h2>
-    
-    <div class="note-item">
-      <h3>💱 Para Birimi Dönüşümleri</h3>
-      <p>Tüm harcamalar seçtiğiniz rapor para birimine (${esc(payload.reportCurrency)}) dönüştürülmüştür. Dönüşüm işlemi uygulamada kayıtlı güncel kur bilgilerine göre yapılmaktadır. Orijinal para birimlerindeki tutarlar "Günlük Harcama Dökümü" tablosunda gösterilmektedir.</p>
-    </div>
-    
-    <div class="note-item">
-      <h3>👥 Borç Hesaplama Mantığı</h3>
-      <p>Borç hesaplaması sadece "Ortak" olarak işaretlenmiş harcamalar için yapılır. Sistem, her kişinin ödediği toplam tutarı hesaplar ve kişi başına düşen payı belirler. Fazla ödeyenler alacaklı, az ödeyenler borçlu olarak listelenir. Hesaplama algoritması minimum işlem sayısıyla dengeyi sağlamayı hedefler. Rezervasyon maliyetleri de ortak harcamalara dahil edilir.</p>
-    </div>
-    
-    <div class="note-item">
-      <h3>📊 Harcama Kategorileri</h3>
-      <p>Harcamalar kategorilere ayrılarak raporlanır. Her harcama kaydı sırasında seçilen kategori bilgisi bu raporda gösterilir. Kategoriler: Yeme-İçme, Ulaşım, Konaklama, Akaryakıt, Alışveriş, Müze & Aktivite ve Diğer.</p>
-    </div>
-    
-    <div class="note-item">
-      <h3>🔍 Bireysel ve Ortak Harcamalar</h3>
-      <p>Harcamalar "Bireysel" veya "Ortak" olarak işaretlenebilir. Bireysel harcamalar sadece ilgili kişiye ait olup borç hesaplamasına dahil edilmez. Ortak harcamalar tüm seyahat katılımcıları arasında eşit olarak paylaştırılır ve borç hesaplamasında kullanılır.</p>
-    </div>
-    
-    <div class="note-item">
-      <h3>⚠️ Önemli Uyarılar</h3>
-      <p>
-        • Rezervasyon maliyetleri de ortak harcamalara dahil edilir.<br/>
-        • Kur bilgileri uygulamada kayıtlı verilerden alınır, güncel piyasa kurlarından farklılık gösterebilir.<br/>
-        • Rapor verileri anlık olarak hesaplanır ve değişiklikler otomatik yansıtılır.<br/>
-        • Günlük ortalama hesaplaması, seyahat başlangıç ve bitiş tarihleri arasındaki gün sayısına göre yapılır.
-      </p>
-    </div>
+      <!-- 4) Notlar ve Açıklamalar -->
+      <div class="section-title">
+         <span>📋</span> Rapor Bilgileri
+      </div>
+      
+      <div class="notes-box">
+         <div class="notes-title">📌 Rapor Hakkında Bilinmesi Gerekenler</div>
+         
+         <div class="note-text">
+            <strong>Para Birimi Dönüşümleri:</strong> Tüm harcamalar seçtiğiniz rapor para birimine (${esc(payload.reportCurrency)}) dönüştürülmüştür. Dönüşüm, uygulamadaki o anki kur verileri baz alınarak yapılmıştır.
+         </div>
+         <div class="note-text">
+             <strong>Borç Hesaplama:</strong> Sadece "Ortak" işaretli harcamalar ve rezervasyonlar borç hesaplamasına dahil edilir. Kişi başı düşen pay hesaplanarak mahsuplaşma tablosu oluşturulur.
+         </div>
+         <div class="note-text">
+             <strong>Veri Kaynağı:</strong> Rapor verileri anlık olarak cihazınızdaki veritabanından üretilmiştir. Kur bilgileri piyasa verilerinden farklılık gösterebilir.
+         </div>
+      </div>
+      
+      <div class="report-footer">
+        Seyahat Cüzdanı PDF Rapor <strong style="color:#6366f1;">v2024.12.19-MODERN-V2</strong> &bull; ${new Date().getFullYear()}
+      </div>
   </div>
 </body>
 </html>`;
