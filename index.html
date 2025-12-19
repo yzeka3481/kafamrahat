@@ -470,7 +470,7 @@
                 return state.exp.filter(x => x.trip === tripName && !isNaN(Number(x.amt)) && Number(x.amt) > 0);
             }
             // --- BORÇ HESAPLAMA YARDIMCISI ---
-            function calculateDebts(tripName) {
+            function calculateDebtsLegacy(tripName) {
                 if (!tripName) return null;
 
                 const tripObj = state.trips.find(t => t.name === tripName);
@@ -594,8 +594,7 @@
           <td>${esc(r.type || '')}</td>
           <td><strong>${esc(r.name || '')}</strong></td>
           <td>${esc(r.location || '')}</td>
-          <td><span style="font-family:monospace; background:#f1f5f9; padding:2px 4px; border-radius:4px;">${esc(r.code || '')}</span></td>
-          <td class="amt-cell">${fmt(r.cost)} <span style="font-size:10px; color:#64748b;">${esc(r.cur)}</span></td>
+<td class="amt-cell">${fmt(r.cost)} <span style="font-size:10px; color:#64748b;">${esc(r.cur)}</span></td>
           <td><span class="badge ${r.isIndividual ? 'badge-ind' : 'badge-shared'}">${r.isIndividual ? 'Bireysel' : 'Ortak'}</span></td>
         </tr>
     `).join('');
@@ -604,32 +603,88 @@
                 const debtInfo = payload.debtInfo;
                 let debtSection = '';
 
-                if (debtInfo && debtInfo.transactions && debtInfo.transactions.length > 0) {
-                    const debtRows = debtInfo.transactions.map(t => `
+                if (debtInfo && debtInfo.persons && debtInfo.persons.length > 1) {
+                    const totalAll = Number(debtInfo.totalShared) || 0;
+                    const shareAll = Number(debtInfo.sharePerPerson) || 0;
+
+                    const totalSettle = Number(debtInfo.totalSharedForSettlement || 0);
+                    const shareSettle = Number(debtInfo.sharePerPersonForSettlement ?? 0);
+
+                    const persons = debtInfo.persons || [];
+                    const paySettleMap = debtInfo.personPayments || {};
+                    const payAllMap = debtInfo.personPaymentsAll || {};
+
+                    const hasTx = debtInfo.transactions && debtInfo.transactions.length > 0;
+
+                    const debtRows = hasTx
+                        ? debtInfo.transactions.map(t => `
         <tr>
           <td><span style="font-weight:600; color:#dc2626;">${esc(t.from)}</span></td>
           <td style="text-align:center; color:#94a3b8;">→</td>
           <td><span style="font-weight:600; color:#059669;">${esc(t.to)}</span></td>
           <td class="amt-cell" style="background:#f0f9ff; color:#0369a1;">${fmt(t.amount)} ${esc(debtInfo.currency)}</td>
         </tr>
-    `).join('');
+    `).join('')
+                        : `
+        <tr>
+          <td colspan="4" style="text-align:center; padding:14px; color:#64748b; font-style:italic;">
+            Mahsuplaşma gerektiren borç bulunmuyor.
+          </td>
+        </tr>
+    `;
+
+                    const personRows = persons.map(p => {
+                        const paidSettle = Number(paySettleMap[p]) || 0;
+                        const balance = paidSettle - (Number(debtInfo.sharePerPersonForSettlement) || 0);
+
+                        const absBal = Math.abs(balance);
+                        const status = balance > 0.01 ? 'Alacaklı' : (balance < -0.01 ? 'Borçlu' : 'Dengede');
+                        const badge = balance > 0.01 ? 'badge-shared' : (balance < -0.01 ? 'badge-ind' : 'badge-cur');
+                        const netColor = balance > 0.01 ? '#059669' : (balance < -0.01 ? '#dc2626' : '#334155');
+
+                        return `
+        <tr>
+          <td><strong>${esc(p)}</strong></td>
+          <td class="amt-cell">${fmt(paidSettle)} ${esc(debtInfo.currency)}</td>
+          <td class="amt-cell">${fmt(shareSettle)} ${esc(debtInfo.currency)}</td>
+          <td class="amt-cell" style="background:#f8fafc; font-weight:700; color:${netColor};">
+            ${fmt(absBal)} ${esc(debtInfo.currency)}
+          </td>
+          <td><span class="badge ${badge}">${status}</span></td>
+        </tr>`;
+                    }).join('');
 
                     debtSection = `
   <div class="card debt-card">
     <div class="section-title" style="margin-top:0;">
         <span style="background:#f3e8ff; color:#7c3aed;">💰</span>
-        <div style="font-size:16px; color:#581c87;">Kim Kime Ne Kadar Verecek?</div>
+        <div style="font-size:16px; color:#581c87;">Mahsuplaşma ve Kişi Bazlı Harcama</div>
     </div>
-    
-    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:20px;">
+
+    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:12px;">
       <div class="stat-box" style="background:white; border-color:#e9d5ff;">
-        <div class="stat-label" style="color:#7c3aed;">Toplam Ortak Harcama</div>
-        <div class="stat-value" style="color:#581c87;">${fmt(debtInfo.totalShared)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
+        <div class="stat-label" style="color:#7c3aed;">Toplam Ortak Harcama (Toplam)</div>
+        <div class="stat-value" style="color:#581c87;">${fmt(totalAll)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
       </div>
       <div class="stat-box" style="background:white; border-color:#e9d5ff;">
-        <div class="stat-label" style="color:#7c3aed;">Kişi Başı Pay</div>
-        <div class="stat-value" style="color:#581c87;">${fmt(debtInfo.sharePerPerson)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
+        <div class="stat-label" style="color:#7c3aed;">Kişi Başı Harcama (Toplam)</div>
+        <div class="stat-value" style="color:#581c87;">${fmt(shareAll)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
       </div>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:14px;">
+      <div class="stat-box" style="background:white; border-color:#e9d5ff;">
+        <div class="stat-label" style="color:#7c3aed;">Mahsuplaşmaya Dahil Ortak Harcama</div>
+        <div class="stat-value" style="color:#581c87;">${fmt(totalSettle)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
+      </div>
+      <div class="stat-box" style="background:white; border-color:#e9d5ff;">
+        <div class="stat-label" style="color:#7c3aed;">Mahsuplaşmaya Dahil Kişi Payı</div>
+        <div class="stat-value" style="color:#581c87;">${fmt(shareSettle)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
+      </div>
+    </div>
+
+    <div style="font-size:11px; color:#6b7280; margin:-2px 0 16px 0; line-height:1.4;">
+      <strong>Not:</strong> <em>Ödendi</em> işaretli rezervasyonlar alacak-verecek hesabına dahil edilmez; ancak kişi başı harcama payına dahil edilir.
     </div>
 
     <table>
@@ -645,6 +700,30 @@
         ${debtRows}
       </tbody>
     </table>
+
+    <div style="height:14px;"></div>
+
+    <div class="section-title" style="margin-top:0;">
+        <span style="background:#f3e8ff; color:#7c3aed;">👤</span>
+        <div style="font-size:14px; color:#581c87;">Kişi Bazlı Özet (Mahsuplaşma)</div>
+    </div>
+
+    <div class="card" style="padding:0; overflow:hidden; border:none; box-shadow:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Kişi</th>
+            <th style="text-align:right;">Ödediği (Mahsup)</th>
+            <th style="text-align:right;">Kişi Payı (Mahsup)</th>
+            <th style="text-align:right;">Net (Alacak/Verecek)</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${personRows || '<tr><td colspan="5" style="text-align:center; padding:14px; color:#64748b; font-style:italic;">Kişi özeti üretilemedi.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
   </div>
 `;
                 }
@@ -986,13 +1065,12 @@
               <th>Tip</th>
               <th>Başlık</th>
               <th>Lokasyon</th>
-              <th>Kod</th>
-              <th style="text-align:right;">Maliyet</th>
+<th style="text-align:right;">Maliyet</th>
               <th>Kapsam</th>
             </tr>
           </thead>
           <tbody>
-            ${resRows || '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">Kayıtlı rezervasyon bulunmamaktadır.</td></tr>'}
+            ${resRows || '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8; font-style:italic;">Kayıtlı rezervasyon bulunmamaktadır.</td></tr>'}
           </tbody>
         </table>
         ${resRows ? '' : ''}
@@ -2278,61 +2356,85 @@
                 const persons = trip.persons.split(',').map(p => p.trim()).filter(Boolean);
                 if (persons.length < 2) return null;
 
-                const sharedExps = state.exp.filter(x => x.trip === tripName && !x.isIndividual);
-                if (!sharedExps.length) return null;
+                const baseCur = state.baseCurrency || BASE_CURRENCY;
 
                 // Herkesin bakiyesi (pozitif: alacaklı, negatif: borçlu)
+                // NOT: "Ödendi/Mahsuplaşıldı" işaretli rezervasyonlar alacak-verecek hesabına DAHİL EDİLMEZ,
+                // fakat kişi başı harcama payına (toplam tüketim) DAHİL EDİLİR.
                 const balances = {};
-                const personPayments = {}; // YENİ: Her kişinin ne kadar ödediğini takip et
+                const personPayments = {};       // Mahsuplaşma hesabına dahil ödemeler (borç/alacak hesabı)
+                const personPaymentsAll = {};    // Toplam ödemeler (settled dahil, ödeyen bilgisi varsa)
+
                 persons.forEach(p => {
                     balances[p] = 0;
-                    personPayments[p] = 0; // Başlangıçta herkes 0 ödemiş
+                    personPayments[p] = 0;
+                    personPaymentsAll[p] = 0;
                 });
 
-                let totalSharedCost = 0;
+                let totalSharedAll = 0;          // Ortak harcamaların toplamı (settled dahil)
+                let totalSharedForSettlement = 0; // Mahsuplaşma hesabına dahil ortak harcama toplamı (settled hariç)
 
+                // 1) Ortak Harcamalar (günlük harcamalar) - Settled alanı yoksa tamamı mahsuba dahildir
+                const sharedExps = (state.exp || []).filter(x => x.trip === tripName && !x.isIndividual);
                 sharedExps.forEach(x => {
-                    const amtCtx = convertToBase(x.amt, x.cur, state.baseCurrency || BASE_CURRENCY); // Hepsi baz para birimine çevrilir
-                    totalSharedCost += amtCtx;
+                    const amt = Number(x.amt) || 0;
+                    if (amt <= 0) return;
 
-                    const payer = x.payer || persons[0]; // Payer seçilmediyse ilk kişiyi varsay (veya hata yapmamak için)
+                    const amtCtx = convertToBase(amt, x.cur, baseCur);
+                    if (!amtCtx || isNaN(amtCtx)) return;
+
+                    totalSharedAll += amtCtx;
+                    totalSharedForSettlement += amtCtx;
+
+                    const payer = (x.payer && String(x.payer).trim()) ? String(x.payer).trim() : persons[0];
                     if (balances.hasOwnProperty(payer)) {
                         balances[payer] += amtCtx;
-                        personPayments[payer] += amtCtx; // YENİ: Ödemeyi kaydet
+                        personPayments[payer] += amtCtx;
+                        personPaymentsAll[payer] += amtCtx;
                     }
                 });
 
-                // REZERVASYONLARI DA DAHİL ET (YENİ)
-                const sharedRes = state.res.filter(r => r.trip === tripName && !r.isIndividual);
+                // 2) Ortak Rezervasyonlar (konaklama/ulaşım vb.)
+                const sharedRes = (state.res || []).filter(r => r.trip === tripName && !r.isIndividual);
                 sharedRes.forEach(r => {
-                    const cost = Number(r.cost);
-                    if (!cost || cost <= 0) return;
+                    const cost = Number(r.cost) || 0;
+                    if (cost <= 0) return;
 
-                    const amtCtx = convertToBase(cost, r.cur, state.baseCurrency || BASE_CURRENCY);
+                    const amtCtx = convertToBase(cost, r.cur, baseCur);
+                    if (!amtCtx || isNaN(amtCtx)) return;
 
-                    // Settled rezervasyonlar: Toplam maliyete dahil et ama borç hesaplamasına dahil etme
-                    totalSharedCost += amtCtx; // Her durumda toplam maliyete ekle
+                    // Toplam tüketime her durumda dahil
+                    totalSharedAll += amtCtx;
 
+                    // Ödeyen bilgisi varsa, toplam ödeme istatistiğine ekle (settled dahil)
+                    const payerRaw = (r.payer && String(r.payer).trim()) ? String(r.payer).trim() : '';
+                    if (payerRaw && personPaymentsAll.hasOwnProperty(payerRaw)) {
+                        personPaymentsAll[payerRaw] += amtCtx;
+                    }
+
+                    // Mahsuplaşma hesabına sadece "Ödendi" olmayan kayıtlar dahil edilir
                     if (!r.isSettled) {
-                        // Sadece settled OLMAYAN rezervasyonlar borç hesaplamasına dahil
-                        const payer = r.payer || persons[0];
+                        totalSharedForSettlement += amtCtx;
+
+                        const payer = payerRaw || persons[0];
                         if (balances.hasOwnProperty(payer)) {
                             balances[payer] += amtCtx;
                             personPayments[payer] += amtCtx;
                         }
                     }
-                    // Settled ise: Toplam maliyete eklendi ama bakiye/borç hesaplamasına eklenmedi
                 });
 
-                const sharePerPerson = totalSharedCost / persons.length;
+                if (totalSharedAll <= 0) return null;
 
-                // Herkes kendi payını (sharePerPerson) ödemeli.
-                // Bakiyeden pay düşülür.
+                const sharePerPersonAll = totalSharedAll / persons.length;
+                const sharePerPersonForSettlement = totalSharedForSettlement / persons.length;
+
+                // Mahsuplaşma hesabı için net bakiye: Ödediği (mahsuba dahil) - Kişi payı (mahsuba dahil)
                 persons.forEach(p => {
-                    balances[p] -= sharePerPerson;
+                    balances[p] -= sharePerPersonForSettlement;
                 });
 
-                // Hesaplaşma Algoritması
+                // Borçlu/alacaklı listesi
                 const debtors = [];
                 const creditors = [];
 
@@ -2343,8 +2445,8 @@
 
                 const transactions = [];
 
-                debtors.sort((a, b) => a.bal - b.bal); // En çok borcu olan önce
-                creditors.sort((a, b) => b.bal - a.bal); // En çok alacağı olan önce
+                debtors.sort((a, b) => a.bal - b.bal);     // En çok borcu olan önce
+                creditors.sort((a, b) => b.bal - a.bal);   // En çok alacağı olan önce
 
                 let i = 0; // debtor index
                 let j = 0; // creditor index
@@ -2353,14 +2455,12 @@
                     const debtor = debtors[i];
                     const creditor = creditors[j];
 
-                    // Borcun tamamı mı yoksa bir kısmı mı ödenecek?
-                    // debtor.bal negatif, creditor.bal pozitif
-                    const amount = Math.min(Math.abs(debtor.bal), creditor.bal);
+                    const amount = Math.min(-debtor.bal, creditor.bal);
 
                     transactions.push({
                         from: debtor.p,
                         to: creditor.p,
-                        amount: amount
+                        amount: Math.round(amount * 100) / 100
                     });
 
                     debtor.bal += amount;
@@ -2371,16 +2471,23 @@
                 }
 
                 return {
-                    totalShared: totalSharedCost,
-                    sharePerPerson,
+                    // Ekran/PDF istatistikleri için toplam tüketim
+                    totalShared: totalSharedAll,
+                    sharePerPerson: sharePerPersonAll,
+
+                    // Borç/alacak hesabı (settled hariç)
+                    totalSharedForSettlement,
+                    sharePerPersonForSettlement,
+
                     transactions,
-                    currency: state.baseCurrency || BASE_CURRENCY,
-                    personPayments, // YENİ: Her kişinin ödediği tutar
-                    persons // YENİ: Kişi listesi
+                    currency: baseCur,
+
+                    // Kişi bazlı
+                    personPayments,        // mahsuba dahil ödemeler
+                    personPaymentsAll,     // toplam ödemeler (ödeyen bilgisi varsa)
+                    persons
                 };
             }
-
-            // YENİ FONKSİYON: RAPOR AKORDİYON İÇERİĞİ
             function renderReportContent() {
                 const allTrips = [...new Set(state.exp.map(x => x.trip).filter(Boolean).concat(state.res.map(x => x.trip).filter(Boolean)))].sort();
                 let selectedTrip = state.selectedReportTrip;
@@ -2523,7 +2630,7 @@
                     // YENİ: Kişi Bazlı Ödeme Özeti
                     const personSummaryRows = debtInfo.persons.map(person => {
                         const paid = debtInfo.personPayments[person] || 0;
-                        const share = debtInfo.sharePerPerson;
+                        const share = (debtInfo.sharePerPersonForSettlement ?? debtInfo.sharePerPerson);
                         const balance = paid - share;
                         const isCreditor = balance > 0.01;
                         const isDebtor = balance < -0.01;
@@ -2579,6 +2686,10 @@
                     <div class="flex justify-between text-xs">
                         <span class="text-slate-400">Kişi Başı Düşen Pay:</span> 
                         <span class="text-emerald-400 font-bold font-mono">${fmtNum(debtInfo.sharePerPerson)} ${debtInfo.currency}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Mahsuplaşmaya Dahil Kişi Payı:</span> 
+                        <span class="text-amber-300 font-bold">${fmtNum(debtInfo.sharePerPersonForSettlement || 0)} ${debtInfo.currency}</span>
                     </div>
                 </div>
                 <div class="space-y-2">
