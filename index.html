@@ -2784,7 +2784,7 @@
             }
 
             // YENİ FONKSİYON: RAPOR HTML OLUŞTURUCU
-            function buildReportHtml(data) {
+            function buildReportHtmlLegacy(data) {
                 const { trip, reportCurrency, generatedAt, summary, expenses, reservations } = data;
 
                 const fmt = (n) => new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -6174,8 +6174,11 @@
                     const url = URL.createObjectURL(blob);
                     // Cache-busting: Her PDF için benzersiz pencere adı kullan
                     const windowName = `pdf_report_${Date.now()}`;
-                    window.open(url, windowName);
-                }
+                    const w = window.open(url, windowName);
+                    // Memory leak önleme: Blob URL'yi bir süre sonra serbest bırak
+                    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+                    if (!w) alert('Tarayıcı açılır pencereyi engelledi. PDF raporunu açmak için pop-up izni verin.');
+}
 
                 if (act === 'copy-json') {
                     const textarea = document.getElementById('io-txt');
