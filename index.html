@@ -3206,6 +3206,9 @@
 
                 // 2. ADIM: Mekan Seçimi
                 if (r.step === 'selection') {
+                    const errorObj = r.places[0] && r.places[0].error ? r.places[0] : null;
+                    const displayPlaces = errorObj ? [] : r.places;
+
                     return `
                       <div class="space-y-3">
                         <div class="flex items-center justify-between">
@@ -3218,7 +3221,16 @@
                         
                         <div class="bg-slate-900/50 border border-slate-700/50 rounded-lg max-h-60 overflow-y-auto scrl p-2 space-y-1">
                             ${r.places.length === 0 ? '<div class="text-center text-slate-500 py-4 text-xs">Mekan bulunamadı veya yükleniyor...</div>' : ''}
-                            ${r.places.map(p => {
+                            
+                            ${errorObj ? `
+                                <div class="bg-red-900/30 border border-red-500/50 rounded-lg p-3 text-red-200 text-xs text-center">
+                                    <div class="font-bold text-sm mb-1">⚠️ Hata Oluştu</div>
+                                    <div>${errorObj.msg}</div>
+                                    <div class="text-[10px] opacity-75 mt-1">${errorObj.detail}</div>
+                                </div>
+                            ` : ''}
+
+                            ${displayPlaces.map(p => {
                         const isSel = r.selectedPlaces.some(sp => sp.id === p.id);
                         return `
                                   <div class="flex items-center gap-2 group">
@@ -3377,7 +3389,7 @@
 
                     return new Promise((resolve) => {
                         service.textSearch(request, (results, status) => {
-                            if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                            if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
                                 resolve(results.map(p => ({
                                     id: p.place_id, type: 'google', name: p.name,
                                     category: (p.types || []).includes('museum') ? 'Tarih' : 'Gezilecek Yer',
@@ -3387,13 +3399,14 @@
                                     tags: { addr: p.formatted_address }
                                 })).sort((a, b) => b.rating - a.rating));
                             } else {
-                                alert('Google API Hatası: ' + status); // DEBUG ALERT
-                                console.error('Google Places Status:', status);
-                                resolve([]);
+                                // UI'da göstermek için özel hata nesnesi döndür
+                                resolve([{ error: true, msg: `Google API Hatası: ${status}`, detail: 'API Key kısıtlamalarını kontrol edin (Billing, Places API enable mı?)' }]);
                             }
                         });
                     });
-                } catch (e) { alert('Sistem Hatası: ' + e.message); console.error(e); throw e; }
+                } catch (e) {
+                    resolve([{ error: true, msg: 'Sistem Hatası', detail: e.message }]);
+                }
             }
 
             /* DEPRECATED: Overpass Logic Removed */
