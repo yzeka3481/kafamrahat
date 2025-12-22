@@ -3109,6 +3109,36 @@
                 }
                 const r = state.route;
 
+                // DETAY MODALI (State üzerinde id varsa göster)
+                if (r.viewPlaceDetail) {
+                    const pd = r.places.find(p => p.id === r.viewPlaceDetail) || (r.generatedRoute || []).find(p => p.id === r.viewPlaceDetail);
+                    if (pd) {
+                        return `
+                        <div class="bg-slate-800 rounded-lg p-4 space-y-3 border border-slate-700 animate-fade-in relative mb-4">
+                            <button data-act="close-place-detail" class="absolute right-2 top-2 text-slate-400 hover:text-white">${ICONS.x}</button>
+                            <h4 class="font-bold text-white text-lg pr-6 pl-1">${esc(pd.name)}</h4>
+                            <div class="flex items-center gap-2 text-xs pl-1">
+                                <span class="bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded border border-indigo-700/50 capitalize">${esc(pd.category)}</span>
+                                <span class="text-amber-400 font-bold">⭐ ${pd.rating}</span>
+                            </div>
+                            
+                            <div class="text-xs text-slate-300 space-y-2 pt-2 px-1">
+                                ${pd.tags && pd.tags.addr ? `<div class="flex gap-2"><span class="w-4">📍</span> <span>${esc(pd.tags.addr)}</span></div>` : ''}
+                                ${pd.tags && pd.tags.phone ? `<div class="flex gap-2"><span class="w-4">📞</span> <span>${esc(pd.tags.phone)}</span></div>` : ''}
+                                ${pd.tags && pd.tags.website ? `<div class="flex gap-2"><span class="w-4">🌐</span> <a href="${pd.tags.website}" target="_blank" class="text-blue-400 underline truncate block">Web Sitesi</a></div>` : ''}
+                                ${pd.tags && pd.tags.wikipedia ? `<div class="flex gap-2"><span class="w-4">📖</span> <a href="https://${pd.tags.wikipedia}" target="_blank" class="text-blue-400 underline truncate block">Wikipedia</a></div>` : ''}
+                            </div>
+                            
+                            <div class="pt-2 px-1">
+                                <p class="text-[10px] text-slate-500 italic">Bilgiler OpenStreetMap veritabanından alınmıştır.</p>
+                            </div>
+
+                            <button data-act="close-place-detail" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm font-bold mt-2">Kapat</button>
+                        </div>
+                        `;
+                    }
+                }
+
                 // 1. ADIM: Şehir Arama
                 if (r.step === 'search') {
                     return `
@@ -3148,19 +3178,24 @@
                             ${r.places.map(p => {
                         const isSel = r.selectedPlaces.some(sp => sp.id === p.id);
                         return `
-                                  <div data-act="route-toggle-place" data-id="${p.id}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer ${isSel ? 'bg-indigo-900/30 border border-indigo-500/30' : 'border border-transparent'}">
-                                      <div class="w-5 h-5 rounded border ${isSel ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-slate-800'} flex items-center justify-center transition flex-shrink-0">
-                                          ${isSel ? '<span class="text-white text-xs font-bold">✓</span>' : ''}
-                                      </div>
-                                      <div class="flex-1 min-w-0">
-                                          <div class="flex justify-between items-start">
-                                              <div class="text-sm font-medium text-slate-200 truncate pr-2">${esc(p.name)}</div>
-                                              <div class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-amber-400 font-bold border border-slate-700">
-                                                  <span>⭐</span> ${p.rating}
-                                              </div>
+                                  <div class="flex items-center gap-2 group">
+                                      <div data-act="route-toggle-place" data-id="${p.id}" class="flex-1 flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer ${isSel ? 'bg-indigo-900/30 border border-indigo-500/30' : 'border border-transparent'}">
+                                          <div class="w-5 h-5 rounded border ${isSel ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-slate-800'} flex items-center justify-center transition flex-shrink-0">
+                                              ${isSel ? '<span class="text-white text-xs font-bold">✓</span>' : ''}
                                           </div>
-                                          <div class="text-[10px] text-slate-500 truncate capitalize">${esc(p.category)}</div>
+                                          <div class="flex-1 min-w-0">
+                                              <div class="flex justify-between items-start">
+                                                  <div class="text-sm font-medium text-slate-200 truncate pr-2">${esc(p.name)}</div>
+                                                  <div class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-amber-400 font-bold border border-slate-700">
+                                                      <span>⭐</span> ${p.rating}
+                                                  </div>
+                                              </div>
+                                              <div class="text-[10px] text-slate-500 truncate capitalize">${esc(p.category)}</div>
+                                          </div>
                                       </div>
+                                      <button data-act="route-open-detail" data-id="${p.id}" title="Detaylı Bilgi" class="p-2 text-slate-500 hover:text-blue-400 transition hover:bg-slate-800 rounded-lg">
+                                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" /></svg>
+                                      </button>
                                   </div>
                                 `;
                     }).join('')}
@@ -3180,26 +3215,45 @@
 
                 // 3. ADIM: Rota Sonucu
                 if (r.step === 'result') {
+                    // Hesaplamalar
+                    const totalPlaces = r.generatedRoute.length;
+                    const totalKm = (r.totalDist || 0).toFixed(1);
+                    // Rota zamanı tahmini: 40km/h ortalama hız + yer başına 45dk
+                    const travelTimeHours = (r.totalDist || 0) / 40;
+                    const visitTimeHours = totalPlaces * 0.75;
+                    const totalHours = travelTimeHours + visitTimeHours;
+                    const totalTimeFmt = totalHours < 1
+                        ? `${Math.round(totalHours * 60)} dk`
+                        : `${Math.floor(totalHours)} sa ${Math.round((totalHours % 1) * 60)} dk`;
+
                     const googleUrl = generateGoogleMapsUrlFromPlaces(r.generatedRoute);
                     return `
                       <div class="space-y-4">
-                        <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-3">
-                            <div class="flex items-center justify-between mb-3">
+                        <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-3 relative">
+                            <!-- ÖZET KART -->
+                            <div class="absolute -top-3 right-3 bg-slate-900 border border-emerald-500/50 rounded-lg px-2 py-1 shadow-lg shadow-black/50 flex flex-col items-end z-10">
+                                <span class="text-xs font-bold text-emerald-400">~${totalKm} km</span>
+                                <span class="text-[10px] text-slate-400 font-mono">Tahmini: ${totalTimeFmt}</span>
+                            </div>
+
+                            <div class="flex items-center justify-between mb-3 pt-1">
                                 <h4 class="text-sm font-bold text-emerald-100 flex items-center gap-2">
                                     🗺️ Oluşturulan Rota
                                 </h4>
-                                <button data-act="route-back-select" class="text-xs text-emerald-200/70 hover:text-white underline">Düzenle</button>
+                                <button data-act="route-back-select" class="text-xs text-emerald-200/70 hover:text-white underline mr-24">Düzenle</button>
                             </div>
                             
                             <div class="relative pl-4 space-y-0 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-700/50">
                                 ${r.generatedRoute.map((p, idx) => `
-                                    <div class="relative py-2">
+                                    <div class="relative py-2 group">
                                         <div class="absolute -left-[21px] top-3 w-3 h-3 rounded-full ${idx === 0 ? 'bg-emerald-500' : (idx === r.generatedRoute.length - 1 ? 'bg-red-500' : 'bg-slate-600')} border-2 border-slate-900"></div>
-                                        <div class="flex justify-between items-center">
-                                            <div class="text-sm font-medium text-slate-200">${esc(p.name)}</div>
+                                        <div class="flex justify-between items-center cursor-pointer hover:bg-white/5 rounded px-1 -mx-1 transition" data-act="route-open-detail" data-id="${p.id}">
+                                            <div>
+                                                <div class="text-sm font-medium text-slate-200">${esc(p.name)}</div>
+                                                <div class="text-[10px] text-slate-500 capitalize">${esc(p.category)}</div>
+                                            </div>
                                             <div class="text-[10px] text-amber-500 font-bold ml-2">⭐ ${p.rating}</div>
                                         </div>
-                                        <div class="text-[10px] text-slate-500 capitalize">${esc(p.category)}</div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -3291,7 +3345,13 @@
                             category: tags.tourism || tags.historic || 'Diğer',
                             lat: pLat,
                             lon: pLon,
-                            rating: finalScore
+                            rating: finalScore,
+                            tags: {
+                                website: tags.website,
+                                wikipedia: tags.wikipedia,
+                                phone: tags.phone || tags['contact:phone'],
+                                addr: tags['addr:street'] ? (tags['addr:street'] + ' ' + (tags['addr:housenumber'] || '')) : ''
+                            }
                         };
                     }).filter(p => p.name !== 'Bilinmeyen Mekan'); // İsimsizleri ele
 
@@ -3315,11 +3375,7 @@
 
             // Basit TSP (Gezgin Satıcı) Yaklaşımı veya En Yakın Komşu (Nearest Neighbor)
             function optimizeRoute(startLat, startLon, selectedPlaces) {
-                if (!selectedPlaces || selectedPlaces.length === 0) return [];
-
-                // Başlangıç noktası olarak ilk seçilen mekanı veya şehir merkezini alabiliriz.
-                // Burada basitlik adına: İlk seçilen mekanı başlangıç kabul edip, en yakın komşuya gitme mantığı kuralım.
-                // Ancak kullanıcı "sırayla" gitmek istemeyebilir, optimizasyon istiyor.
+                if (!selectedPlaces || selectedPlaces.length === 0) return { route: [], totalDist: 0 };
 
                 let currentLat = parseFloat(startLat);
                 let currentLon = parseFloat(startLon);
@@ -3327,9 +3383,7 @@
                 // Mekanların kopyasını al
                 let pool = [...selectedPlaces];
                 const route = [];
-
-                // Eğer mekanlar arasında başlangıç noktası seçilmediyse, şehir merkezine en yakın olanla başla
-                // (Opsiyonel: Kullanıcıya başlangıç noktası seçtirmek daha iyi ama şimdilik otomatik)
+                let totalDist = 0;
 
                 while (pool.length > 0) {
                     // Şu anki konuma en yakın mekanı bul
@@ -3347,6 +3401,7 @@
 
                     if (nearestIdx !== -1) {
                         const nextPlace = pool[nearestIdx];
+                        totalDist += minDist;
                         route.push(nextPlace);
                         currentLat = parseFloat(nextPlace.lat);
                         currentLon = parseFloat(nextPlace.lon);
@@ -3356,7 +3411,7 @@
                     }
                 }
 
-                return route;
+                return { route, totalDist };
             }
 
             function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
@@ -6877,9 +6932,22 @@
                     }
                     // Rotayı optimize et
                     const optimized = optimizeRoute(state.route.lat, state.route.lon, state.route.selectedPlaces);
-                    state.route.generatedRoute = optimized;
+                    state.route.generatedRoute = optimized.route;
+                    state.route.totalDist = optimized.totalDist;
                     state.route.step = 'result';
                     state.modals.route = true; // Modalı açık tut
+                    renderApp();
+                }
+
+                if (act === 'route-open-detail') {
+                    state.route.viewPlaceDetail = String(id);
+                    state.modals.route = true;
+                    renderApp();
+                }
+
+                if (act === 'close-place-detail') {
+                    state.route.viewPlaceDetail = null;
+                    state.modals.route = true;
                     renderApp();
                 }
 
