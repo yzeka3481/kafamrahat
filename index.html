@@ -544,9 +544,11 @@
         });
       }
 
+      // Nominatim usage policy: Max 1 request per second.
+      // We increase debounce to 1000ms to minimize 429 errors.
       function scheduleCityPredictionsRefresh() {
         if (_itinCityPredTimer) clearTimeout(_itinCityPredTimer);
-        _itinCityPredTimer = setTimeout(() => refreshItinCityPredictions(), 250);
+        _itinCityPredTimer = setTimeout(() => refreshItinCityPredictions(), 1000);
       }
 
       // YENİ FONKSİYON: Nominatim (OpenStreetMap) üzerinden şehir arama
@@ -554,12 +556,20 @@
         if (!query || query.length < 2) return [];
         try {
           console.log('Fetching Nominatim for:', query);
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&accept-language=tr&limit=5`;
+          // E-posta parametresi eklemek iyi bir pratiktir (Nominatim için)
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&accept-language=tr&limit=5&email=demo@example.com`;
+
           const res = await fetch(url);
+
           if (!res.ok) {
             console.error('Nominatim response not OK:', res.status);
-            return [];
+            if (res.status === 429) {
+              // Rate limit hatası
+              throw new Error('Çok fazla istek yapıldı. Lütfen biraz bekleyin.');
+            }
+            throw new Error(`Sunucu hatası: ${res.status}`);
           }
+
           const data = await res.json();
           console.log('Nominatim results:', data);
           return data.map(item => ({
@@ -570,12 +580,13 @@
           }));
         } catch (e) {
           console.error('Nominatim hatası:', e);
-          return [];
+          // Hatayı yukarı fırlat ki UI'da gösterebilelim
+          throw e;
         }
       }
 
       // YENİ FONKSİYON: Şehir önerilerini DOM'a bas (Targeted Update)
-      function renderItinCitySuggestions(items) {
+      function renderItinCitySuggestions(items, errorMsg = null) {
         const container = document.getElementById('itin-city-suggestions');
         if (!container) {
           console.warn('Suggestion container #itin-city-suggestions NOT found in DOM');
@@ -583,13 +594,20 @@
         }
 
         container.classList.remove('hidden');
-        // Z-index'i artır ve görünürlüğü zorla
         container.style.display = 'block';
         container.style.zIndex = '9999';
 
+        if (errorMsg) {
+          container.innerHTML = `<div class="p-3 text-xs text-rose-400 italic text-center font-medium">${esc(errorMsg)}</div>`;
+          // 3 saniye sonra gizle
+          setTimeout(() => {
+            if (container.innerText.includes(errorMsg)) container.classList.add('hidden');
+          }, 3500);
+          return;
+        }
+
         if (!items || !items.length) {
           container.innerHTML = '<div class="p-3 text-sm text-slate-400 italic text-center">Sonuç bulunamadı</div>';
-          // 2 saniye sonra gizle
           setTimeout(() => {
             if (container.innerText.includes('Sonuç bulunamadı')) container.classList.add('hidden');
           }, 2000);
@@ -623,7 +641,7 @@
           container.classList.remove('hidden');
           container.style.display = 'block';
           container.style.zIndex = '9999';
-          container.innerHTML = '<div class="p-3 text-xs text-slate-400 flex items-center gap-2"><div class="w-3 h-3 rounded-full border-2 border-slate-500 border-t-transparent animate-spin"></div>Aranıyor...</div>';
+          container.innerHTML = '<div class="p-3 text-xs text-slate-400 flex items-center gap-2"><div class="w-3 h-3 rounded-full border-2 border-slate-500 border-t-transparent animate-spin"></div>Aranıyor... (1sn bekleme)</div>';
         }
 
         fetchCityFromNominatim(q).then(items => {
@@ -634,7 +652,8 @@
           console.error('Prediction fetch error:', err);
           if (reqId !== _itinCityPredReqId) return;
           state.itin.cityPreds = [];
-          renderItinCitySuggestions([]);
+          // Hata mesajını UI'da göster
+          renderItinCitySuggestions([], err.message || 'Arama hatası');
         });
       }
 
