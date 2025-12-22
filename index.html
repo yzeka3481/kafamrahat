@@ -3386,10 +3386,14 @@
                                     photo: p.photos && p.photos.length ? p.photos[0].getUrl({ maxWidth: 400 }) : null,
                                     tags: { addr: p.formatted_address }
                                 })).sort((a, b) => b.rating - a.rating));
-                            } else { resolve([]); }
+                            } else {
+                                alert('Google API Hatası: ' + status); // DEBUG ALERT
+                                console.error('Google Places Status:', status);
+                                resolve([]);
+                            }
                         });
                     });
-                } catch (e) { console.error(e); throw e; }
+                } catch (e) { alert('Sistem Hatası: ' + e.message); console.error(e); throw e; }
             }
 
             /* DEPRECATED: Overpass Logic Removed */
