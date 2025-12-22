@@ -369,7 +369,7 @@
             }
 
             // --- Sabitler ---
-            const K = { EXP: 'travel_expenses', LIST: 'travel_checklist', BUD: 'travel_budget', PREF: 'travel_pref', NOTES: 'travel_notes', RES: 'travel_reservations', TRIPS: 'travel_trips' };
+            const K = { EXP: 'travel_expenses', LIST: 'travel_checklist', BUD: 'travel_budget', PREF: 'travel_pref', NOTES: 'travel_notes', RES: 'travel_reservations', TRIPS: 'travel_trips', TRANS: 'travel_transfers' };
             const AVAILABLE_CURRENCIES = ['TRY', 'EUR', 'USD', 'GBP', 'JPY', 'CAD', 'AUD'];
 
             // YENİ FOTOĞRAF SABİTLERİ
@@ -414,6 +414,20 @@
 
 
             let chartInst = null, state = {};
+
+            // YENİ: Rota Oluşturucu State Başlangıç Değerleri
+            const ROUTE_STATE_DEFAULT = {
+                city: '',
+                lat: null,
+                lon: null,
+                searchLoading: false,
+                placesLoading: false,
+                places: [],         // API'den gelen ham mekan listesi
+                selectedPlaces: [], // Kullanıcının seçtiği mekanlar (id listesi veya obje)
+                generatedRoute: null, // Oluşturulan rota (sıralı liste ve maps linki)
+                step: 'search',     // 'search' | 'selection' | 'result'
+                error: ''
+            };
 
             // Harcamayı ana para birimine dönüştürür
             function convertToBase(amount, currency, targetCurrency = BASE_CURRENCY) {
@@ -563,6 +577,7 @@
 
             function buildReportHtml(payload) {
                 const fmt = (n) => n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const reportCur = payload.reportCurrency || payload.baseCurrency || 'TRY';
                 const dateRange = (payload.dateFrom && payload.dateTo)
                     ? `${payload.dateFrom} – ${payload.dateTo}`
                     : 'Tarih bilgisi yok';
@@ -583,8 +598,8 @@
           <td>${esc(e.cat || '')}</td>
           <td><strong>${esc(e.place || '')}</strong></td>
           <td>${esc(e.city || '')}</td>
-          <td class="amt-cell">${fmt(e.amt)} <span style="font-size:10px; color:#64748b;">${esc(e.cur)}</span></td>
-          <td><span class="badge ${e.isIndividual ? 'badge-ind' : 'badge-shared'}">${e.isIndividual ? 'Bireysel' : 'Ortak'}</span></td>
+          <td class="amt-cell">${fmt(convertToBase(Number(e.amt) || 0, e.cur || reportCur, reportCur))} <span style="font-size:10px; color:#64748b;">${esc(reportCur)}</span></td>
+          <td><span class="badge ${e.isIndividual ? 'badge-ind' : 'badge-shared'}">${e.isIndividual ? 'Bireysel' : 'Ortak'}</span>${(!e.isIndividual && e.isSettled) ? ` <span class="badge badge-settled">Ödendi</span>` : ''}</td>
         </tr>
     `).join('');
 
@@ -594,7 +609,7 @@
           <td>${esc(r.type || '')}</td>
           <td><strong>${esc(r.name || '')}</strong></td>
           <td>${esc(r.location || '')}</td>
-<td class="amt-cell">${fmt(r.cost)} <span style="font-size:10px; color:#64748b;">${esc(r.cur)}</span></td>
+<td class="amt-cell">${fmt(convertToBase(Number(r.cost) || 0, r.cur || reportCur, reportCur))} <span style="font-size:10px; color:#64748b;">${esc(reportCur)}</span></td>
           <td><span class="badge ${r.isIndividual ? 'badge-ind' : 'badge-shared'}">${r.isIndividual ? 'Bireysel' : 'Ortak'}</span></td>
         </tr>
     `).join('');
@@ -603,6 +618,7 @@
                 const debtInfo = payload.debtInfo;
                 let debtSection = '';
 
+                let transfersSection = '';
                 if (debtInfo && debtInfo.persons && debtInfo.persons.length > 1) {
                     const totalAll = Number(debtInfo.totalShared) || 0;
                     const shareAll = Number(debtInfo.sharePerPerson) || 0;
@@ -622,7 +638,7 @@
           <td><span style="font-weight:600; color:#dc2626;">${esc(t.from)}</span></td>
           <td style="text-align:center; color:#94a3b8;">→</td>
           <td><span style="font-weight:600; color:#059669;">${esc(t.to)}</span></td>
-          <td class="amt-cell" style="background:#f0f9ff; color:#0369a1;">${fmt(t.amount)} ${esc(debtInfo.currency)}</td>
+          <td class="amt-cell" style="background:rgba(14,116,144,.18); color:#e0f2fe;">${fmt(t.amount)} ${esc(debtInfo.currency)}</td>
         </tr>
     `).join('')
                         : `
@@ -657,8 +673,8 @@
                     debtSection = `
   <div class="card debt-card">
     <div class="section-title" style="margin-top:0;">
-        <span style="background:#f3e8ff; color:#7c3aed;">💰</span>
-        <div style="font-size:16px; color:#581c87;">Mahsuplaşma ve Kişi Bazlı Harcama</div>
+        <span style="background:rgba(167,139,250,.18); color:#ddd6fe; border:1px solid rgba(167,139,250,.35);">💰</span>
+        <div style="font-size:16px; color:#e9d5ff;">Mahsuplaşma ve Kişi Bazlı Harcama</div>
     </div>
 
     <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:12px;">
@@ -674,11 +690,11 @@
 
     <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:14px;">
       <div class="stat-box" style="background:white; border-color:#e9d5ff;">
-        <div class="stat-label" style="color:#7c3aed;">Mahsuplaşmaya Dahil Ortak Harcama</div>
+        <div class="stat-label" style="color:#7c3aed;">Toplam Mahsuplaşılacak Harcama</div>
         <div class="stat-value" style="color:#581c87;">${fmt(totalSettle)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
       </div>
       <div class="stat-box" style="background:white; border-color:#e9d5ff;">
-        <div class="stat-label" style="color:#7c3aed;">Mahsuplaşmaya Dahil Kişi Payı</div>
+        <div class="stat-label" style="color:#7c3aed;">Kişi Başı Mahsuplaşılacak Harcama</div>
         <div class="stat-value" style="color:#581c87;">${fmt(shareSettle)} <span style="font-size:12px; font-weight:normal;">${esc(debtInfo.currency)}</span></div>
       </div>
     </div>
@@ -704,7 +720,7 @@
     <div style="height:14px;"></div>
 
     <div class="section-title" style="margin-top:0;">
-        <span style="background:#f3e8ff; color:#7c3aed;">👤</span>
+        <span style="background:rgba(167,139,250,.18); color:#ddd6fe; border:1px solid rgba(167,139,250,.35);">👤</span>
         <div style="font-size:14px; color:#581c87;">Kişi Bazlı Özet (Mahsuplaşma)</div>
     </div>
 
@@ -728,6 +744,40 @@
 `;
                 }
 
+                // Transfer/Mahsuplaşma Bölümü (YENİ)
+                try {
+                    const tfs = (debtInfo && Array.isArray(debtInfo.transfers)) ? debtInfo.transfers : [];
+                    if (tfs.length) {
+                        const rows = tfs.map(t => `
+                            <tr>
+<td><strong>${esc(t.from || '')}</strong> → <strong>${esc(t.to || '')}</strong></td>
+                                <td class="amt-cell">${fmt(convertToBase(Number(t.amt) || 0, t.cur || reportCur, reportCur))} <span style="font-size:10px; color:#64748b;">${esc(reportCur)}</span></td>
+                            </tr>
+                        `).join('');
+
+                        transfersSection = `
+                            <div class="section">
+                              <div class="section-title">Yapılan Mahsuplaşmalar (Transferler) (${tfs.length})</div>
+                              <table>
+                                <thead><tr><th>Transfer</th><th class="amt">Tutar</th></tr></thead>
+                                <tbody>${rows}</tbody>
+                              </table>
+                              <div style="color:#64748b; font-size:11px; margin-top:6px">
+                                Not: Transferler kişi başı harcamayı etkilemez; sadece kim-kime hesabındaki kalan ödemeleri günceller.
+                              </div>
+                            </div>
+                        `;
+                    } else if (debtInfo) {
+                        transfersSection = `
+                            <div class="section">
+                              <div class="section-title">Yapılan Mahsuplaşmalar (Transferler)</div>
+                              <div style="color:#64748b; font-size:12px; font-style:italic">Mahsuplaşma kaydı bulunmamaktadır.</div>
+                            </div>
+                        `;
+                    }
+                } catch (e) { console.error(e); }
+
+
                 const html = `<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -735,251 +785,234 @@
   <!-- Cache-Buster: ${Date.now()} -->
   <title>Seyahat Cüzdanı – ${esc(payload.trip)} Raporu</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root{
+          --bg: #0b1220;
+          --panel: #0f172a;
+          --panel2:#111c2f;
+          --text: #e5e7eb;
+          --muted:#cbd5e1;
+          --muted2:#94a3b8;
+          --border:#334155;
+          --border2:#475569;
+          --accent:#a78bfa;
+          --good:#34d399;
+          --warn:#fbbf24;
+          --bad:#fb7185;
+        }
+
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 40px;
-            color: #1e293b;
-            background: #f8fafc;
-            line-height: 1.5;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          margin: 0;
+          padding: 36px;
+          color: var(--text);
+          background: var(--bg);
+          line-height: 1.5;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
-        /* Modern Grid Layout */
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+        .container { max-width: 860px; margin: 0 auto; }
+
+        header{
+          margin-bottom: 26px;
+          border-bottom: 2px solid var(--border);
+          padding-bottom: 18px;
         }
 
-        /* Header Section */
-        header {
-            margin-bottom: 30px;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 20px;
+        h1{
+          margin: 0 0 8px 0;
+          font-size: 28px;
+          font-weight: 800;
+          letter-spacing: -0.5px;
+          color: var(--text);
         }
 
-        h1 {
-            margin: 0 0 8px 0;
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .meta-grid{
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 12px;
+          margin-top: 12px;
         }
 
-        .meta-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-top: 15px;
+        .meta-item{
+          display: flex;
+          gap: 10px;
+          align-items: flex-start;
+          padding: 12px 12px;
+          background: var(--panel);
+          border-radius: 12px;
+          border: 1.5px solid var(--border);
         }
 
-        .meta-item {
-            font-size: 12px;
-            color: #64748b;
+        .meta-icon{
+          flex: 0 0 auto;
+          width: 24px;
+          height: 24px;
+          background: rgba(167,139,250,.18);
+          color: #ddd6fe;
+          border: 1px solid rgba(167,139,250,.35);
+          border-radius: 7px;
+          font-size: 12px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
-        .meta-item strong {
-            color: #334155;
-            display: block;
-            margin-bottom: 2px;
+        .meta-label{ font-size: 11px; color: var(--muted2); font-weight: 600; margin-bottom: 2px; }
+        .meta-value{ font-size: 13px; color: var(--text); font-weight: 600; }
+
+        .meta-footer{
+          margin-top: 12px;
+          padding: 10px 12px;
+          background: rgba(255,255,255,.02);
+          border-radius: 12px;
+          border: 1.5px dashed var(--border);
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+        }
+        .meta-footer-label{ font-size: 11px; color: var(--muted2); font-weight: 700; }
+        .meta-footer-value{ font-size: 12px; color: var(--text); font-weight: 800; letter-spacing: .2px; }
+
+
+        .card{
+          background: linear-gradient(180deg, var(--panel) 0%, var(--panel2) 100%);
+          border-radius: 16px;
+          padding: 18px;
+          border: 1.5px solid var(--border);
+          box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset;
+          margin-bottom: 18px;
         }
 
-        /* Sections & Cards */
-        .section-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 30px 0 15px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .section-title{
+          font-size: 16px;
+          font-weight: 800;
+          color: var(--text);
+          margin: 28px 0 14px 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
+
+        .stats-grid{
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+          gap: 12px;
+        }
+
+        .stat-box{
+          text-align: center;
+          padding: 14px 12px;
+          background: rgba(255,255,255,.03);
+          border-radius: 12px;
+          border: 1.5px solid var(--border);
+        }
+
+        .stat-label{ font-size: 11px; color: var(--muted2); font-weight: 700; }
+        .stat-value{ font-size: 20px; font-weight: 900; margin-top: 4px; letter-spacing: -0.5px; }
+        .stat-sub{ font-size: 11px; color: var(--muted2); margin-top: 4px; }
+
+        .debt-card{
+          border: 2px solid rgba(167,139,250,.35);
+        }
+
+        table{
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          font-size: 12px;
+          margin-top: 10px;
+        }
+
+        th{
+          background: rgba(255,255,255,.04);
+          color: var(--muted);
+          font-weight: 800;
+          text-align: left;
+          padding: 10px 12px;
+          border-top: 1.5px solid var(--border2);
+          border-bottom: 1.5px solid var(--border2);
+        }
+
+        th:first-child{ border-top-left-radius: 10px; border-left: 1.5px solid var(--border2); }
+        th:last-child{ border-top-right-radius: 10px; border-right: 1.5px solid var(--border2); }
+
+        td{
+          padding: 10px 12px;
+          border-bottom: 1.5px solid var(--border);
+          color: var(--text);
+        }
+
+        td:first-child{ border-left: 1.5px solid var(--border); }
+        td:last-child{ border-right: 1.5px solid var(--border); }
+
+        tr:last-child td{ border-bottom: 1.5px solid var(--border2); }
+        tr:last-child td:first-child{ border-bottom-left-radius: 10px; }
+        tr:last-child td:last-child{ border-bottom-right-radius: 10px; }
+
+        tr:nth-child(even) td{ background: rgba(255,255,255,.02); }
+
+        .amt-cell{
+          text-align: right;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+          font-weight: 800;
+          letter-spacing: -0.2px;
+        }
+
+        .badge{
+          display: inline-flex;
+          align-items: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 800;
+          border: 1px solid rgba(255,255,255,.12);
+          background: rgba(255,255,255,.05);
+          color: var(--muted);
+        }
+
+        .badge-ind{ background: rgba(14,116,144,.22); color: #e0f2fe; border-color: rgba(14,116,144,.35); }
+        .badge-shared{ background: rgba(148,163,184,.12); color: #e2e8f0; border-color: rgba(148,163,184,.25); }
+        .badge-cur{ background: rgba(16,185,129,.18); color: #dcfce7; border-color: rgba(16,185,129,.30); }
+
+        .notes-box{
+          background: rgba(251,191,36,.10);
+          border: 1.5px solid rgba(251,191,36,.40);
+          border-radius: 12px;
+          padding: 14px;
+        }
+        .notes-title{ font-weight: 900; color: #fef3c7; margin-bottom: 6px; }
+        .note-text{ color: #fde68a; font-size: 12px; line-height: 1.4; }
+
+        .report-footer{
+          margin-top: 22px;
+          font-size: 11px;
+          color: var(--muted2);
+          text-align: center;
+          opacity: .9;
+        }
+
         
-        .section-title span {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            background: #e0e7ff;
-            color: #4f46e5;
-            border-radius: 6px;
-            font-size: 12px;
+        .no-print{
+          display:block;
+          margin: 0 auto 16px auto;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: rgba(167,139,250,.10);
+          border: 1.5px solid rgba(167,139,250,.25);
+          color: #e9d5ff;
+          font-size: 12px;
         }
 
-        .card {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-            border: 1px solid #f1f5f9;
-            margin-bottom: 20px;
-        }
 
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
+        @media print{
+          body{ padding: 22px; }
+          .no-print{ display:none !important; }
+          .meta-grid{ grid-template-columns: repeat(4, 1fr); }
         }
-
-        .stat-box {
-            text-align: center;
-            padding: 15px;
-            background: #f8fafc;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #64748b;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        .stat-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .stat-sub {
-            font-size: 10px;
-            color: #94a3b8;
-            margin-top: 2px;
-        }
-
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 12px;
-            margin-top: 10px;
-        }
-
-        th {
-            background: #f1f5f9;
-            color: #475569;
-            font-weight: 600;
-            text-align: left;
-            padding: 10px 12px;
-            border-top: 1px solid #e2e8f0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        th:first-child { border-top-left-radius: 8px; border-left: 1px solid #e2e8f0; }
-        th:last-child { border-top-right-radius: 8px; border-right: 1px solid #e2e8f0; }
-
-        td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #f1f5f9;
-            color: #334155;
-        }
-        
-        td:first-child { border-left: 1px solid #f1f5f9; }
-        td:last-child { border-right: 1px solid #f1f5f9; }
-
-        tr:last-child td { border-bottom: 1px solid #e2e8f0; }
-        tr:last-child td:first-child { border-bottom-left-radius: 8px; }
-        tr:last-child td:last-child { border-bottom-right-radius: 8px; }
-
-        tr:nth-child(even) td {
-            background: #fcfcfc;
-        }
-
-        .amt-cell {
-            text-align: right;
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-        }
-
-        /* Debt Section */
-        .debt-card {
-            background: linear-gradient(145deg, #ffffff 0%, #fbfdff 100%);
-            border: 1px solid #bfdbfe;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .debt-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 4px; height: 100%;
-            background: #3b82f6;
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .badge-ind { background: #e0f2fe; color: #0284c7; }
-        .badge-shared { background: #f1f5f9; color: #475569; }
-        .badge-cur { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-
-        /* Notes Box */
-        .notes-box {
-            background: #fffbeb;
-            border: 1px solid #fcd34d;
-            border-radius: 12px;
-            padding: 15px;
-        }
-        
-        .notes-title {
-            color: #92400e;
-            font-weight: 700;
-            font-size: 13px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .note-text {
-            color: #78350f;
-            font-size: 11px;
-            margin-bottom: 6px;
-            padding-left: 10px;
-            border-left: 2px solid #f59e0b;
-        }
-
-        /* Footer */
-        .report-footer {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 10px;
-            color: #94a3b8;
-            padding-top: 15px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        @media print {
-            body { 
-                background: white; 
-                padding: 0; 
-                margin: 15mm;
-            }
-            .no-print { display: none !important; }
-            .card, .debt-card, table { page-break-inside: avoid; }
-            .section-title { margin-top: 20px; }
-            box-shadow: none !important;
-        }
-    </style>
+</style>
 </head>
 <body>
   <div class="no-print" style="max-width:800px; margin:0 auto 20px auto; font-size:11px; color:#b45309; background:#fffbeb; padding:12px; border-radius:10px; border:1px solid #fcd34d; display:flex; align-items:center; gap:8px;">
@@ -990,27 +1023,44 @@
   <div class="container">
       <header>
           <h1>Seyahat Cüzdanı – Harcama Raporu</h1>
+
           <div class="meta-grid">
               <div class="meta-item">
-                  <strong>Seyahat</strong>
-                  ${esc(payload.trip)}
+                  <span class="meta-icon">🧳</span>
+                  <div>
+                      <div class="meta-label">Seyahat</div>
+                      <div class="meta-value">${esc(payload.trip)}</div>
+                  </div>
               </div>
+
               <div class="meta-item">
-                  <strong>Tarih Aralığı</strong>
-                  ${esc(dateRange)}
+                  <span class="meta-icon">📅</span>
+                  <div>
+                      <div class="meta-label">Tarih Aralığı</div>
+                      <div class="meta-value">${esc(dateRange)}</div>
+                  </div>
               </div>
+
               <div class="meta-item">
-                  <strong>Rapor Para Birimi</strong>
-                  <span class="badge badge-cur">${esc(payload.reportCurrency)}</span>
+                  <span class="meta-icon">💱</span>
+                  <div>
+                      <div class="meta-label">Rapor Para Birimi</div>
+                      <div class="meta-value"><span class="badge badge-cur">${esc(payload.reportCurrency)}</span></div>
+                  </div>
               </div>
+
               <div class="meta-item">
-                  <strong>Kapsam</strong>
-                  <span class="badge badge-shared" style="background:#f1f5f9;">${esc(scopeLabel)}</span>
+                  <span class="meta-icon">🧾</span>
+                  <div>
+                      <div class="meta-label">Kapsam</div>
+                      <div class="meta-value"><span class="badge badge-shared">${esc(scopeLabel)}</span></div>
+                  </div>
               </div>
-              <div class="meta-item">
-                  <strong>Oluşturulma</strong>
-                  ${esc(new Date(payload.generatedAt).toLocaleDateString('tr-TR'))}
-              </div>
+          </div>
+
+          <div class="meta-footer">
+              <span class="meta-footer-label">Oluşturulma</span>
+              <span class="meta-footer-value">${esc(new Date(payload.generatedAt).toLocaleDateString('tr-TR'))}</span>
           </div>
       </header>
     
@@ -1051,6 +1101,7 @@
       <!-- BORÇ BÖLÜMÜ -->
       <div style="margin-top:30px;">
         ${debtSection}
+  ${transfersSection}
       </div>
 
       <!-- 2) Rezervasyonlar -->
@@ -1410,6 +1461,7 @@
                 fuelAmount: '',
                 type: EXPENSE_TYPES[0].id,
                 isIndividual: false,
+                isSettled: false,
             });
 
             // YENİ FONKSİYON: Boş Rezervasyon Formu
@@ -1498,7 +1550,12 @@
                 // YENİ: Rezervasyonları yükle
                 try { r = JSON.parse(localStorage.getItem(K.RES) || '[]'); } catch (err) { r = []; }
 
-                try { prefTZ = localStorage.parse(localStorage.getItem(K.PREF + '_tz') || initialTZ); } catch (err) { }
+
+                // YENİ: Transfer/Mahsuplaşma kayıtlarını yükle
+                let tf = [];
+                try { tf = JSON.parse(localStorage.getItem(K.TRANS) || '[]'); } catch (err) { tf = []; }
+
+                try { prefTZ = (localStorage.getItem(K.PREF + '_tz') || initialTZ); } catch (err) { }
                 try { criticalNotes = JSON.parse(localStorage.getItem(K.NOTES) || '[]'); } catch (err) { criticalNotes = []; }
                 try { preferredBaseCurrency = localStorage.getItem(K.PREF + '_base_cur') || 'TRY'; } catch (err) { preferredBaseCurrency = 'TRY'; }
 
@@ -1524,6 +1581,7 @@
                         endKm: item.endKm || '',
                         fuelAmount: item.fuelAmount || '',
                         type: item.type || EXPENSE_TYPES[0].id,
+                        isSettled: !!item.isSettled,
                         isIndividual: item.isIndividual !== undefined ? item.isIndividual : false,
                     };
                     delete updated.fuelLocation;
@@ -1551,6 +1609,7 @@
                     exp: e,
                     chk: c,
                     res: r, // Yeni: Rezervasyonlar
+                    transfers: tf, // Yeni: Transfer/Mahsuplaşmalar
                     view: 'list',
                     tab: 'sum',
                     tripFilter: '',
@@ -1596,6 +1655,7 @@
                     reportCurrency: preferredBaseCurrency,
                     quickExp: { trip: '', cat: 'food', amt: '', cur: preferredBaseCurrency },
                     quickExpOpen: false,
+                    undo: null,
                 };
 
                 state.openChkCats = {};
@@ -1610,14 +1670,92 @@
                 localStorage.setItem(K.RES, JSON.stringify(state.res)); // Rezervasyonları kaydet
                 localStorage.setItem(K.PREF + '_tz', state.targetTimezone);
                 localStorage.setItem(K.NOTES, JSON.stringify(state.criticalNotes));
-                localStorage.setItem(K.NOTES, JSON.stringify(state.criticalNotes));
                 localStorage.setItem(K.PREF + '_base_cur', state.baseCurrency);
                 localStorage.setItem(K.TRIPS, JSON.stringify(state.trips));
+                localStorage.setItem(K.TRANS, JSON.stringify(state.transfers || []));
                 if (!isGuest()) {
                     saveStateToCloud();
                 }
             };
 
+
+
+            // --- UNDO (Geri Al) Mekanizması ---
+            let undoTimer = null;
+            function setUndo(entry) {
+                try {
+                    const id = genId();
+                    state.undo = { id, ...entry, expiresAt: Date.now() + 10_000 };
+                    if (undoTimer) clearTimeout(undoTimer);
+                    undoTimer = setTimeout(() => {
+                        if (state.undo && state.undo.id === id) {
+                            state.undo = null;
+                            renderApp();
+                        }
+                    }, 10_200);
+                } catch (err) { console.error(err); }
+            }
+
+            function performUndo() {
+                try {
+                    const u = state.undo;
+                    if (!u) return;
+                    state.undo = null;
+
+                    switch (u.kind) {
+                        case 'exp':
+                            if (u.item) state.exp.push(u.item);
+                            break;
+                        case 'res':
+                            if (u.item) state.res.push(u.item);
+                            break;
+                        case 'transfer':
+                            if (u.item) state.transfers.push(u.item);
+                            break;
+                        case 'note':
+                            if (u.item) state.criticalNotes.push(u.item);
+                            break;
+                        case 'chk-item':
+                            if (u.item) state.chk.items.push(u.item);
+                            break;
+                        case 'chk-cat':
+                            if (u.cat) state.chk.cats.push(u.cat);
+                            if (Array.isArray(u.items) && u.items.length) state.chk.items.push(...u.items);
+                            if (u.cat && state.openChkCats) state.openChkCats[u.cat.id] = false;
+                            break;
+                        case 'trip':
+                            if (u.trip && !state.trips.some(t => String(t.id) === String(u.trip.id))) state.trips.push(u.trip);
+                            if (Array.isArray(u.exp) && u.exp.length) state.exp.push(...u.exp);
+                            if (Array.isArray(u.res) && u.res.length) state.res.push(...u.res);
+                            if (Array.isArray(u.notes) && u.notes.length) state.criticalNotes.push(...u.notes);
+                            break;
+                        case 'img':
+                            if (typeof u.index === 'number' && u.data) {
+                                state.form.imgs.splice(u.index, 0, u.data);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+
+                    save();
+                    renderApp();
+                } catch (err) { console.error(err); }
+            }
+
+            function renderUndoBar() {
+                const u = state.undo;
+                if (!u || !u.expiresAt || u.expiresAt <= Date.now()) return '';
+                const msg = esc(u.message || 'İşlem geri alınabilir');
+                return `
+                  <div class="fixed left-0 right-0 bottom-20 sm:bottom-6 z-[9999] px-3">
+                    <div class="mx-auto max-w-md bg-slate-900/95 border border-slate-700 rounded-2xl shadow-xl px-4 py-3 flex items-center justify-between gap-3">
+                      <div class="text-sm text-slate-200">${msg}</div>
+                      <button data-act="undo" class="shrink-0 bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold text-sm px-3 py-1.5 rounded-lg">Geri Al</button>
+                    </div>
+                  </div>
+                `;
+            }
 
             function getUserDocRef() {
                 if (!db || !currentUser) return null;
@@ -1662,6 +1800,9 @@
                             if (Array.isArray(data.trips)) {
                                 state.trips = data.trips;
                             }
+                            if (Array.isArray(data.transfers)) {
+                                state.transfers = data.transfers;
+                            }
                             // LocalStorage'i de güncelle
                             save();
                             renderApp();
@@ -1686,10 +1827,11 @@
                     res: state.res || [],
                     chk: state.chk || {},
                     criticalNotes: state.criticalNotes || [],
-                    targetTimezone: state.targetTimezone || '',
+                    transfers: state.transfers || [],
                     targetTimezone: state.targetTimezone || '',
                     baseCurrency: state.baseCurrency || 'TRY',
                     trips: state.trips || [],
+                    transfers: state.transfers || [],
                     updatedAt: new Date().toISOString()
                 };
                 isCloudSaving = true;
@@ -2356,7 +2498,7 @@
                 const persons = trip.persons.split(',').map(p => p.trim()).filter(Boolean);
                 if (persons.length < 2) return null;
 
-                const baseCur = state.baseCurrency || BASE_CURRENCY;
+                const baseCur = state.reportCurrency || state.baseCurrency || BASE_CURRENCY;
 
                 // Herkesin bakiyesi (pozitif: alacaklı, negatif: borçlu)
                 // NOT: "Ödendi/Mahsuplaşıldı" işaretli rezervasyonlar alacak-verecek hesabına DAHİL EDİLMEZ,
@@ -2384,13 +2526,21 @@
                     if (!amtCtx || isNaN(amtCtx)) return;
 
                     totalSharedAll += amtCtx;
-                    totalSharedForSettlement += amtCtx;
 
-                    const payer = (x.payer && String(x.payer).trim()) ? String(x.payer).trim() : persons[0];
-                    if (balances.hasOwnProperty(payer)) {
-                        balances[payer] += amtCtx;
-                        personPayments[payer] += amtCtx;
-                        personPaymentsAll[payer] += amtCtx;
+                    const payerRaw = (x.payer && String(x.payer).trim()) ? String(x.payer).trim() : '';
+                    if (payerRaw && personPaymentsAll.hasOwnProperty(payerRaw)) {
+                        personPaymentsAll[payerRaw] += amtCtx;
+                    }
+
+                    // Mahsuplaşma hesabına sadece "Ödendi" olmayan kayıtlar dahil edilir
+                    if (!x.isSettled) {
+                        totalSharedForSettlement += amtCtx;
+
+                        const payer = payerRaw || persons[0];
+                        if (balances.hasOwnProperty(payer)) {
+                            balances[payer] += amtCtx;
+                            personPayments[payer] += amtCtx;
+                        }
                     }
                 });
 
@@ -2432,6 +2582,38 @@
                 // Mahsuplaşma hesabı için net bakiye: Ödediği (mahsuba dahil) - Kişi payı (mahsuba dahil)
                 persons.forEach(p => {
                     balances[p] -= sharePerPersonForSettlement;
+                });
+
+
+                // 3) Mahsuplaşmalar / Transferler (tüketime dahil değil, borç-alacak bakiyesini düzeltir)
+                const balancesBeforeTransfers = { ...balances };
+                const transfersRaw = (state.transfers || []).filter(t => t && t.trip === tripName);
+                const appliedTransfers = [];
+                transfersRaw.forEach(tr => {
+                    const from = (tr.from || '').trim();
+                    const to = (tr.to || '').trim();
+                    const amt = Number(tr.amt) || 0;
+                    if (!from || !to || from === to || amt <= 0) return;
+                    if (!balances.hasOwnProperty(from) || !balances.hasOwnProperty(to)) return;
+
+                    const cur = tr.cur || baseCur;
+                    const amtCtx = convertToBase(amt, cur, baseCur);
+                    if (!amtCtx || isNaN(amtCtx)) return;
+
+                    // from -> to ödeme yapıldı: from bakiyesi artar (borcu azalır), to bakiyesi azalır (alacağı azalır)
+                    balances[from] += amtCtx;
+                    balances[to] -= amtCtx;
+
+                    appliedTransfers.push({
+                        id: tr.id || genId(),
+                        trip: tripName,
+                        date: tr.date || '',
+                        from,
+                        to,
+                        amt: amtCtx,
+                        cur: baseCur,
+                        note: tr.note || ''
+                    });
                 });
 
                 // Borçlu/alacaklı listesi
@@ -2482,6 +2664,11 @@
                     transactions,
                     currency: baseCur,
 
+
+                    balancesBeforeTransfers,
+                    balancesAfterTransfers: { ...balances },
+                    transfers: appliedTransfers,
+
                     // Kişi bazlı
                     personPayments,        // mahsuba dahil ödemeler
                     personPaymentsAll,     // toplam ödemeler (ödeyen bilgisi varsa)
@@ -2489,7 +2676,7 @@
                 };
             }
             function renderReportContent() {
-                const allTrips = [...new Set(state.exp.map(x => x.trip).filter(Boolean).concat(state.res.map(x => x.trip).filter(Boolean)))].sort();
+                const allTrips = [...new Set(state.exp.map(x => x.trip).filter(Boolean).concat(state.res.map(x => x.trip).filter(Boolean)).concat((state.transfers || []).map(x => x.trip).filter(Boolean)))].sort();
                 let selectedTrip = state.selectedReportTrip;
 
                 if (!allTrips.includes(selectedTrip)) {
@@ -2613,25 +2800,102 @@
                 const debtInfo = calculateDebts(selectedTrip);
                 let debtHtml = '';
 
+
+                // TRANSFER (Mahsuplaşma) Bölümü
+                let transferSectionHtml = '';
+                try {
+                    const tripObjForTransfers = (state.trips || []).find(t => t.name === selectedTrip);
+                    const personsForTransfers = (tripObjForTransfers && tripObjForTransfers.persons)
+                        ? tripObjForTransfers.persons.split(',').map(p => p.trim()).filter(Boolean)
+                        : [];
+                    if (personsForTransfers.length >= 2) {
+                        const transfersForTrip = (state.transfers || []).filter(t => t && t.trip === selectedTrip);
+                        transfersForTrip.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+
+                        const personOpts = personsForTransfers.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+                        const curOpts = AVAILABLE_CURRENCIES.map(c => `<option value="${c}" ${c === reportCur ? 'selected' : ''}>${c}</option>`).join('');
+
+                        const transferRows = transfersForTrip.length
+                            ? transfersForTrip.map(tr => `
+                                <div class="flex items-center justify-between bg-slate-900/60 border border-slate-700/50 rounded-lg p-3">
+                                    <div class="min-w-0">
+                                        <div class="text-sm text-white font-semibold truncate">
+                                            ${esc(tr.from || '')} <span class="text-slate-400 mx-1">→</span> ${esc(tr.to || '')}
+                                            <span class="text-slate-400 mx-2">•</span>
+                                            <span class="text-white font-mono text-sm">${fmtNum(convertToBase(Number(tr.amt) || 0, tr.cur || reportCur, reportCur))} ${esc(reportCur)}</span>
+                                        </div></div>
+                                    <button data-act="del-transfer" data-id="${esc(tr.id)}" class="ml-3 shrink-0 px-3 py-2 rounded-lg bg-red-600/30 hover:bg-red-600/50 border border-red-500/30 text-red-100 text-xs font-bold">Sil</button>
+                                </div>
+                            `).join('')
+                            : `<div class="text-sm text-slate-400 bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">Henüz mahsuplaşma kaydı yok.</div>`;
+
+                        transferSectionHtml = `
+                            <div class="bg-gradient-to-br from-emerald-900/20 via-slate-800/40 to-teal-900/20 border border-emerald-500/20 rounded-xl p-5 space-y-4 shadow-lg">
+                                <h4 class="text-base font-bold text-white uppercase flex items-center gap-2">
+                                    <span class="text-2xl">🔁</span> Yapılan Mahsuplaşmalar (Transferler)
+                                </h4>
+
+                                <div class="space-y-2">
+                                    ${transferRows}
+                                </div>
+
+                                <div class="pt-3 border-t border-slate-700/40">
+                                    <h5 class="text-xs font-bold text-slate-300 uppercase mb-2">Yeni Mahsuplaşma Ekle</h5>
+                                    <div class="grid grid-cols-1 md:grid-cols-6 gap-2">
+                                        <div class="md:col-span-2">
+                                            <label class="block text-[11px] text-slate-500 mb-1">Gönderen</label>
+                                            <select id="trf-from" class="w-full bg-slate-950/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-white">${personOpts}</select>
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-[11px] text-slate-500 mb-1">Alan</label>
+                                            <select id="trf-to" class="w-full bg-slate-950/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-white">${personOpts}</select>
+                                        </div>
+                                        <div class="md:col-span-1">
+                                            <label class="block text-[11px] text-slate-500 mb-1">Tutar</label>
+                                            <input id="trf-amt" inputmode="decimal" placeholder="0" class="w-full bg-slate-950/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-white"/>
+                                        </div>
+                                        <div class="md:col-span-1">
+                                            <label class="block text-[11px] text-slate-500 mb-1">Para Birimi</label>
+                                            <select id="trf-cur" class="w-full bg-slate-950/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-white">${curOpts}</select>
+                                        </div>
+<div class="md:col-span-6 flex justify-end">
+                                            <button data-act="add-transfer" class="mt-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">Ekle</button>
+                                        </div>
+                                    </div>
+                                    <div class="text-[11px] text-slate-500 mt-2">
+                                        Not: Transferler kişi başı harcamayı değiştirmez; sadece kim-kime bakiyesini (kalan ödemeleri) günceller.
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } catch (err) { console.error(err); }
+
                 if (debtInfo && debtInfo.transactions.length > 0) {
                     const debtRows = debtInfo.transactions.map(t => `
-                <div class="flex justify-between items-center bg-gradient-to-r from-slate-800/80 to-slate-700/60 p-3 rounded-lg border border-slate-600/40 hover:border-slate-500/60 transition">
-                    <span class="text-red-300 font-bold w-1/3 truncate text-sm">${esc(t.from)}</span>
-                    <span class="text-slate-400 text-center w-12 flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                        </svg>
-                    </span>
-                    <span class="text-emerald-300 font-bold w-1/3 truncate text-right text-sm">${esc(t.to)}</span>
-                    <span class="font-bold text-white w-1/4 text-right bg-blue-600/30 px-2 py-1 rounded text-sm">${fmtNum(t.amount)} ${debtInfo.currency}</span>
+                <div class="flex items-center gap-3 bg-gradient-to-r from-slate-800/80 to-slate-700/60 p-3 rounded-lg border border-slate-600/40 hover:border-slate-500/60 transition">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="text-red-300 font-bold max-w-[180px] truncate text-sm">${esc(t.from)}</span>
+                        <span class="text-slate-400 shrink-0 flex items-center justify-center">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                        </span>
+                        <span class="text-emerald-300 font-bold max-w-[180px] truncate text-sm">${esc(t.to)}</span>
+                    </div>
+                    <span class="ml-auto font-bold text-white shrink-0 bg-blue-600/30 px-3 py-1.5 rounded-lg text-sm font-mono">${fmtNum(t.amount)} ${debtInfo.currency}</span>
                 </div>
+
              `).join('');
 
                     // YENİ: Kişi Bazlı Ödeme Özeti
                     const personSummaryRows = debtInfo.persons.map(person => {
                         const paid = debtInfo.personPayments[person] || 0;
                         const share = (debtInfo.sharePerPersonForSettlement ?? debtInfo.sharePerPerson);
-                        const balance = paid - share;
+                        const balanceBefore = paid - share;
+                        const balance = (debtInfo.balancesAfterTransfers && typeof debtInfo.balancesAfterTransfers[person] === 'number')
+                            ? debtInfo.balancesAfterTransfers[person]
+                            : balanceBefore;
                         const isCreditor = balance > 0.01;
                         const isDebtor = balance < -0.01;
                         const statusText = isCreditor ? 'Alacaklı' : isDebtor ? 'Borçlu' : 'Dengede';
@@ -2653,10 +2917,11 @@
                             <span class="text-slate-400">Payı:</span>
                             <span class="text-slate-300 font-mono">${fmtNum(share)} ${debtInfo.currency}</span>
                         </div>
-                        <div class="flex justify-between pt-1 border-t border-slate-700/50">
-                            <span class="text-slate-400 font-semibold">Durum:</span>
-                            <span class="${statusColor} font-bold font-mono">${balanceSign}${fmtNum(Math.abs(balance))} ${debtInfo.currency}</span>
-                        </div>
+                        ${(Math.abs(balance - balanceBefore) > 0.01) ? `
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Transfer Öncesi:</span>
+                            <span class="text-slate-400 font-mono">${(balanceBefore > 0 ? '+' : '')}${fmtNum(Math.abs(balanceBefore))} ${debtInfo.currency}</span>
+                        </div>` : ''}
                     </div>
                 </div>
             `;
@@ -2753,6 +3018,7 @@
               <!-- BORÇ / HESAPLAŞMA BÖLÜMÜ (En üste yakın) -->
               ${debtHtml}
 
+          ${transferSectionHtml}
               <!-- 1. Toplam Harcama (Orijinal Kurlar) -->
               <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
                   <h4 class="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
@@ -2806,12 +3072,7 @@
                   <h4 class="text-base font-bold text-amber-200 uppercase flex items-center gap-2">
                      📋 Rapor Hakkında Bilinmesi Gerekenler
                   </h4>
-                  <div class="space-y-3 text-xs text-slate-300">
-                      <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
-                          <div class="font-semibold text-amber-300 mb-1.5">💱 Para Birimi Dönüşümleri</div>
-                          <p class="leading-relaxed">Tüm harcamalar seçtiğiniz rapor para birimine (${reportCur}) dönüştürülmüştür. Dönüşüm işlemi uygulamada kayıtlı güncel kur bilgilerine göre yapılmaktadır. Orijinal para birimlerindeki tutarlar "Orijinal Para Birimi Bazında Toplam Harcama" bölümünde gösterilmektedir.</p>
-                      </div>
-                      
+                                       
                       <div class="bg-slate-900/40 p-3 rounded-lg border border-slate-700/40">
                           <div class="font-semibold text-emerald-300 mb-1.5">👥 Borç Hesaplama Mantığı</div>
                           <p class="leading-relaxed">Borç hesaplaması sadece "Ortak" olarak işaretlenmiş harcamalar ve rezervasyonlar için yapılır. "Ödendi/Settled" işaretli rezervasyonlar toplam maliyete ve kişi başı paya dahil edilir ancak borç hesaplamasına dahil edilmez (çünkü zaten ödenmiş ve mahsuplaşılmıştır). Sistem, her kişinin ödediği toplam tutarı hesaplar ve kişi başına düşen payı belirler. Fazla ödeyenler alacaklı, az ödeyenler borçlu olarak listelenir. Hesaplama algoritması minimum işlem sayısıyla dengeyi sağlamayı hedefler.</p>
@@ -2840,59 +3101,279 @@
       `;
             }
 
-            // YENİ FONKSİYON: Rota Planlayıcı İçeriğini Oluştur (MEKAN BAZLI)
+            // YENİ FONKSİYON: Rota Planlayıcı İçeriğini Oluştur
             function renderRoutePlanner() {
-                const selectedTrip = state.routeTrip || state.tripFilter;
+                // State kontrolü ve init
+                if (!state.route) {
+                    state.route = { ...ROUTE_STATE_DEFAULT };
+                }
+                const r = state.route;
 
-                if (!selectedTrip || selectedTrip === "") {
+                // 1. ADIM: Şehir Arama
+                if (r.step === 'search') {
                     return `
-              <div class="text-center py-4 bg-slate-900/50 rounded-lg text-sm text-slate-500">
-                  Lütfen yukarıdan bir seyahat seçin.
-              </div>
-          `;
+                      <div class="space-y-4">
+                        <div class="bg-indigo-900/40 p-3 rounded-lg border border-indigo-700/50">
+                            <p class="text-xs text-indigo-200 mb-2">Gideceğiniz şehri yazın, gezilecek yerleri bulalım.</p>
+                            <div class="flex gap-2">
+                                <input id="route-city-input" type="text" value="${esc(r.city)}" 
+                                    class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+                                    placeholder="Şehir adı (Örn: Roma, Paris, İstanbul)"
+                                    onkeydown="if(event.key === 'Enter') document.getElementById('btn-route-search').click()">
+                                <button id="btn-route-search" data-act="route-search-city" 
+                                    class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                                    ${r.searchLoading ? '<span class="animate-spin">↻</span>' : ICONS.search.replace('w-4 h-4', 'w-4 h-4')} Ara
+                                </button>
+                            </div>
+                            ${r.error ? `<div class="text-xs text-red-400 mt-2 flex items-center gap-1">⚠️ ${esc(r.error)}</div>` : ''}
+                        </div>
+                      </div>
+                    `;
                 }
 
-                const routeData = getRouteUrl(selectedTrip);
-
-                if (routeData.error) {
+                // 2. ADIM: Mekan Seçimi
+                if (r.step === 'selection') {
                     return `
-              <div class="text-center py-4 bg-red-900/30 border border-red-800 rounded-lg text-sm text-red-300">
-                  ${routeData.error}
-              </div>
-          `;
+                      <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-white"><span class="text-indigo-400">${esc(r.city)}</span> Gezilecek Yerler</h4>
+                            <button data-act="route-restart" class="text-xs text-slate-400 hover:text-white underline">Şehir Değiştir</button>
+                        </div>
+                        
+                        <div class="bg-slate-900/50 border border-slate-700/50 rounded-lg max-h-60 overflow-y-auto scrl p-2 space-y-1">
+                            ${r.places.length === 0 ? '<div class="text-center text-slate-500 py-4 text-xs">Mekan bulunamadı veya yükleniyor...</div>' : ''}
+                            ${r.places.map(p => {
+                        const isSel = r.selectedPlaces.some(sp => sp.id === p.id);
+                        return `
+                                  <div data-act="route-toggle-place" data-id="${p.id}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer ${isSel ? 'bg-indigo-900/30 border border-indigo-500/30' : 'border border-transparent'}">
+                                      <div class="w-5 h-5 rounded border ${isSel ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-slate-800'} flex items-center justify-center transition">
+                                          ${isSel ? '<span class="text-white text-xs font-bold">✓</span>' : ''}
+                                      </div>
+                                      <div class="flex-1 min-w-0">
+                                          <div class="text-sm font-medium text-slate-200 truncate">${esc(p.name)}</div>
+                                          <div class="text-[10px] text-slate-500 truncate capitalize">${esc(p.category)}</div>
+                                      </div>
+                                  </div>
+                                `;
+                    }).join('')}
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <div class="text-xs text-slate-400">Seçilen: <span class="text-white font-bold">${r.selectedPlaces.length}</span></div>
+                            <button data-act="route-create" 
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-lg shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                ${r.selectedPlaces.length < 2 ? 'disabled title="En az 2 mekan seçmelisiniz"' : ''}>
+                                Rota Oluştur ${ICONS.arrowRight || '→'}
+                            </button>
+                        </div>
+                      </div>
+                    `;
                 }
 
-                const pointsList = routeData.points.map((point, index) => {
-                    let icon = '📍';
-                    if (index === 0) icon = '🛫';
-                    else if (index === routeData.points.length - 1) icon = '🏁';
-
-                    const [place, city] = point.split(',').map(s => s.trim());
-
+                // 3. ADIM: Rota Sonucu
+                if (r.step === 'result') {
+                    const googleUrl = generateGoogleMapsUrlFromPlaces(r.generatedRoute);
                     return `
-              <li class="flex items-start gap-2 text-sm text-slate-300 border-l border-slate-700/50 ml-3 pl-3 py-1 -my-1">
-                  <span class="w-5 flex-shrink-0 text-center -ml-5 pt-1">${icon}</span> 
-                  <div>
-                      <div class="font-bold text-white">${esc(place)}</div>
-                      <div class="text-[10px] text-slate-500">${esc(city)}</div>
-                  </div>
-              </li>
-          `;
-                }).join('');
+                      <div class="space-y-4">
+                        <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-3">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-bold text-emerald-100 flex items-center gap-2">
+                                    🗺️ Oluşturulan Rota
+                                </h4>
+                                <button data-act="route-back-select" class="text-xs text-emerald-200/70 hover:text-white underline">Düzenle</button>
+                            </div>
+                            
+                            <div class="relative pl-4 space-y-0 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-700/50">
+                                ${r.generatedRoute.map((p, idx) => `
+                                    <div class="relative py-2">
+                                        <div class="absolute -left-[21px] top-3 w-3 h-3 rounded-full ${idx === 0 ? 'bg-emerald-500' : (idx === r.generatedRoute.length - 1 ? 'bg-red-500' : 'bg-slate-600')} border-2 border-slate-900"></div>
+                                        <div class="text-sm font-medium text-slate-200">${esc(p.name)}</div>
+                                        <div class="text-[10px] text-slate-500 capitalize">${esc(p.category)}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
 
-                return `
-          <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-3 space-y-3">
-              <h4 class="text-sm font-bold text-slate-300">Oluşturulan Rota Sırası (Mekan Bazlı):</h4>
-              <ul class="list-none space-y-1 p-0 m-0 max-h-40 overflow-y-auto scrl">
-                  ${pointsList}
-              </ul>
-              
-              <a href="${routeData.url}" target="_blank" class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-bold transition w-full">
-                 ${ICONS.globe.replace('w-4 h-4', 'w-4 h-4')} Rota Haritasını Aç (Google Maps)
-              </a>
-          </div>
-      `;
+                            <a href="${googleUrl}" target="_blank" class="mt-4 flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-bold shadow-lg transition">
+                                ${ICONS.mapPin.replace('w-4 h-4', 'w-5 h-5')} Google Haritalar'da Aç
+                            </a>
+                        </div>
+                        
+                        <button data-act="route-restart" class="w-full py-2 text-xs text-slate-500 hover:text-slate-300">
+                             Yeni Rota Planla
+                        </button>
+                      </div>
+                    `;
+                }
+
+                return '';
             }
+
+            // --- ROTA OLUŞTURUCU API YARDIMCILARI ---
+
+            async function fetchCityFromNominatim(query) {
+                if (!query) return null;
+                try {
+                    // Nominatim Kullanım Politikası: User-Agent zorunlu.
+                    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
+                    const res = await fetch(url, { headers: { 'User-Agent': 'SeyahatCuzdaniApp/1.0' } });
+                    if (!res.ok) throw new Error('Şehir arama hatası');
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        return {
+                            name: data[0].display_name,
+                            lat: data[0].lat,
+                            lon: data[0].lon
+                        };
+                    }
+                    return null;
+                } catch (e) {
+                    console.error('Nominatim hatası:', e);
+                    throw e;
+                }
+            }
+
+            async function fetchPlacesFromOverpass(lat, lon) {
+                if (!lat || !lon) return [];
+                try {
+                    // Overpass Query: 5km çapındaki turistik yerleri getir (tourism=museum,attraction,viewpoint,historic)
+                    // Sorgu optimize edilebilir.
+                    const query = `
+                        [out:json][timeout:25];
+                        (
+                          node["tourism"~"museum|attraction|viewpoint"](around:5000,${lat},${lon});
+                          way["tourism"~"museum|attraction|viewpoint"](around:5000,${lat},${lon});
+                          relation["tourism"~"museum|attraction|viewpoint"](around:5000,${lat},${lon});
+                          node["historic"~"monument|memorial|castle|ruins"](around:5000,${lat},${lon});
+                        );
+                        out center 20;
+                    `;
+                    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error('Mekan arama hatası');
+                    const data = await res.json();
+
+                    const elements = data.elements || [];
+                    // Veriyi temizle ve formatla
+                    const places = elements.map(el => {
+                        const tags = el.tags || {};
+                        const name = tags.name || tags['name:tr'] || tags['name:en'] || 'Bilinmeyen Mekan';
+                        // Center koordinatları (way/relation için center, node için lat/lon)
+                        const pLat = el.lat || el.center.lat;
+                        const pLon = el.lon || el.center.lon;
+
+                        return {
+                            id: el.id,
+                            type: el.type,
+                            name: name,
+                            category: tags.tourism || tags.historic || 'Diğer',
+                            lat: pLat,
+                            lon: pLon
+                        };
+                    }).filter(p => p.name !== 'Bilinmeyen Mekan'); // İsimsizleri ele
+
+                    // Tekrar eden isimleri temizle (Basit yöntem)
+                    const uniquePlaces = [];
+                    const names = new Set();
+                    places.forEach(p => {
+                        if (!names.has(p.name)) {
+                            names.add(p.name);
+                            uniquePlaces.push(p);
+                        }
+                    });
+
+                    return uniquePlaces.slice(0, 20); // En fazla 20 mekan göster
+                } catch (e) {
+                    console.error('Overpass hatası:', e);
+                    throw e;
+                }
+            }
+
+            // Basit TSP (Gezgin Satıcı) Yaklaşımı veya En Yakın Komşu (Nearest Neighbor)
+            function optimizeRoute(startLat, startLon, selectedPlaces) {
+                if (!selectedPlaces || selectedPlaces.length === 0) return [];
+
+                // Başlangıç noktası olarak ilk seçilen mekanı veya şehir merkezini alabiliriz.
+                // Burada basitlik adına: İlk seçilen mekanı başlangıç kabul edip, en yakın komşuya gitme mantığı kuralım.
+                // Ancak kullanıcı "sırayla" gitmek istemeyebilir, optimizasyon istiyor.
+
+                let currentLat = parseFloat(startLat);
+                let currentLon = parseFloat(startLon);
+
+                // Mekanların kopyasını al
+                let pool = [...selectedPlaces];
+                const route = [];
+
+                // Eğer mekanlar arasında başlangıç noktası seçilmediyse, şehir merkezine en yakın olanla başla
+                // (Opsiyonel: Kullanıcıya başlangıç noktası seçtirmek daha iyi ama şimdilik otomatik)
+
+                while (pool.length > 0) {
+                    // Şu anki konuma en yakın mekanı bul
+                    let nearestIdx = -1;
+                    let minDist = Infinity;
+
+                    for (let i = 0; i < pool.length; i++) {
+                        const p = pool[i];
+                        const d = getDistanceFromLatLonInKm(currentLat, currentLon, parseFloat(p.lat), parseFloat(p.lon));
+                        if (d < minDist) {
+                            minDist = d;
+                            nearestIdx = i;
+                        }
+                    }
+
+                    if (nearestIdx !== -1) {
+                        const nextPlace = pool[nearestIdx];
+                        route.push(nextPlace);
+                        currentLat = parseFloat(nextPlace.lat);
+                        currentLon = parseFloat(nextPlace.lon);
+                        pool.splice(nearestIdx, 1);
+                    } else {
+                        break;
+                    }
+                }
+
+                return route;
+            }
+
+            function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+                var R = 6371; // Radius of the earth in km
+                var dLat = deg2rad(lat2 - lat1);  // deg2rad below
+                var dLon = deg2rad(lon2 - lon1);
+                var a =
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat1)) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+                    ;
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                var d = R * c; // Distance in km
+                return d;
+            }
+
+            function deg2rad(deg) {
+                return deg * (Math.PI / 180)
+            }
+
+            function generateGoogleMapsUrlFromPlaces(places) {
+                if (!places || places.length === 0) return '';
+                // Google Maps Dir format: https://www.google.com/maps/dir/Origin/Waypoint1/Waypoint2/.../Destination
+                // Veya api=1&origin=...&destination=...&waypoints=...
+
+                const origin = `${places[0].lat},${places[0].lon}`;
+                const destination = `${places[places.length - 1].lat},${places[places.length - 1].lon}`;
+
+                let waypoints = '';
+                if (places.length > 2) {
+                    waypoints = places.slice(1, places.length - 1).map(p => `${p.lat},${p.lon}`).join('|');
+                }
+
+                let url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+                if (waypoints) {
+                    url += `&waypoints=${waypoints}`;
+                }
+                // Alternatif basit format (sadece noktaları gösterir, rota çizmezse)
+                // Ama user rota istiyor.
+                return url;
+            }
+
 
             // YENİ FONKSİYON: RAPOR HTML OLUŞTURUCU
             function buildReportHtmlLegacy(data) {
@@ -2946,7 +3427,7 @@
                                             ${x.payer ? `<div class="payer-info">Ödeyen: ${escStr(x.payer)}</div>` : ''}
                                         </td>
                                         <td class="amt">
-                                            ${fmt(x.amt)} ${x.cur}
+                                            ${fmt(convertToBase(Number(x.amt) || 0, x.cur || reportCurrency, reportCurrency))} ${reportCurrency}
                                             <div style="margin-top:2px">
                                                 <span class="badge ${x.isIndividual ? 'badge-ind' : 'badge-shared'}">${x.isIndividual ? 'Bireysel' : 'Ortak'}</span>
                                             </div>
@@ -2978,7 +3459,7 @@
                                             ${r.isSettled ? `<div style="color:#2563eb; font-size:10px; font-weight:bold">✓ Ödeme Yapıldı (Ödendi)</div>` : ''}
                                         </td>
                                         <td class="amt">
-                                            ${fmt(r.cost)} ${r.cur}
+                                            ${fmt(convertToBase(Number(r.cost) || 0, r.cur || reportCurrency, reportCurrency))} ${reportCurrency}
                                             <div style="margin-top:2px">
                                                 <span class="badge ${r.isIndividual ? 'badge-ind' : 'badge-shared'}">${r.isIndividual ? 'Bireysel' : 'Ortak'}</span>
                                             </div>
@@ -3253,7 +3734,7 @@
                             </div>
                             <!-- Sağ: Tutar / Base Cur Karşılığı -->
                             <div class="text-right flex-shrink-0">
-                                <div class="text-sm font-bold text-slate-200">${fmtNum(x.amt)} <span class="text-xs font-medium">${x.cur}</span></div>
+                                <div class="text-sm font-bold text-slate-200">${fmtNum(estimatedBaseCur)} <span class="text-xs font-medium">${baseCur}</span></div>
                                 
                             </div>
                         </div>
@@ -3650,13 +4131,13 @@
                        </div>
                        <div class="flex items-center justify-end gap-1.5 mt-0.5">
                            <span class="text-[9px] text-slate-500 mr-1">${esc(typeInfo.l)}</span>
-                           <span class="text-slate-600 font-medium">(${x.isIndividual ? 'Bireysel' : 'Ortak'}${!x.isIndividual && x.payer ? ` · <span class="text-emerald-600 font-bold">${esc(x.payer)}</span>` : ''})</span>
+                           <span class="text-slate-600 font-medium">(${x.isIndividual ? 'Bireysel' : 'Ortak'}${!x.isIndividual && x.payer ? ` · <span class="text-emerald-600 font-bold">${esc(x.payer)}</span>` : ''}${(!x.isIndividual && x.isSettled) ? ` · <span class="text-emerald-700 font-bold">Ödendi</span>` : ''})</span>
                        </div>
                    </div>
 
                    <div class="text-right flex-shrink-0 w-16">
-                      <div class="text-sm font-bold text-slate-900">${fmtNum(x.amt)}</div>
-                      <div class="text-[10px] text-slate-600">${x.cur}</div>
+                      <div class="text-sm font-bold text-slate-900">${fmtNum(convertToBase(Number(x.amt) || 0, x.cur || state.baseCurrency, state.baseCurrency))}</div>
+                      <div class="text-[10px] text-slate-600">${state.baseCurrency}</div>
                    </div>
                 </div>`;
                     }).join('') : ''}
@@ -3799,13 +4280,16 @@
                 const notesForTrip = state.criticalNotes.filter(n => n.trip === selectedTripForNotes);
 
                 const dataExport = JSON.stringify({
-                    exp: state.exp,
-                    trips: state.trips,
-                    criticalNotes: state.criticalNotes,
-                    res: state.res,
-                    baseCur: state.baseCurrency
+                    schemaVersion: 1,
+                    exportedAt: new Date().toISOString(),
+                    exp: state.exp || [],
+                    res: state.res || [],
+                    trips: state.trips || [],
+                    chk: state.chk || {},
+                    criticalNotes: state.criticalNotes || [],
+                    baseCur: state.baseCurrency || BASE_CURRENCY || 'TRY',
+                    targetTimezone: state.targetTimezone || ''
                 }, null, 2);
-
                 const helperCard = (href, emoji, label) => {
                     return `
     <a
@@ -4087,14 +4571,27 @@
             </p>
             <textarea id="io-txt" class="w-full h-48 bg-black/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono outline-none focus:border-teal-400 placeholder-slate-500"
               placeholder="Veri yedeği burada görünecek veya buraya yapıştırarak içe aktarabilirsiniz.">${esc(dataExport)}</textarea>
-            <div class="flex flex-col sm:flex-row gap-3 pt-1">
-              <button data-act="copy-json" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 py-2.5 rounded-lg font-medium text-sm">
+            
+<div class="flex flex-col sm:flex-row gap-3 pt-1">
+              <button data-act="copy-json" class="flex-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 py-2.5 rounded-lg font-medium text-sm">
                 Kopyala
+              </button>
+              <button data-act="download-json" class="flex-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 py-2.5 rounded-lg font-medium text-sm">
+                JSON İndir
+              </button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 pt-1">
+              <button data-act="pick-json-file" class="flex-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 py-2.5 rounded-lg font-medium text-sm">
+                Dosya Seç
               </button>
               <button data-act="imp" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded-lg font-bold text-sm">
                 Yükle
               </button>
             </div>
+
+            <input id="io-file" data-act="io-file" type="file" accept="application/json" class="hidden" />
+
           </div>
         </div>
       </div>
@@ -4437,7 +4934,18 @@
                     </label>
                     <span class="text-[10px] text-slate-500">İşaretliyse ortak hesaba dahil edilmez</span>
                 </div>
-                <input type="checkbox" id="i-isIndividual" ${f.isIndividual ? 'checked' : ''} class="custom-checkbox w-5 h-5 rounded border-slate-600 bg-slate-700 focus:ring-blue-500" onchange="document.getElementById('payer-wrapper').style.display = this.checked ? 'none' : 'block'">
+                <input type="checkbox" id="i-isIndividual" ${f.isIndividual ? 'checked' : ''} class="custom-checkbox w-5 h-5 rounded border-slate-600 bg-slate-700 focus:ring-blue-500" onchange="document.getElementById('payer-wrapper').style.display = this.checked ? 'none' : 'block'; const sw=document.getElementById('settled-wrapper'); if(sw) sw.style.display = this.checked ? 'none' : 'flex'">
+            </div>
+
+            
+            <div id="settled-wrapper" class="${f.isIndividual ? 'hidden' : ''} flex items-center justify-between p-3 bg-slate-800/50 border border-slate-700 rounded-lg mb-3">
+                <div class="flex flex-col">
+                    <label for="i-isSettled" class="text-sm font-bold text-slate-200 cursor-pointer">
+                        Ödendi (Mahsuplaşılmış)
+                    </label>
+                    <span class="text-[10px] text-slate-500">Kim-kime hesabına dahil edilmez; kişi başı harcamaya dahil edilir</span>
+                </div>
+                <input type="checkbox" id="i-isSettled" ${f.isSettled ? 'checked' : ''} class="custom-checkbox w-5 h-5 rounded border border-slate-600 bg-slate-900/40">
             </div>
 
             <!-- KATEGORİ SEÇİMİ (YUKARI TAŞINDI) -->
@@ -4834,11 +5342,49 @@
 
             function renderQuickExpensePanel() {
                 const baseCur = state.baseCurrency || BASE_CURRENCY;
-                const q = state.quickExp || { trip: '', cat: 'food', amt: '', cur: baseCur };
+                const q = state.quickExp || { trip: '', cat: 'food', amt: '', cur: baseCur, payer: '' };
+
                 const allTrips = getDistinctTripsAll();
                 const tripOptions = allTrips.map(t => `<option value="${esc(t)}">`).join('');
-                const autoCur = getCurrencyForTrip(q.trip || '');
-                const cur = (q.cur && q.cur.trim()) || autoCur || baseCur;
+
+                const tripName = String(q.trip || '').trim();
+                const tripObj = (state.trips || []).find(t => String(t.name || '').trim().toLowerCase() === tripName.toLowerCase());
+                const persons = (tripObj && tripObj.persons)
+                    ? String(tripObj.persons).split(',').map(p => p.trim()).filter(Boolean)
+                    : [];
+
+                const autoCur = getCurrencyForTrip(tripName || '');
+                const cur = (q.cur && String(q.cur).trim()) || autoCur || baseCur;
+
+                const payer = (q.payer && String(q.payer).trim()) ? String(q.payer).trim() : '';
+                const payerButtons = persons.map(p => {
+                    const active = (p === payer);
+                    const baseCls = "px-3 py-2 rounded-full text-xs font-semibold flex items-center gap-2 border backdrop-blur";
+                    const cls = active
+                        ? baseCls + " bg-emerald-500/20 text-emerald-100 border-emerald-400/50 shadow"
+                        : baseCls + " bg-slate-900/60 text-slate-200 border-slate-600 hover:bg-slate-800";
+                    return `<button type="button" data-act="quick-set-payer" data-val="${esc(p)}" class="${cls}">${esc(p)}</button>`;
+                }).join('');
+
+                const payerField = persons.length
+                    ? `
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Ödeyen</label>
+                <div class="flex flex-wrap gap-2">
+                  ${payerButtons}
+                </div>
+                ${payer ? '' : '<div class="mt-1 text-[10px] text-slate-500">Bir kişi seçin</div>'}
+              </div>
+                    `
+                    : `
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-1">Ödeyen</label>
+                <input id="q-payer-free" type="text"
+                       class="w-full bg-slate-950/60 border border-slate-700/70 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 outline-none focus:border-amber-400"
+                       placeholder="Ödeyen kişi"
+                       value="${esc(payer)}">
+              </div>
+                    `;
 
                 const catDefs = [
                     { id: 'food', label: 'Cafe', icon: CATS.food.i },
@@ -4849,7 +5395,7 @@
 
                 const catButtons = catDefs.map(c => {
                     const active = q.cat ? q.cat === c.id : c.id === 'food';
-                    const baseCls = "px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 border backdrop-blur";
+                    const baseCls = "px-3 py-2 rounded-full text-xs font-semibold flex items-center gap-2 border backdrop-blur";
                     const cls = active
                         ? baseCls + " bg-amber-500 text-white border-amber-300 shadow"
                         : baseCls + " bg-slate-900/60 text-slate-200 border-slate-600 hover:bg-slate-800";
@@ -4858,6 +5404,8 @@
                   </button>`;
                 }).join('');
 
+                const curOptions = AVAILABLE_CURRENCIES.map(c => `<option value="${c}" ${c === cur ? 'selected' : ''}>${c}</option>`).join('');
+
                 return `
         <div class="fixed inset-x-0 bottom-0 z-40 px-4 pb-4">
           <div class="mx-auto max-w-md rounded-2xl border border-slate-700/70 bg-slate-900/95 shadow-2xl backdrop-blur-xl p-4 space-y-3">
@@ -4865,41 +5413,49 @@
               <div class="text-xs font-semibold uppercase tracking-wide text-amber-300">Hızlı Harcama</div>
               <button type="button" data-act="open-quick-exp" class="text-slate-400 hover:text-white text-xs">Kapat</button>
             </div>
+
             <div class="space-y-2">
               <div>
                 <label class="block text-[10px] text-slate-400 mb-1">Seyahat</label>
                 <div class="relative">
                   <input id="q-trip" list="dl-all-trips-quick"
-                         class="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-400"
+                         class="w-full bg-slate-950/60 border border-slate-700/70 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 outline-none focus:border-amber-400"
                          placeholder="Seyahat adı yaz veya seç"
                          value="${esc(q.trip || '')}">
                   <datalist id="dl-all-trips-quick">${tripOptions}</datalist>
                 </div>
               </div>
+
               <div class="flex flex-wrap gap-2">
                 ${catButtons}
               </div>
+
+              ${payerField}
+
               <div class="flex items-end gap-3">
                 <div class="flex-1">
                   <label class="block text-[10px] text-slate-400 mb-1">Tutar</label>
                   <input id="q-amt" type="number" min="0" step="0.01"
-                         class="w-full bg-slate-950/60 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-400"
-                         placeholder="0,00">
+                         class="w-full bg-slate-950/60 border border-slate-700/70 rounded-xl px-3 py-2 text-slate-100 placeholder-slate-500 outline-none focus:border-amber-400"
+                         placeholder="0,00" value="${esc(q.amt || '')}">
                 </div>
-                <div class="w-[72px]">
+                <div style="width:120px">
                   <label class="block text-[10px] text-slate-400 mb-1">Para Birimi</label>
-                  <div class="bg-slate-900/80 border border-slate-700 rounded-xl px-2 py-1.5 text-xs text-slate-100 text-center">
-                    <span id="q-cur">${cur}</span>
-                  </div>
+                  <select id="q-cur"
+                          class="w-full bg-slate-950/60 border border-slate-700/70 rounded-xl px-3 py-2 text-slate-100 outline-none focus:border-amber-400">
+                    ${curOptions}
+                  </select>
                 </div>
               </div>
+
               <button type="button" data-act="save-quick-exp"
-                      class="w-full mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-xs font-semibold text-slate-900 py-2 shadow-lg shadow-amber-500/40">
-                ${ICONS.wallet.replace('w-4 h-4', 'w-4 h-4')} Hızlı Kaydet
+                      class="w-full mt-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-extrabold rounded-xl py-3 flex items-center justify-center gap-2 shadow">
+                <span>💾</span> Hızlı Kaydet
               </button>
             </div>
           </div>
-        </div>`;
+        </div>
+                `;
             }
 
             function renderApp() {
@@ -4973,6 +5529,7 @@
 
                     if (state.lightbox) h += `<div class="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-2 backdrop-blur-xl" data-act="close-lb"><img src="${state.lightbox}" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"></div>`;
 
+                    h += renderUndoBar();
                     root.innerHTML = h;
                     if (state.modals.chart) {
                         setTimeout(renderExpenseChart, 0);
@@ -5015,6 +5572,55 @@
             // YENİ: CHANGE/INPUT EVENT LISTENER (Trip Select Box İçin)
             // 'input' event'i datalist seçimlerinde daha tutarlıdır
             document.addEventListener('input', e => {
+
+                // Hızlı Harcama (pop-up) alanları: trip / tutar / para birimi / ödeyen
+                if (e.target.id === 'q-trip') {
+                    const baseCur = state.baseCurrency || BASE_CURRENCY;
+                    state.quickExp = state.quickExp || { trip: '', cat: 'food', amt: '', cur: baseCur, payer: '' };
+                    state.quickExp.trip = e.target.value || '';
+
+                    const typed = String(e.target.value || '').trim();
+                    const tripObj = (state.trips || []).find(t => String(t.name || '').trim().toLowerCase() === typed.toLowerCase());
+                    const persons = (tripObj && tripObj.persons)
+                        ? String(tripObj.persons).split(',').map(p => p.trim()).filter(Boolean)
+                        : [];
+
+                    if (persons.length) {
+                        if (!persons.includes(state.quickExp.payer)) {
+                            state.quickExp.payer = persons[0] || '';
+                        }
+                    } else {
+                        state.quickExp.payer = '';
+                    }
+
+                    const tcur = getCurrencyForTrip(typed) || baseCur;
+                    if (!state.quickExp.cur) state.quickExp.cur = tcur;
+
+                    renderApp();
+                    return;
+                }
+
+                if (e.target.id === 'q-amt') {
+                    const baseCur = state.baseCurrency || BASE_CURRENCY;
+                    state.quickExp = state.quickExp || { trip: '', cat: 'food', amt: '', cur: baseCur, payer: '' };
+                    state.quickExp.amt = e.target.value;
+                    return;
+                }
+
+                if (e.target.id === 'q-cur') {
+                    const baseCur = state.baseCurrency || BASE_CURRENCY;
+                    state.quickExp = state.quickExp || { trip: '', cat: 'food', amt: '', cur: baseCur, payer: '' };
+                    state.quickExp.cur = e.target.value;
+                    return;
+                }
+
+                if (e.target.id === 'q-payer-free') {
+                    const baseCur = state.baseCurrency || BASE_CURRENCY;
+                    state.quickExp = state.quickExp || { trip: '', cat: 'food', amt: '', cur: baseCur, payer: '' };
+                    state.quickExp.payer = e.target.value;
+                    return;
+                }
+
                 // Harcama Formu Trip Seçimi
                 if (e.target.id === 'i-trip') {
                     if (e.target.value === '__new__') {
@@ -5322,15 +5928,28 @@
                     if (state.quickExpOpen) {
                         const baseCur = state.baseCurrency || BASE_CURRENCY;
                         if (!state.quickExp) {
-                            state.quickExp = { trip: '', cat: 'food', amt: '', cur: baseCur };
+                            state.quickExp = { trip: '', cat: 'food', amt: '', cur: baseCur, payer: '' };
                         }
                         if (state.tripFilter) {
                             state.quickExp.trip = state.tripFilter;
                             const tcur = getCurrencyForTrip(state.tripFilter);
                             state.quickExp.cur = tcur || baseCur;
+
+                            const tripObj = (state.trips || []).find(t => String(t.name || '').trim().toLowerCase() === String(state.tripFilter || '').trim().toLowerCase());
+                            const persons = (tripObj && tripObj.persons)
+                                ? String(tripObj.persons).split(',').map(p => p.trim()).filter(Boolean)
+                                : [];
+                            state.quickExp.payer = persons.length ? (persons[0] || '') : '';
                         } else {
                             const tcur = getCurrencyForTrip(state.quickExp.trip || '');
                             state.quickExp.cur = tcur || baseCur;
+
+                            const tripObj = (state.trips || []).find(t => String(t.name || '').trim().toLowerCase() === String(state.quickExp.trip || '').trim().toLowerCase());
+                            const persons = (tripObj && tripObj.persons)
+                                ? String(tripObj.persons).split(',').map(p => p.trim()).filter(Boolean)
+                                : [];
+                            if (persons.length && !persons.includes(state.quickExp.payer)) state.quickExp.payer = persons[0] || '';
+                            if (!persons.length) state.quickExp.payer = '';
                         }
                     }
                     state.err = '';
@@ -5338,8 +5957,14 @@
                     return;
                 }
                 if (act === 'quick-set-cat') {
-                    state.quickExp = state.quickExp || { trip: '', cat: 'food', amt: '', cur: state.baseCurrency || BASE_CURRENCY };
+                    state.quickExp = state.quickExp || { trip: '', cat: 'food', amt: '', cur: state.baseCurrency || BASE_CURRENCY, payer: '' };
                     state.quickExp.cat = val || 'food';
+                    renderApp();
+                    return;
+                }
+                if (act === 'quick-set-payer') {
+                    state.quickExp = state.quickExp || { trip: '', cat: 'food', amt: '', cur: state.baseCurrency || BASE_CURRENCY, payer: '' };
+                    state.quickExp.payer = val || '';
                     renderApp();
                     return;
                 }
@@ -5358,7 +5983,33 @@
                         return;
                     }
 
-                    const cur = getCurrencyForTrip(trip) || state.baseCurrency || BASE_CURRENCY;
+                    const curEl = document.getElementById('q-cur');
+                    const curSel = curEl ? String(curEl.value || '').trim() : '';
+                    const baseCur = state.baseCurrency || BASE_CURRENCY;
+                    const cur = curSel || (state.quickExp && String(state.quickExp.cur || '').trim()) || getCurrencyForTrip(trip) || baseCur;
+
+                    // Ödeyen (varsa seyahatteki kişilerden seçilmiş olmalı)
+                    const tripObj = (state.trips || []).find(t => String(t.name || '').trim().toLowerCase() === trip.toLowerCase());
+                    const persons = (tripObj && tripObj.persons)
+                        ? String(tripObj.persons).split(',').map(p => p.trim()).filter(Boolean)
+                        : [];
+
+                    let payer = (state.quickExp && String(state.quickExp.payer || '').trim()) || '';
+
+                    if (!persons.length) {
+                        const pf = document.getElementById('q-payer-free');
+                        const pr = pf ? String(pf.value || '').trim() : '';
+                        if (pr) payer = titleCase(pr);
+                    } else {
+                        if (!payer) payer = persons[0] || '';
+                        if (payer && !persons.includes(payer)) payer = persons[0] || '';
+                        if (!payer) {
+                            state.err = 'Lütfen ödeyen kişiyi seçin.';
+                            renderApp();
+                            return;
+                        }
+                    }
+
 
                     const now = new Date();
                     const dateStr = now.toISOString().split('T')[0];
@@ -5379,6 +6030,7 @@
                         cat,
                         type: EXPENSE_TYPES[0].id,
                         isIndividual: false,
+                        payer,
                         amt,
                         cur,
                         date: dateStr,
@@ -5392,7 +6044,7 @@
 
                     state.exp.push(newExp);
                     state.quickExpOpen = false;
-                    state.quickExp = { trip: '', cat, amt: '', cur };
+                    state.quickExp = { trip: '', cat, amt: '', cur, payer: '' };
                     save();
                     renderApp();
                     return;
@@ -5513,16 +6165,26 @@
                         const relatedResCount = state.res.filter(r => r.trip === tripName).length;
                         const relatedNotesCount = state.criticalNotes.filter(n => n.trip === tripName).length;
 
+                        const relatedTransferCount = (state.transfers || []).filter(t => t.trip === tripName).length;
                         let warningMsg = `"${tripName}" seyahatini silmek istediğinize emin misiniz?\n\n`;
-                        if (relatedExpCount > 0 || relatedResCount > 0 || relatedNotesCount > 0) {
+                        if (relatedExpCount > 0 || relatedResCount > 0 || relatedNotesCount > 0 || relatedTransferCount > 0) {
                             warningMsg += `⚠️ DİKKAT: Bu işlem ile birlikte aşağıdaki kayıtlar da SİLİNECEK:\n`;
                             if (relatedExpCount > 0) warningMsg += `• ${relatedExpCount} harcama kaydı\n`;
                             if (relatedResCount > 0) warningMsg += `• ${relatedResCount} rezervasyon\n`;
                             if (relatedNotesCount > 0) warningMsg += `• ${relatedNotesCount} not\n`;
+                            if (relatedTransferCount > 0) warningMsg += `• ${relatedTransferCount} mahsuplaşma/transfer
+`;
                             warningMsg += `\nBu işlem geri alınamaz!`;
                         }
 
                         if (confirm(warningMsg)) {
+                            const deletedTrip = state.trips.find(t => String(t.id) === tripIdToDelete);
+                            const removedExp = state.exp.filter(x => x.trip === tripName);
+                            const removedRes = state.res.filter(r => r.trip === tripName);
+                            const removedNotes = state.criticalNotes.filter(n => n.trip === tripName);
+                            const removedTransfers = (state.transfers || []).filter(t => t.trip === tripName);
+                            if (deletedTrip) setUndo({ kind: 'trip', trip: deletedTrip, exp: removedExp, res: removedRes, notes: removedNotes, message: `Seyahat silindi: ${tripName}. (Geri alınabilir)` });
+
                             state.trips = state.trips.filter(t => String(t.id) !== tripIdToDelete);
                             state.exp = state.exp.filter(x => x.trip !== tripName);
                             state.res = state.res.filter(r => r.trip !== tripName);
@@ -5582,9 +6244,69 @@
                 if (act === 'del-note') {
                     e.stopPropagation(); // Güvenlik: Tıklama yayılımını durdur
                     e.preventDefault(); // Varsayılan davranışı engelle
+                    const deleted = state.criticalNotes.find(n => n.id === id);
+                    if (deleted) setUndo({ kind: 'note', item: deleted, message: 'Not silindi. (Geri alınabilir)' });
                     state.criticalNotes = state.criticalNotes.filter(n => n.id !== id);
                     save();
                     renderApp();
+                }
+
+                if (act === 'add-transfer') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const tripName = state.selectedReportTrip;
+                    const fromEl = document.getElementById('trf-from');
+                    const toEl = document.getElementById('trf-to');
+                    const amtEl = document.getElementById('trf-amt');
+                    const curEl = document.getElementById('trf-cur');
+                    const dateEl = document.getElementById('trf-date');
+                    const noteEl = document.getElementById('trf-note');
+
+                    const from = fromEl ? String(fromEl.value || '').trim() : '';
+                    const to = toEl ? String(toEl.value || '').trim() : '';
+                    const amt = amtEl ? Number(String(amtEl.value || '').replace(',', '.')) : 0;
+                    const cur = curEl ? String(curEl.value || '').trim() : (state.reportCurrency || state.baseCurrency || BASE_CURRENCY);
+                    const date = dateEl ? String(dateEl.value || '').trim() : '';
+                    const note = noteEl ? String(noteEl.value || '').trim() : '';
+
+                    if (!tripName) return;
+                    if (!from || !to || from === to) {
+                        alert('Gönderen ve alan seçimi geçerli olmalı.');
+                        return;
+                    }
+                    if (!(amt > 0)) {
+                        alert('Transfer tutarı 0\'dan büyük olmalı.');
+                        return;
+                    }
+
+                    if (!Array.isArray(state.transfers)) state.transfers = [];
+                    state.transfers.push({
+                        id: genId(),
+                        trip: tripName,
+                        from,
+                        to,
+                        amt,
+                        cur,
+                        date,
+                        note
+                    });
+
+                    if (amtEl) amtEl.value = '';
+                    if (noteEl) noteEl.value = '';
+                    save();
+                    renderApp();
+                    return;
+                }
+
+                if (act === 'del-transfer') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const deleted = (state.transfers || []).find(t => String(t.id) === String(id));
+                    if (deleted) setUndo({ kind: 'transfer', item: deleted, message: 'Mahsuplaşma silindi. (Geri alınabilir)' });
+                    state.transfers = (state.transfers || []).filter(t => String(t.id) !== String(id));
+                    save();
+                    renderApp();
+                    return;
                 }
 
                 if (act === 'clean-all-exp') {
@@ -5622,6 +6344,8 @@
                     try {
                         if (state.selExp && confirm('Bu harcama kaydı kalıcı olarak silinsin mi?')) {
                             const idToDelete = String(state.selExp);
+                            const deleted = state.exp.find(x => String(x.id) === idToDelete);
+                            if (deleted) setUndo({ kind: 'exp', item: deleted, message: 'Harcama silindi. (Geri alınabilir)' });
                             state.exp = state.exp.filter(x => String(x.id) !== idToDelete);
                             state.modals.detail = false;
                             save();
@@ -5667,6 +6391,8 @@
                     try {
                         if (id && confirm('Bu maddeyi listeden kaldırmak istediğinize emin misiniz?')) {
                             const idStr = String(id);
+                            const deleted = state.chk.items.find(x => String(x.id) === idStr);
+                            if (deleted) setUndo({ kind: 'chk-item', item: deleted, message: 'Liste maddesi silindi. (Geri alınabilir)' });
                             state.chk.items = state.chk.items.filter(x => String(x.id) !== idStr);
                             save(); renderApp();
                         }
@@ -5728,6 +6454,9 @@
                     try {
                         if (id && confirm('Bu kategori ve İÇİNDEKİ TÜM MADDELER silinecek. Onaylıyor musun?')) {
                             const catId = String(id);
+                            const deletedCat = state.chk.cats.find(c => String(c.id) === catId);
+                            const deletedItems = state.chk.items.filter(i => String(i.cat) === catId);
+                            if (deletedCat) setUndo({ kind: 'chk-cat', cat: deletedCat, items: deletedItems, message: 'Kategori silindi. (Geri alınabilir)' });
                             state.chk.cats = state.chk.cats.filter(c => String(c.id) !== catId);
                             state.chk.items = state.chk.items.filter(i => String(i.cat) !== catId);
                             delete state.openChkCats[catId];
@@ -5757,7 +6486,10 @@
                 if (act === 'del-img') {
                     e.stopPropagation(); // Güvenlik: Tıklama yayılımını durdur
                     e.preventDefault(); // KRİTİK DÜZELTME: Varsayılan davranışı engelle
-                    state.form.imgs.splice(val, 1);
+                    const idx = Number(val);
+                    const deleted = state.form.imgs[idx];
+                    if (!Number.isNaN(idx) && deleted) setUndo({ kind: 'img', index: idx, data: deleted, message: 'Fotoğraf kaldırıldı. (Geri alınabilir)' });
+                    state.form.imgs.splice(idx, 1);
                     renderApp();
                 }
 
@@ -5770,6 +6502,9 @@
                     // Payer bilgisini al
                     const payerInput = document.getElementById('i-payer');
                     f.payer = (payerInput && !f.isIndividual) ? payerInput.value : '';
+
+                    const settledInput = document.getElementById('i-isSettled');
+                    f.isSettled = (!f.isIndividual && settledInput) ? !!settledInput.checked : false;
 
                     const isFuelActive = f.cat === 'fuel';
                     f.isFuel = isFuelActive;
@@ -5975,6 +6710,8 @@
                     try {
                         if (state.selRes && confirm('Bu rezervasyon kalıcı olarak silinsin mi?')) {
                             const idToDelete = String(state.selRes);
+                            const deleted = state.res.find(x => String(x.id) === idToDelete);
+                            if (deleted) setUndo({ kind: 'res', item: deleted, message: 'Rezervasyon silindi. (Geri alınabilir)' });
                             state.res = state.res.filter(x => String(x.id) !== idToDelete);
                             save();
                             state.modals.resDetail = false;
@@ -6052,6 +6789,81 @@
                     renderApp();
                 }
 
+                // ROTA OLUŞTURUCU AKSİYONLARI
+                if (act === 'route-search-city') {
+                    const cityInput = document.getElementById('route-city-input');
+                    const query = cityInput ? cityInput.value.trim() : '';
+                    if (!query) return;
+
+                    if (!state.route) state.route = { ...ROUTE_STATE_DEFAULT };
+                    state.route.city = query;
+                    state.route.searchLoading = true;
+                    state.route.error = '';
+                    renderApp();
+
+                    (async () => {
+                        try {
+                            const cityData = await fetchCityFromNominatim(query);
+                            if (cityData) {
+                                state.route.lat = cityData.lat;
+                                state.route.lon = cityData.lon;
+                                state.route.placesLoading = true;
+                                state.route.step = 'selection'; // Seçim ekranına geç
+                                renderApp();
+
+                                // Hemen mekanları çek
+                                const places = await fetchPlacesFromOverpass(cityData.lat, cityData.lon);
+                                state.route.places = places;
+                                state.route.placesLoading = false;
+                            } else {
+                                state.route.error = 'Şehir bulunamadı, lütfen tekrar deneyin.';
+                                state.route.searchLoading = false;
+                            }
+                        } catch (err) {
+                            state.route.error = 'Bağlantı hatası: ' + err.message;
+                            state.route.searchLoading = false;
+                        }
+                        renderApp();
+                    })();
+                    return;
+                }
+
+                if (act === 'route-toggle-place') {
+                    const pid = String(id); // dataset.id otomatik string gelir ama garanti olsun
+                    const place = state.route.places.find(p => String(p.id) === pid);
+                    if (place) {
+                        const idx = state.route.selectedPlaces.findIndex(p => String(p.id) === pid);
+                        if (idx > -1) {
+                            state.route.selectedPlaces.splice(idx, 1);
+                        } else {
+                            state.route.selectedPlaces.push(place);
+                        }
+                        renderApp();
+                    }
+                }
+
+                if (act === 'route-create') {
+                    if (state.route.selectedPlaces.length < 2) {
+                        alert('En az 2 mekan seçmelisiniz.');
+                        return;
+                    }
+                    // Rotayı optimize et
+                    const optimized = optimizeRoute(state.route.lat, state.route.lon, state.route.selectedPlaces);
+                    state.route.generatedRoute = optimized;
+                    state.route.step = 'result';
+                    renderApp();
+                }
+
+                if (act === 'route-restart') {
+                    state.route = { ...ROUTE_STATE_DEFAULT };
+                    renderApp();
+                }
+
+                if (act === 'route-back-select') {
+                    state.route.step = 'selection';
+                    renderApp();
+                }
+
                 // Diğer Aksiyonlar
                 if (act === 'open-tz-modal') {
                     state.modals.tzSelect = true;
@@ -6102,20 +6914,42 @@
 
                 if (act === 'imp') {
                     try {
-                        const dataStr = document.getElementById('io-txt').value;
-                        const d = JSON.parse(dataStr);
-                        state.exp = d.exp || [];
-                        state.chk = d.chk || state.chk;
-                        state.criticalNotes = d.notes || [];
-                        state.res = d.res || []; // Rezervasyonları yükle
-                        state.baseCurrency = d.baseCur || 'TRY';
-                        BASE_CURRENCY = state.baseCurrency;
+                        const textarea = document.getElementById('io-txt');
+                        const dataStr = textarea ? textarea.value : '';
+                        const d = JSON.parse(dataStr || '{}');
+
+                        const exp = Array.isArray(d.exp) ? d.exp : (Array.isArray(d.expenses) ? d.expenses : []);
+                        const res = Array.isArray(d.res) ? d.res : (Array.isArray(d.reservations) ? d.reservations : []);
+                        const trips = Array.isArray(d.trips) ? d.trips : [];
+                        const chk = d.chk ? d.chk : (d.checklist ? d.checklist : null);
+                        const notes = Array.isArray(d.criticalNotes) ? d.criticalNotes : (Array.isArray(d.notes) ? d.notes : []);
+                        const transfers = Array.isArray(d.transfers) ? d.transfers : (Array.isArray(d.trf) ? d.trf : []);
+                        const baseCur = d.baseCur || d.baseCurrency || 'TRY';
+                        const tz = d.targetTimezone || state.targetTimezone || '';
+
+                        state.exp = exp;
+                        state.res = res;
+                        if (trips.length > 0) state.trips = trips;
+                        if (chk) state.chk = chk;
+                        state.criticalNotes = notes;
+
+                        state.transfers = transfers;
+                        state.baseCurrency = baseCur;
+                        BASE_CURRENCY = baseCur;
+
+                        if (tz) state.targetTimezone = tz;
+
+                        // Checklist kategori aç/kapa haritasını yenile
+                        state.openChkCats = {};
+                        (state.chk.cats || []).forEach(x => state.openChkCats[x.id] = false);
+
                         save();
-                        alert('Veriler Başarıyla Yüklendi!');
+                        alert('Veriler başarıyla yüklendi!');
                         state.helpersAccordion.data = false;
                         renderApp();
-                    } catch {
-                        state.err = 'JSON Hatalı. Lütfen geçerli bir JSON formatı girin.';
+                    } catch (err) {
+                        console.error(err);
+                        state.err = 'JSON hatalı. Lütfen geçerli bir JSON formatı girin.';
                         renderApp();
                     }
                 }
@@ -6289,7 +7123,7 @@
                     // Memory leak önleme: Blob URL'yi bir süre sonra serbest bırak
                     setTimeout(() => URL.revokeObjectURL(url), 60_000);
                     if (!w) alert('Tarayıcı açılır pencereyi engelledi. PDF raporunu açmak için pop-up izni verin.');
-}
+                }
 
                 if (act === 'copy-json') {
                     const textarea = document.getElementById('io-txt');
@@ -6299,10 +7133,63 @@
                     textarea.value = "JSON kopyalandı!";
                     setTimeout(() => textarea.value = originalText, 1000);
                 }
+
+                if (act === 'download-json') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                        const textarea = document.getElementById('io-txt');
+                        const txt = textarea ? textarea.value : '';
+                        const blob = new Blob([txt], { type: 'application/json;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                        a.href = url;
+                        a.download = `seyahat-yedek-${ts}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+                    } catch (err) { console.error(err); }
+                    return;
+                }
+
+                if (act === 'pick-json-file') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const inp = document.getElementById('io-file');
+                    if (inp) inp.click();
+                    return;
+                }
+
+                if (act === 'undo') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    performUndo();
+                    return;
+                }
+
             });
 
             document.addEventListener('change', e => {
                 const t = e.target;
+
+
+                if (t.dataset.act === 'io-file') {
+                    try {
+                        const file = t.files && t.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            const txt = String(reader.result || '');
+                            const textarea = document.getElementById('io-txt');
+                            if (textarea) textarea.value = txt;
+                        };
+                        reader.readAsText(file);
+                        t.value = '';
+                    } catch (err) { console.error(err); }
+                    return;
+                }
 
                 if (t.dataset.act === 'set-base-currency') {
                     state.baseCurrency = t.value;
