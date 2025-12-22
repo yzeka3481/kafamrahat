@@ -6962,7 +6962,7 @@
 
                     (async () => {
                         try {
-                            const places = await fetchPlacesFromOverpass(state.route.lat, state.route.lon, state.route.categories);
+                            const places = await fetchPlacesFromGoogle(state.route.city, state.route.categories);
                             state.route.places = places;
                             state.route.placesLoading = false;
                             state.route.step = 'selection';
