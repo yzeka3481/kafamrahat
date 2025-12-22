@@ -3347,20 +3347,103 @@
 
             // --- OPENSTREETMAP / OVERPASS API ENTEGRASYONU (Restore Edildi) ---
 
-            // --- WIKIPEDIA API ENTEGRASYONU ---
+            // --- WIKIDATA (SPARQL) ENTEGRASYONU (PROFESYONEL VERİ) ---
 
-            async function fetchPlacesFromWikipedia(cityName) {
-                // 1. Şehir Merkezini Bul (Nominatim)
-                const cityData = await fetchCityFromNominatim(cityName);
-                if (!cityData) throw new Error('Şehir bulunamadı.');
-                const { lat, lon } = cityData;
+            async function getWikidataCityId(cityName) {
+                // Wikidata API'den şehir ismini arayıp Q-ID'sini bulur (Örn: İstanbul -> Q406)
+                // Daha iyi eşleşme için "şehir" kelimesini eklemiyorum, direkt ismi arıyoruz.
+                const url = `https://www.wikidata.org/w/api.php?origin=*&action=wbsearchentities&search=${cityName}&language=tr&format=json&type=item&limit=1`;
+                try {
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    if (data.search && data.search.length > 0) {
+                        return data.search[0].id;
+                    }
+                    return null;
+                } catch (e) {
+                    console.error('Wikidata City Search Error:', e);
+                    return null;
+                }
+            }
 
-                // 2. Wikipedia'dan Yakındaki Önemli Yerleri Getir
-                // generator=geosearch: Koordinata yakın makaleleri bul
-                // prop=pageimages|extracts: Resim ve özet bilgi al
-                // ggsradius=10000: 10km yarıçap
-                // ggslimit=50: En fazla 50 sonuç
-                const apiUrl = `https://tr.wikipedia.org/w/api.php?origin=*&action=query&format=json&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=10000&ggslimit=50&prop=pageimages|extracts|coordinates&pithumbsize=500&exintro&explaintext&exsentences=3`;
+            async function fetchPlacesFromWikidata(cityName) {
+                const cityQid = await getWikidataCityId(cityName);
+                if (!cityQid) throw new Error('Şehir Wikidata üzerinde bulunamadı.');
+
+                // SPARQL Sorgusu: Şehirdeki (P131) turistik yerleri (Q570116) veya müzeleri (Q33506) getir.
+                // Sıralama: Sitelinks (Wikipedia makale sayısı) - Popülarite göstergesi.
+                const sparqlQuery = `
+                    SELECT DISTINCT ?place ?placeLabel ?image ?lat ?lon ?desc ?sitelinks WHERE {
+                      { ?place wdt:P131* wd:${cityQid}. }
+                      UNION
+                      { ?place wdt:P131* ?district. ?district wdt:P131* wd:${cityQid}. }
+                      
+                      { ?place wdt:P31/wdt:P279* wd:Q570116. } # Turistik Yer
+                      UNION
+                      { ?place wdt:P31/wdt:P279* wd:Q33506. } # Müze
+                      UNION
+                      { ?place wdt:P31/wdt:P279* wd:Q811979. } # Mimari Yapı
+                      UNION
+                      { ?place wdt:P31/wdt:P279* wd:Q2065736. } # Kültürel Miras
+
+                      OPTIONAL { ?place wdt:P18 ?image. }
+                      OPTIONAL { ?place wdt:P625 ?loc. }
+                      OPTIONAL { ?place schema:description ?desc. FILTER(LANG(?desc) = "tr") }
+                      ?place wikibase:sitelinks ?sitelinks.
+                      
+                      BIND(geof:latitude(?loc) AS ?lat)
+                      BIND(geof:longitude(?loc) AS ?lon)
+                      
+                      SERVICE wikibase:label { bd:serviceParam wikibase:language "tr,en". }
+                    }
+                    ORDER BY DESC(?sitelinks)
+                    LIMIT 40
+                `;
+
+                const url = `https://query.wikidata.org/sparql?query=${encodeURIComponent(sparqlQuery)}&format=json`;
+
+                try {
+                    const res = await fetch(url, { headers: { 'Accept': 'application/sparql-results+json' } });
+                    const data = await res.json();
+
+                    return data.results.bindings.map(item => {
+                        // Puanlama: Sitelinks sayısını 5 üzerinden puana çevir (Logaritmik oran)
+                        const links = parseInt(item.sitelinks.value);
+                        let rating = 4.0 + (Math.log10(links) * 0.5);
+                        if (rating > 5.0) rating = 5.0;
+                        if (rating < 3.5) rating = 3.8; // Taban puan
+
+                        // Kategori tespiti (Basit)
+                        let cat = 'Gezilecek Yer';
+                        const name = item.placeLabel.value.toLowerCase();
+                        if (name.includes('müze')) cat = 'Müze';
+                        else if (name.includes('cami') || name.includes('saray')) cat = 'Tarihi Yer';
+                        else if (name.includes('park') || name.includes('bahçe')) cat = 'Park & Doğa';
+
+                        return {
+                            id: item.place.value.split('/').pop(), // QID
+                            type: 'wikidata',
+                            name: item.placeLabel.value,
+                            category: cat,
+                            lat: parseFloat(item.lat ? item.lat.value : 0),
+                            lon: parseFloat(item.lon ? item.lon.value : 0),
+                            rating: rating.toFixed(1),
+                            ratingCount: links * 50, // Popülarite göstergesi olarak
+                            photo: item.image ? item.image.value : null,
+                            desc: item.desc ? item.desc.value : '',
+                            tags: { links: links }
+                        };
+                    })
+                        .filter(p => p.lat !== 0); // Koordinatı olmayanları eledik
+
+                } catch (e) {
+                    console.error('Wikidata SPARQL Hatası:', e);
+                    throw e;
+                }
+            }
+
+            /* DEPRECATED: Wikipedia Logic */
+            async function fetchPlacesFromWikipedia_OLD(cityName) {
 
                 try {
                     const response = await fetch(apiUrl);
@@ -7062,8 +7145,8 @@
 
                     (async () => {
                         try {
-                            // Wikipedia üzerinden veri çek
-                            const places = await fetchPlacesFromWikipedia(state.route.city);
+                            // Wikidata (SPARQL) üzerinden profesyonel veri çek
+                            const places = await fetchPlacesFromWikidata(state.route.city);
 
                             // Kategori filtresi (Wikipedia'dan gelen veriyi client-side filtrele)
                             const cats = state.route.categories || [];
