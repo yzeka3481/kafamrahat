@@ -553,10 +553,15 @@
       async function fetchCityFromNominatim(query) {
         if (!query || query.length < 2) return [];
         try {
+          console.log('Fetching Nominatim for:', query);
           const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&accept-language=tr&limit=5`;
           const res = await fetch(url);
-          if (!res.ok) return [];
+          if (!res.ok) {
+            console.error('Nominatim response not OK:', res.status);
+            return [];
+          }
           const data = await res.json();
+          console.log('Nominatim results:', data);
           return data.map(item => ({
             name: item.name || item.display_name.split(',')[0],
             display_name: item.display_name,
@@ -572,15 +577,25 @@
       // YENİ FONKSİYON: Şehir önerilerini DOM'a bas (Targeted Update)
       function renderItinCitySuggestions(items) {
         const container = document.getElementById('itin-city-suggestions');
-        if (!container) return;
-
-        if (!items || !items.length) {
-          container.innerHTML = '';
-          container.classList.add('hidden');
+        if (!container) {
+          console.warn('Suggestion container #itin-city-suggestions NOT found in DOM');
           return;
         }
 
         container.classList.remove('hidden');
+        // Z-index'i artır ve görünürlüğü zorla
+        container.style.display = 'block';
+        container.style.zIndex = '9999';
+
+        if (!items || !items.length) {
+          container.innerHTML = '<div class="p-3 text-sm text-slate-400 italic text-center">Sonuç bulunamadı</div>';
+          // 2 saniye sonra gizle
+          setTimeout(() => {
+            if (container.innerText.includes('Sonuç bulunamadı')) container.classList.add('hidden');
+          }, 2000);
+          return;
+        }
+
         container.innerHTML = items.map((p, i) => `
         <button type="button" data-act="itin-city-pick" data-idx="${i}"
           class="w-full text-left px-3 py-2 hover:bg-slate-800/70 active:bg-slate-800 border-b border-slate-800 last:border-0 transition-colors">
@@ -597,7 +612,8 @@
 
         if (!q || q.length < 2) {
           state.itin.cityPreds = [];
-          renderItinCitySuggestions([]);
+          const container = document.getElementById('itin-city-suggestions');
+          if (container) container.classList.add('hidden');
           return;
         }
 
@@ -605,14 +621,17 @@
         const container = document.getElementById('itin-city-suggestions');
         if (container) {
           container.classList.remove('hidden');
-          container.innerHTML = '<div class="p-2 text-xs text-slate-400">Aranıyor...</div>';
+          container.style.display = 'block';
+          container.style.zIndex = '9999';
+          container.innerHTML = '<div class="p-3 text-xs text-slate-400 flex items-center gap-2"><div class="w-3 h-3 rounded-full border-2 border-slate-500 border-t-transparent animate-spin"></div>Aranıyor...</div>';
         }
 
         fetchCityFromNominatim(q).then(items => {
           if (reqId !== _itinCityPredReqId) return;
           state.itin.cityPreds = items || [];
           renderItinCitySuggestions(items);
-        }).catch(() => {
+        }).catch((err) => {
+          console.error('Prediction fetch error:', err);
           if (reqId !== _itinCityPredReqId) return;
           state.itin.cityPreds = [];
           renderItinCitySuggestions([]);
