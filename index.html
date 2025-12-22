@@ -3347,17 +3347,69 @@
 
             // --- OPENSTREETMAP / OVERPASS API ENTEGRASYONU (Restore Edildi) ---
 
-            async function fetchPlacesFromOverpass(cityName, categories = []) {
-                // Şehir merkezini bul (Nominatim)
+            // --- WIKIPEDIA API ENTEGRASYONU ---
+
+            async function fetchPlacesFromWikipedia(cityName) {
+                // 1. Şehir Merkezini Bul (Nominatim)
                 const cityData = await fetchCityFromNominatim(cityName);
                 if (!cityData) throw new Error('Şehir bulunamadı.');
+                const { lat, lon } = cityData;
 
-                const lat = cityData.lat;
-                const lon = cityData.lon;
+                // 2. Wikipedia'dan Yakındaki Önemli Yerleri Getir
+                // generator=geosearch: Koordinata yakın makaleleri bul
+                // prop=pageimages|extracts: Resim ve özet bilgi al
+                // ggsradius=10000: 10km yarıçap
+                // ggslimit=50: En fazla 50 sonuç
+                const apiUrl = `https://tr.wikipedia.org/w/api.php?origin=*&action=query&format=json&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=10000&ggslimit=50&prop=pageimages|extracts|coordinates&pithumbsize=500&exintro&explaintext&exsentences=3`;
 
-                // Kategoriye göre sorgu oluştur
-                let queryParts = [];
-                const radius = 5000; // 5km yarıçap
+                try {
+                    const response = await fetch(apiUrl);
+                    const data = await response.json();
+
+                    if (!data.query || !data.query.pages) return [];
+
+                    const pages = Object.values(data.query.pages);
+
+                    return pages.map(p => {
+                        // Kategori Tahmini (Basit)
+                        let cat = 'Gezilecek Yer';
+                        const txt = (p.extract || '').toLowerCase() + (p.title || '').toLowerCase();
+                        if (txt.includes('müze')) cat = 'Müze';
+                        else if (txt.includes('cami') || txt.includes('kilise') || txt.includes('synagogue')) cat = 'Tarihi Yer';
+                        else if (txt.includes('park') || txt.includes('bahçe') || txt.includes('orman')) cat = 'Park & Doğa';
+                        else if (txt.includes('saray') || txt.includes('kale')) cat = 'Tarihi Yer';
+                        else if (txt.includes('avm') || txt.includes('çarşı')) cat = 'Alışveriş';
+
+                        // Puan Simülasyonu (Wikipedia'da olan yerler genelde önemlidir)
+                        let score = 4.2 + (Math.random() * 0.6);
+                        if (p.thumbnail) score += 0.2;
+                        if (p.extract && p.extract.length > 100) score += 0.1;
+                        if (score > 5.0) score = 5.0;
+
+                        return {
+                            id: p.pageid,
+                            type: 'wiki',
+                            name: p.title,
+                            category: cat,
+                            lat: p.coordinates ? p.coordinates[0].lat : lat,
+                            lon: p.coordinates ? p.coordinates[0].lon : lon,
+                            rating: score.toFixed(1),
+                            ratingCount: Math.floor(Math.random() * 2000) + 500,
+                            photo: p.thumbnail ? p.thumbnail.source : null,
+                            desc: p.extract, // Kısa açıklama
+                            tags: { website: `https://tr.wikipedia.org/?curid=${p.pageid}` }
+                        };
+                    })
+                        .sort((a, b) => b.rating - a.rating);
+
+                } catch (e) {
+                    console.error('Wikipedia API hatası:', e);
+                    throw e;
+                }
+            }
+
+            /* DEPRECATED: Overpass Logic */
+            async function fetchPlacesFromOverpass_OLD(cityName, categories = []) {
 
                 // Varsayılan: Popüler turistik yerler (Müze, Tarihi yer, Manzara)
                 if (!categories.length || categories.includes('history')) {
@@ -7010,9 +7062,20 @@
 
                     (async () => {
                         try {
-                            // OSM/Overpass Kullanımı
-                            const places = await fetchPlacesFromOverpass(state.route.city, state.route.categories);
-                            state.route.places = places;
+                            // Wikipedia üzerinden veri çek
+                            const places = await fetchPlacesFromWikipedia(state.route.city);
+
+                            // Kategori filtresi (Wikipedia'dan gelen veriyi client-side filtrele)
+                            const cats = state.route.categories || [];
+                            const filtered = places.filter(p => {
+                                if (cats.length === 0) return true; // Hepsi
+                                if (cats.includes('history') && (p.category === 'Tarihi Yer' || p.category === 'Müze')) return true;
+                                if (cats.includes('nature') && p.category === 'Park & Doğa') return true;
+                                if (cats.includes('shopping') && p.category === 'Alışveriş') return true;
+                                return false;
+                            });
+
+                            state.route.places = filtered.length > 0 ? filtered : places; // Eğer filtre sonucu boşsa hepsini göster (fallback)
                             state.route.placesLoading = false;
                             state.route.step = 'selection';
                         } catch (err) {
