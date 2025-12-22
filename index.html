@@ -3210,8 +3210,8 @@
                       <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h4 class="text-sm font-bold text-white"><span class="text-indigo-400">${esc(r.city)}</span> Gezilecek Yerler</h4>
-                                <div class="text-[10px] text-slate-400">Puanlar yapay zeka ve popülerlik bazlıdır. API kısıtlaması nedeniyle Google puanı değildir.</div>
+                              <h4 class="text-sm font-bold text-white"><span class="text-indigo-400">${esc(r.city)}</span> Gezilecek Yerler</h4>
+                                <div class="text-[10px] text-slate-400">Google Puan ve Yorumlarına göre sıralanmıştır.</div>
                             </div>
                             <button data-act="route-restart" class="text-xs text-slate-400 hover:text-white underline">Değiştir</button>
                         </div>
@@ -3223,14 +3223,15 @@
                         return `
                                   <div class="flex items-center gap-2 group">
                                       <div data-act="route-toggle-place" data-id="${p.id}" class="flex-1 flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer ${isSel ? 'bg-indigo-900/30 border border-indigo-500/30' : 'border border-transparent'}">
-                                          <div class="w-5 h-5 rounded border ${isSel ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 bg-slate-800'} flex items-center justify-center transition flex-shrink-0">
-                                              ${isSel ? '<span class="text-white text-xs font-bold">✓</span>' : ''}
+                                          <div class="relative w-12 h-12 rounded overflow-hidden flex-shrink-0 border border-slate-700">
+                                            ${p.photo ? `<img src="${p.photo}" class="w-full h-full object-cover">` : '<div class="w-full h-full bg-slate-800 flex items-center justify-center text-xl">🏛️</div>'}
+                                            ${isSel ? '<div class="absolute inset-0 bg-indigo-600/50 flex items-center justify-center font-bold text-white text-lg">✓</div>' : ''}
                                           </div>
                                           <div class="flex-1 min-w-0">
                                               <div class="flex justify-between items-start">
                                                   <div class="text-sm font-medium text-slate-200 truncate pr-2">${esc(p.name)}</div>
-                                                  <div class="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-amber-400 font-bold border border-slate-700">
-                                                      <span>⭐</span> ${p.rating}
+                                                  <div class="flex items-center gap-1 bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-amber-400 font-bold border border-slate-700">
+                                                      <span>⭐</span> ${p.rating} <span class="text-slate-500 font-normal">(${p.ratingCount})</span>
                                                   </div>
                                               </div>
                                               <div class="text-[10px] text-slate-500 truncate capitalize">${esc(p.category)}</div>
@@ -3340,121 +3341,59 @@
                 }
             }
 
-            async function fetchPlacesFromOverpass(lat, lon, categories = []) {
-                if (!lat || !lon) return [];
-                try {
-                    // Kategori bazlı sorgu oluşturma (TripAdvisor Simülasyonu)
-                    let queryParts = [];
-                    const radius = 5000;
+            // --- GOOGLE MAPS API ENTEGRASYONU ---
+            const GOOGLE_API_KEY = 'AIzaSyD4ouGXz5jIPXR5Fo9DoOk0SITxBcnRXYw';
+            let googleScriptLoaded = false;
 
-                    // Varsayılan: Eğer kategori seçilmediyse genel turistik yerler
-                    if (!categories || categories.length === 0) {
-                        queryParts.push(`node["tourism"~"museum|attraction|viewpoint"](around:${radius},${lat},${lon});`);
-                        queryParts.push(`way["tourism"~"museum|attraction|viewpoint"](around:${radius},${lat},${lon});`);
-                        queryParts.push(`relation["tourism"~"museum|attraction|viewpoint"](around:${radius},${lat},${lon});`);
-                        queryParts.push(`node["historic"~"monument|memorial|castle|ruins"](around:${radius},${lat},${lon});`);
-                    } else {
-                        // KATEGORİ LOGİĞİ
-                        if (categories.includes('history')) {
-                            queryParts.push(`node["historic"](around:${radius},${lat},${lon});`);
-                            queryParts.push(`way["historic"](around:${radius},${lat},${lon});`);
-                            queryParts.push(`relation["historic"](around:${radius},${lat},${lon});`);
-                            queryParts.push(`node["tourism"="museum"](around:${radius},${lat},${lon});`);
-                            queryParts.push(`node["amenity"="place_of_worship"](around:${radius},${lat},${lon});`); // Cami/Kilise vb.
-                        }
-                        if (categories.includes('nature')) {
-                            queryParts.push(`node["leisure"="park"](around:${radius},${lat},${lon});`);
-                            queryParts.push(`way["leisure"="park"](around:${radius},${lat},${lon});`);
-                            queryParts.push(`node["tourism"="viewpoint"](around:${radius},${lat},${lon});`);
-                            queryParts.push(`node["natural"](around:${radius},${lat},${lon});`);
-                        }
-                        if (categories.includes('food')) {
-                            // Sadece popüler olanları almak zor, rastgele restoran/cafe
-                            queryParts.push(`node["amenity"~"restaurant|cafe|fast_food"](around:2000,${lat},${lon});`); // Çapı küçült (2km)
-                        }
-                        if (categories.includes('shopping')) {
-                            queryParts.push(`node["shop"~"mall|department_store|supermarket|marketplace"](around:${radius},${lat},${lon});`);
-                            queryParts.push(`way["shop"~"mall"](around:${radius},${lat},${lon});`);
-                        }
-                    }
-
-                    const query = `
-                        [out:json][timeout:25];
-                        (
-                          ${queryParts.join('\n')}
-                        );
-                        out center 25;
-                    `; // Limit arttırıldı center 25
-
-                    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error('Mekan arama hatası');
-                    const data = await res.json();
-
-                    const elements = data.elements || [];
-                    // Veriyi temizle ve formatla
-                    const places = elements.map(el => {
-                        const tags = el.tags || {};
-                        const name = tags.name || tags['name:tr'] || tags['name:en'] || 'Bilinmeyen Mekan';
-                        // Center koordinatları (way/relation için center, node için lat/lon)
-                        const pLat = el.lat || el.center.lat;
-                        const pLon = el.lon || el.center.lon;
-
-                        // HEURISTIC RATING GENERATOR (Gezgin Puanı)
-                        let baseScore = 4.0;
-                        if (tags.wikipedia) baseScore += 0.5;
-                        if (tags.website) baseScore += 0.2;
-                        if (tags.wikidata) baseScore += 0.1;
-
-                        // Kategoriye göre bonus
-                        if (categories.includes('history') && (tags.historic || tags.tourism === 'museum')) baseScore += 0.3;
-
-                        // Biraz randomize et (3.0 ile 4.9 arası genişletildi)
-                        let randomFactor = (Math.random() * 1.0) - 0.5;
-                        let finalScore = Math.min(Math.max(baseScore + randomFactor, 3.0), 4.9).toFixed(1);
-
-                        let catDisplay = 'Diğer';
-                        if (tags.historic) catDisplay = 'Tarihi';
-                        if (tags.tourism === 'museum') catDisplay = 'Müze';
-                        if (tags.leisure === 'park' || tags.natural) catDisplay = 'Doğa/Park';
-                        if (tags.amenity === 'restaurant') catDisplay = 'Restoran';
-                        if (tags.amenity === 'cafe') catDisplay = 'Kafe';
-                        if (tags.shop) catDisplay = 'Alışveriş';
-
-                        return {
-                            id: el.id,
-                            type: el.type,
-                            name: name,
-                            category: catDisplay,
-                            lat: pLat,
-                            lon: pLon,
-                            rating: finalScore,
-                            tags: {
-                                website: tags.website,
-                                wikipedia: tags.wikipedia,
-                                phone: tags.phone || tags['contact:phone'],
-                                addr: tags['addr:street'] ? (tags['addr:street'] + ' ' + (tags['addr:housenumber'] || '')) : ''
-                            }
-                        };
-                    }).filter(p => p.name !== 'Bilinmeyen Mekan'); // İsimsizleri ele
-
-                    // Tekrar eden isimleri temizle (Basit yöntem)
-                    const uniquePlaces = [];
-                    const names = new Set();
-                    places.forEach(p => {
-                        if (!names.has(p.name)) {
-                            names.add(p.name);
-                            uniquePlaces.push(p);
-                        }
-                    });
-
-                    // Puana göre sırala (Yüksekten düşüğe)
-                    return uniquePlaces.sort((a, b) => b.rating - a.rating).slice(0, 30); // 30'a yükseltildi
-                } catch (e) {
-                    console.error('Overpass hatası:', e);
-                    throw e;
-                }
+            async function loadGoogleMapsScript() {
+                if (googleScriptLoaded) return;
+                if (window.google && window.google.maps) { googleScriptLoaded = true; return; }
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&libraries=places`;
+                    script.async = true; script.defer = true;
+                    script.onload = () => { googleScriptLoaded = true; resolve(); };
+                    script.onerror = () => reject(new Error('Google Maps Error'));
+                    document.head.appendChild(script);
+                });
             }
+
+            async function fetchPlacesFromGoogle(cityName, categories = []) {
+                try {
+                    await loadGoogleMapsScript();
+                    const service = new google.maps.places.PlacesService(document.createElement('div'));
+
+                    let keywords = 'tourist attractions';
+                    if (categories.includes('history')) keywords += ' historic sites museums';
+                    if (categories.includes('nature')) keywords += ' parks nature';
+                    if (categories.includes('food')) keywords += ' restaurants cafes';
+                    if (categories.includes('shopping')) keywords += ' shopping malls markets';
+                    if (!categories.length) keywords = 'top thing to do';
+
+                    const request = {
+                        query: `${keywords} in ${cityName}`,
+                        fields: ['name', 'geometry', 'formatted_address', 'place_id', 'rating', 'user_ratings_total', 'photos', 'types']
+                    };
+
+                    return new Promise((resolve) => {
+                        service.textSearch(request, (results, status) => {
+                            if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                                resolve(results.map(p => ({
+                                    id: p.place_id, type: 'google', name: p.name,
+                                    category: (p.types || []).includes('museum') ? 'Tarih' : 'Gezilecek Yer',
+                                    lat: p.geometry.location.lat(), lon: p.geometry.location.lng(),
+                                    rating: p.rating || 0, ratingCount: p.user_ratings_total || 0,
+                                    photo: p.photos && p.photos.length ? p.photos[0].getUrl({ maxWidth: 400 }) : null,
+                                    tags: { addr: p.formatted_address }
+                                })).sort((a, b) => b.rating - a.rating));
+                            } else { resolve([]); }
+                        });
+                    });
+                } catch (e) { console.error(e); throw e; }
+            }
+
+            /* DEPRECATED: Overpass Logic Removed */
+
 
             // Basit TSP (Gezgin Satıcı) Yaklaşımı veya En Yakın Komşu (Nearest Neighbor)
             function optimizeRoute(startLat, startLon, selectedPlaces) {
