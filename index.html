@@ -4289,7 +4289,7 @@
   ${helperCard('#helper-reservations', '📑', 'Rezervasyonlar')}
   ${helperCard('#helper-flights', '✈️', 'Uçuşlar')}
   ${helperCard('#helper-report', '📊', 'Rapor')}
-  ${helperCard('#helper-route', '🗺️', 'Rota')}
+
   ${helperCard('#helper-critical', '📝', 'Notlar')}
   ${helperCard('#helper-places', '📍', 'Yakın Yerler')}
   ${helperCard('#helper-health', '⚕️', 'Sağlık')}
@@ -4369,45 +4369,9 @@
       </div>
 
 
-<!-- GEZİ ROTASI (OFFLINE) POPUP -->
-<div id="helper-itinerary" class="helper-modal">
-  <div class="helper-modal-inner relative">
-    <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
-      ${ICONS.x}
-    </a>
-    <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Gezi Rotası Planlayıcı</h3>
-    ${renderItineraryPlanner()}
-  </div>
-</div>
 
-      <!-- ROTA POPUP -->
-      <div id="helper-route" class="helper-modal">
-        <div class="helper-modal-inner relative">
-          <a href="#other-root" class="helper-modal-close text-slate-400 hover:text-white">
-            ${ICONS.x}
-          </a>
-          <h3 class="font-bold text-white mb-4 text-center text-base sm:text-lg">Yol Güzergahı Haritası</h3>
-          <div class="space-y-3">
-            <p class="text-xs text-slate-400">
-              Harcama kayıtlarındaki şehir ve mekan bilgilerine göre Google Haritalar için hızlı rota bağlantısı oluşturur.
-            </p>
-            <div>
-              <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Harcamaları Olan Seyahati Seç</label>
-              <div class="relative">
-                <select id="route-trip-select" data-act="set-route-trip"
-                  class="w-full bg-slate-950/50 border border-slate-700/70 rounded-lg px-3 py-2 text-xs text-slate-100 outline-none focus:border-white cursor-pointer backdrop-blur-sm">
-                  <option value="">-- Seyahat Seçin --</option>
-                  ${tripsWithSpending.map(t => `<option value="${esc(t)}" ${esc(state.routeTrip || '') === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}
-                </select>
-              
-              </div>
-            </div>
-            <div id="route-output-box">
-              ${renderRoutePlanner()}
-            </div>
-          </div>
-        </div>
-      </div>
+
+
 
       <!-- NOTLAR POPUP -->
       <div id="helper-critical" class="helper-modal">
