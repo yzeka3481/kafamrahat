@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Planner v15</title>
+    <title>Pro Planner v16</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -24,52 +24,49 @@
         .view { display: none; }
         .view.active { display: block; }
 
-        /* Yıllık Görünüm Tamiri */
+        /* Yıllık & Takvim Stilleri */
         .year-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .month-card { background: white; border-radius: 18px; padding: 15px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .month-card { background: white; border-radius: 18px; padding: 15px; border: 1px solid #e2e8f0; }
         .month-card h4 { text-align: center; margin: 0 0 12px; color: var(--primary); font-weight: 800; text-transform: uppercase; font-size: 14px; }
         .mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .mini-day { aspect-ratio: 1; font-size: 10px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #f1f5f9; color: #94a3b8; cursor: pointer; font-weight: 600; }
+        .mini-day { aspect-ratio: 1; font-size: 10px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: #f1f5f9; color: #94a3b8; cursor: pointer; }
         .mini-day.has-data { background: var(--primary) !important; color: white !important; }
         .mini-day.is-today { background: var(--today-bg); border: 1px solid var(--today-border); color: #166534; }
 
-        /* Aylık Takvim */
-        .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .m-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .m-head { text-align: center; font-size: 11px; font-weight: 800; color: #94a3b8; padding-bottom: 5px; }
-        .m-day { min-height: 85px; padding: 8px; border-radius: 12px; border: 1px solid #f1f5f9; position: relative; cursor: pointer; transition: 0.2s; }
-        .m-day.selected { border: 3px solid var(--selected-border) !important; box-shadow: 0 0 12px rgba(79, 70, 229, 0.2); }
+        .m-day { min-height: 85px; padding: 8px; border-radius: 12px; border: 1px solid #f1f5f9; position: relative; cursor: pointer; }
+        .m-day.selected { border: 3px solid var(--selected-border) !important; }
         .m-day.today { background: var(--today-bg) !important; border: 2px solid var(--today-border); }
         .h1 { background: var(--w1); } .h2 { background: var(--w2); } .h3 { background: var(--w3); } .h4 { background: var(--w4); } .h5 { background: var(--w5); }
 
-        .dot-box { display: flex; gap: 3px; margin-top: 5px; flex-wrap: wrap; }
-        .dot { width: 6px; height: 6px; border-radius: 50%; }
-
-        /* Yüzen Ekleme Butonu (FAB) */
-        .fab {
-            position: fixed; bottom: 95px; right: 20px;
-            width: 60px; height: 60px; background: var(--primary);
-            color: white; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center;
-            font-size: 32px; cursor: pointer;
-            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
-            z-index: 300; transition: 0.2s;
-        }
-        .fab:active { transform: scale(0.9); }
-
         /* Plan Kartları */
-        .task-card { background: white; padding: 15px; border-radius: 15px; display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-left: 5px solid transparent; word-break: break-word; }
+        .task-card { 
+            background: white; padding: 15px; border-radius: 15px; display: flex; align-items: center; gap: 12px; 
+            margin-bottom: 10px; border: 1px solid #e2e8f0; border-left: 5px solid transparent; 
+        }
         .task-card.cat-is { border-left-color: var(--cat-is); }
         .task-card.cat-akademi { border-left-color: var(--cat-akademi); }
         .task-card.cat-kisisel { border-left-color: var(--cat-kisisel); }
-        .deadline-tag { font-size: 10px; background: #fee2e2; color: #b91c1c; padding: 3px 8px; border-radius: 6px; font-weight: 700; }
+        
+        .task-info { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .task-time-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .deadline-tag { font-size: 10px; background: #fee2e2; color: #b91c1c; padding: 3px 6px; border-radius: 6px; font-weight: 700; }
+        .task-text { font-size: 15px; line-height: 1.4; text-transform: capitalize; word-break: break-word; }
+        .task-card.done { opacity: 0.5; background: #f8fafc; border-left-color: #cbd5e1; }
+        
+        /* Düzenleme İkonu */
+        .edit-btn { 
+            padding: 8px; font-size: 18px; color: #94a3b8; cursor: pointer; 
+            border-radius: 50%; transition: 0.2s;
+        }
+        .edit-btn:active { background: #f1f5f9; color: var(--primary); }
 
-        /* Bottom Nav */
+        /* UI Elemanları */
+        .fab { position: fixed; bottom: 95px; right: 20px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4); z-index: 300; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; height: 75px; z-index: 200; }
         .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #94a3b8; cursor: pointer; }
         .nav-item.active { color: var(--primary); }
-
-        /* Modal */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 1000; }
         .modal-content { background: white; width: 100%; border-radius: 25px 25px 0 0; padding: 25px; padding-bottom: 40px; }
         select, input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px; font-size: 16px; outline: none; }
@@ -84,7 +81,7 @@
 
 <div class="container">
     <div id="year" class="view">
-        <div class="cal-nav">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
             <button onclick="changeYear(-1)" style="border:0;background:none;font-size:20px;">◀</button>
             <h2 id="yearLabel" style="margin:0">2026</h2>
             <button onclick="changeYear(1)" style="border:0;background:none;font-size:20px;">▶</button>
@@ -93,16 +90,16 @@
     </div>
 
     <div id="month" class="view active">
-        <div class="cal-nav">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
             <button onclick="changeMonth(-1)" style="border:0;background:none;font-size:20px;">◀</button>
-            <h2 id="monthLabel" style="margin:0; font-size: 18px;">Mart 2026</h2>
+            <h2 id="monthLabel" style="margin:0;font-size:18px;">Mart 2026</h2>
             <button onclick="changeMonth(1)" style="border:0;background:none;font-size:20px;">▶</button>
         </div>
         <div class="m-grid" id="mGrid"></div>
     </div>
 
     <div id="day" class="view">
-        <h2 id="dayLabel" style="font-size: 18px; margin-bottom: 15px;">Planlar</h2>
+        <h2 id="dayLabel" style="font-size:18px;margin-bottom:15px;">Planlar</h2>
         <div id="dGrid"></div>
     </div>
 </div>
@@ -125,9 +122,9 @@
         </select>
         <input type="time" id="fTime" value="09:00">
         <input type="text" id="fText" placeholder="Detay yazın..." oninput="caps(this)">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px; font-weight:600;">
-            <input type="checkbox" id="fDeadline" style="width:20px; height:20px;">
-            <label for="fDeadline">Geri Sayım Ekle</label>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+            <input type="checkbox" id="fDeadline" style="width:20px;height:20px;">
+            <label for="fDeadline" style="font-weight:600;">Geri Sayım Ekle</label>
         </div>
         <div style="display:flex; gap:10px;">
             <button id="btnDelete" style="flex:0.3; background:var(--danger); color:white; border:none; border-radius:12px; display:none;" onclick="deleteTask()">Sil</button>
@@ -137,7 +134,7 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('proPlannerV15')) || {};
+    let db = JSON.parse(localStorage.getItem('proPlannerV16')) || {};
     let viewDate = new Date();
     let selectedD = new Date().toISOString().split('T')[0];
     let editIndex = null;
@@ -162,23 +159,20 @@
         const y = viewDate.getFullYear();
         document.getElementById('yearLabel').innerText = y;
         const months = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-        
         months.forEach((m, idx) => {
-            const daysInMonth = new Date(y, idx + 1, 0).getDate();
-            const firstDay = (new Date(y, idx, 1).getDay() + 6) % 7;
-            let html = `<div class="month-card"><h4 onclick="goToMonth(${idx})">${m}</h4><div class="mini-grid">`;
-            for(let s=0; s<firstDay; s++) html += `<div></div>`;
-            for(let d=1; d<=daysInMonth; d++) {
-                const dStr = `${y}-${(idx+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
-                const has = db[dStr] && db[dStr].length > 0;
-                const isT = dStr === new Date().toISOString().split('T')[0];
-                html += `<div class="mini-day ${has?'has-data':''} ${isT?'is-today':''}" onclick="viewDayFromYear('${dStr}')">${d}</div>`;
+            const dInM = new Date(y, idx + 1, 0).getDate();
+            const fDay = (new Date(y, idx, 1).getDay() + 6) % 7;
+            let h = `<div class="month-card"><h4 onclick="goToMonth(${idx})">${m}</h4><div class="mini-grid">`;
+            for(let s=0; s<fDay; s++) h += `<div></div>`;
+            for(let d=1; d<=dInM; d++) {
+                const ds = `${y}-${(idx+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+                h += `<div class="mini-day ${db[ds] && db[ds].length ? 'has-data' : ''} ${ds === new Date().toISOString().split('T')[0] ? 'is-today' : ''}" onclick="viewD('${ds}')">${d}</div>`;
             }
-            yg.innerHTML += html + `</div></div>`;
+            yg.innerHTML += h + `</div></div>`;
         });
     }
 
-    function viewDayFromYear(d) { selectedD = d; viewDate = new Date(d); tab('month', document.querySelectorAll('.nav-item')[1]); }
+    function viewD(d) { selectedD = d; viewDate = new Date(d); tab('month', document.querySelectorAll('.nav-item')[1]); }
 
     function renderMonth() {
         const mg = document.getElementById('mGrid'); mg.innerHTML = '';
@@ -190,41 +184,45 @@
         for(let s=0; s<first; s++) mg.innerHTML += `<div></div>`;
         for(let d=1; d<=total; d++) {
             const dStr = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
-            const tasks = db[dStr] || [];
             let wIdx = Math.ceil((d+first)/7); if(wIdx>5) wIdx=5;
-            mg.innerHTML += `<div class="m-day h${wIdx} ${dStr===new Date().toISOString().split('T')[0]?'today':''} ${dStr===selectedD?'selected':''}" onclick="selectDay('${dStr}')">
+            mg.innerHTML += `<div class="m-day h${wIdx} ${dStr===new Date().toISOString().split('T')[0]?'today':''} ${dStr===selectedD?'selected':''}" onclick="sd('${dStr}')">
                 <span class="m-num">${d}</span>
-                <div class="dot-box">${tasks.map(t=>`<div class="dot" style="background:${t.done?'#cbd5e1':catColors[t.cat]}"></div>`).join('')}</div>
+                <div style="display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;">${(db[dStr]||[]).map(t=>`<div style="width:6px;height:6px;border-radius:50%;background:${t.done?'#cbd5e1':catColors[t.cat]}"></div>`).join('')}</div>
             </div>`;
         }
     }
 
-    function selectDay(d) { selectedD = d; renderMonth(); }
-    function openAddM() { editIndex = null; document.getElementById('mTitle').innerText = selectedD + " - Yeni Plan"; document.getElementById('fText').value = ''; document.getElementById('fDeadline').checked = false; document.getElementById('btnDelete').style.display = 'none'; document.getElementById('modal').style.display = 'flex'; }
-    function openEditM(d, i) { selectedD = d; editIndex = i; const t = db[d][i]; document.getElementById('mTitle').innerText = "Düzenle"; document.getElementById('fText').value = t.text; document.getElementById('fTime').value = t.time; document.getElementById('fCat').value = t.cat; document.getElementById('fDeadline').checked = t.isDeadline; document.getElementById('btnDelete').style.display = 'block'; document.getElementById('modal').style.display = 'flex'; }
-    function save() { const text = document.getElementById('fText').value; if(!text) return; if(!db[selectedD]) db[selectedD] = []; const data = { time: document.getElementById('fTime').value, text, cat: document.getElementById('fCat').value, isDeadline: document.getElementById('fDeadline').checked, done: editIndex !== null ? db[selectedD][editIndex].done : false }; if(editIndex !== null) db[selectedD][editIndex] = data; else db[selectedD].push(data); localStorage.setItem('proPlannerV15', JSON.stringify(db)); closeM(); tab('day', document.querySelectorAll('.nav-item')[2]); }
+    function sd(d) { selectedD = d; renderMonth(); }
+
     function renderDay(date) {
         selectedD = date; document.getElementById('dayLabel').innerText = date;
         const dg = document.getElementById('dGrid'); const tasks = db[date] || [];
         tasks.sort((a,b)=>a.time.localeCompare(b.time));
-        let html = '';
+        let h = '';
         tasks.forEach((t, i) => {
-            let deadHtml = "";
+            let dh = "";
             if(t.isDeadline && !t.done) {
-                const now = new Date(); const target = new Date(date + 'T' + t.time); const diff = target - now;
-                if(diff > 0) { const s = Math.floor((diff/1000)%60); const m = Math.floor((diff/(1000*60))%60); const h = Math.floor((diff/(1000*60*60))%24); const d = Math.floor(diff/(1000*60*60*24)); deadHtml = `<span class="deadline-tag">⏳ ${d>0?d+'g ':''}${h}s ${m}dk ${s}sn</span>`; } else deadHtml = `<span class="deadline-tag">SÜRE DOLDU</span>`;
+                const diff = new Date(date + 'T' + t.time) - new Date();
+                if(diff > 0) {
+                    const s = Math.floor((diff/1000)%60), m = Math.floor((diff/(1000*60))%60), hrs = Math.floor((diff/(1000*60*60))%24), d = Math.floor(diff/(1000*60*60*24));
+                    dh = `<span class="deadline-tag">⏳ ${d>0?d+'g ':''}${hrs}s ${m}dk ${s}sn</span>`;
+                } else dh = `<span class="deadline-tag">SÜRE DOLDU</span>`;
             }
-            html += `<div class="task-card ${t.cat} ${t.done?'done':''}">
+            h += `<div class="task-card ${t.cat} ${t.done?'done':''}">
                 <input type="checkbox" style="width:22px;height:22px;" ${t.done?'checked':''} onchange="toggleDone('${date}',${i})">
-                <div class="task-info" onclick="openEditM('${date}',${i})">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="font-weight:800;color:var(--primary);font-size:12px;">${t.time}</span>${deadHtml}</div>
-                    <span style="font-size:15px; text-transform:capitalize;">${t.text}</span>
+                <div class="task-info">
+                    <div class="task-time-row"><span style="font-weight:800;color:var(--primary);font-size:12px;">${t.time}</span>${dh}</div>
+                    <span class="task-text">${t.text}</span>
                 </div>
+                <div class="edit-btn" onclick="openEditM('${date}',${i})">✎</div>
             </div>`;
         });
-        dg.innerHTML = html || '<p style="text-align:center;color:#94a3b8;margin-top:50px;">Seçili gün için plan yok.</p>';
+        dg.innerHTML = h || '<p style="text-align:center;color:#94a3b8;margin-top:50px;">Plan yok.</p>';
     }
 
+    function openAddM() { editIndex = null; document.getElementById('mTitle').innerText = selectedD + " - Yeni"; document.getElementById('fText').value = ''; document.getElementById('fDeadline').checked = false; document.getElementById('btnDelete').style.display = 'none'; document.getElementById('modal').style.display = 'flex'; }
+    function openEditM(d, i) { selectedD = d; editIndex = i; const t = db[d][i]; document.getElementById('mTitle').innerText = "Düzenle"; document.getElementById('fText').value = t.text; document.getElementById('fTime').value = t.time; document.getElementById('fCat').value = t.cat; document.getElementById('fDeadline').checked = t.isDeadline; document.getElementById('btnDelete').style.display = 'block'; document.getElementById('modal').style.display = 'flex'; }
+    function save() { const txt = document.getElementById('fText').value; if(!txt) return; if(!db[selectedD]) db[selectedD] = []; const data = { time: document.getElementById('fTime').value, text: txt, cat: document.getElementById('fCat').value, isDeadline: document.getElementById('fDeadline').checked, done: editIndex !== null ? db[selectedD][editIndex].done : false }; if(editIndex !== null) db[selectedD][editIndex] = data; else db[selectedD].push(data); localStorage.setItem('proPlannerV16', JSON.stringify(db)); closeM(); tab('day', document.querySelectorAll('.nav-item')[2]); }
     function startTimers() { stopTimers(); timerInterval = setInterval(() => renderDay(selectedD), 1000); }
     function stopTimers() { if(timerInterval) clearInterval(timerInterval); }
     function closeM() { document.getElementById('modal').style.display = 'none'; renderMonth(); }
@@ -232,8 +230,8 @@
     function changeYear(n) { viewDate.setFullYear(viewDate.getFullYear()+n); renderYear(); }
     function changeMonth(n) { viewDate.setMonth(viewDate.getMonth()+n); renderMonth(); }
     function goToMonth(m) { viewDate.setMonth(m); tab('month', document.querySelectorAll('.nav-item')[1]); }
-    function deleteTask() { db[selectedD].splice(editIndex, 1); localStorage.setItem('proPlannerV15', JSON.stringify(db)); closeM(); renderDay(selectedD); }
-    function toggleDone(d, i) { db[d][i].done = !db[d][i].done; localStorage.setItem('proPlannerV15', JSON.stringify(db)); renderDay(d); }
+    function deleteTask() { db[selectedD].splice(editIndex, 1); localStorage.setItem('proPlannerV16', JSON.stringify(db)); closeM(); renderDay(selectedD); }
+    function toggleDone(d, i) { db[d][i].done = !db[d][i].done; localStorage.setItem('proPlannerV16', JSON.stringify(db)); renderDay(d); }
 
     renderMonth();
 </script>
