@@ -3,147 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Planner App v2</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Pro Planner v9</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1; --bg: #f8fafc; --surface: #ffffff;
-            --text: #0f172a; --text-light: #64748b;
-            --today-green: #dcfce7; --today-border: #22c55e;
+            --primary: #4f46e5; --bg: #f8fafc;
+            --today-bg: #eefdf3; --today-border: #22c55e;
+            /* Haftalık Pastel Renkler */
             --w1: #fff1f2; --w2: #f0f9ff; --w3: #f5f3ff; --w4: #fff7ed; --w5: #fdf2f8;
         }
 
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--bg); color: var(--text); 
-            margin: 0; padding-bottom: 90px;
-            overflow-x: hidden; /* Sayfanın yanlara kaymasını engeller */
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; overflow-x: hidden; }
 
-        .app-bar {
-            position: sticky; top: 0; background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px); padding: 15px 20px; z-index: 100;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #f1f5f9;
-        }
+        /* Üst Header */
+        .header { background: white; padding: 15px 20px; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 18px; margin: 0; font-weight: 800; color: #1e293b; }
 
-        .container { padding: 15px; width: 100%; }
-        .view { display: none; animation: fadeIn 0.3s ease; }
+        .container { padding: 15px; }
+        .view { display: none; }
         .view.active { display: block; }
 
-        /* --- PLANLAR (GÜNLÜK) TASARIMI DÜZELTME --- */
-        .task-card { 
-            background: white; 
-            padding: 16px; 
-            border-radius: 18px; 
-            display: flex; 
-            align-items: flex-start; /* Üstten hizala (uzun metinler için) */
-            gap: 12px; 
-            margin-bottom: 12px;
-            border: 1px solid #f1f5f9; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            width: 100%; /* Ekran genişliğine sadık kal */
-            word-break: break-word; /* Uzun kelimeleri böler */
-        }
+        /* Yıllık Görünüm Tamiri */
+        .year-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+        .month-card { background: white; border-radius: 15px; padding: 12px; border: 1px solid #e2e8f0; }
+        .month-card h4 { text-align: center; margin: 0 0 10px; color: var(--primary); }
+        .mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .mini-day { aspect-ratio: 1; font-size: 9px; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: #f1f5f9; color: #94a3b8; cursor: pointer; }
+        .mini-day.has-data { background: var(--primary); color: white; }
+        .mini-day.is-today { background: var(--today-bg); border: 1px solid var(--today-border); color: #166534; }
 
-        .task-card input[type="checkbox"] {
-            margin-top: 4px; /* Metinle hizalamak için */
-            min-width: 20px;
-            min-height: 20px;
-        }
-
-        .task-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            flex: 1; /* Kalan tüm alanı kapla */
-        }
-
-        .task-time { 
-            font-weight: 800; 
-            color: var(--primary); 
-            font-size: 13px; 
-        }
-
-        .task-text {
-            font-size: 15px;
-            line-height: 1.4;
-            text-transform: capitalize;
-        }
-
-        .task-card.done { opacity: 0.5; background: #f1f5f9; }
-        .task-card.done .task-text { text-decoration: line-through; color: var(--text-light); }
-
-        /* --- DİĞER MOBİL AYARLAR --- */
-        .m-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .m-day { min-height: 70px; padding: 5px; border-radius: 12px; border: 1px solid #f1f5f9; font-size: 12px; }
-
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            background: white; border-top: 1px solid #f1f5f9;
-            display: flex; height: 75px; padding-bottom: env(safe-area-inset-bottom);
-        }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: var(--text-light); cursor: pointer; }
-        .nav-item.active { color: var(--primary); }
-
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 1000; }
-        .modal-content { background: white; width: 100%; border-radius: 25px 25px 0 0; padding: 25px; padding-bottom: 40px; }
+        /* Aylık Takvim & Renkler */
+        .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .m-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .m-head { text-align: center; font-size: 11px; font-weight: 800; color: #94a3b8; padding-bottom: 5px; }
+        .m-day { min-height: 80px; padding: 8px; border-radius: 12px; border: 1px solid #f1f5f9; position: relative; cursor: pointer; }
         
-        input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 10px; font-size: 16px; outline: none; }
-        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 800; font-size: 16px; }
-        .btn-primary { background: var(--primary); color: white; margin-bottom: 10px; }
+        /* Dinamik Haftalık Renkler */
+        .h1 { background: var(--w1); } .h2 { background: var(--w2); }
+        .h3 { background: var(--w3); } .h4 { background: var(--w4); } .h5 { background: var(--w5); }
+        .m-day.today { background: var(--today-bg) !important; border: 2px solid var(--today-border); }
+
+        .m-num { font-weight: 800; font-size: 14px; }
+        .dot-box { display: flex; gap: 3px; margin-top: 5px; flex-wrap: wrap; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+        .dot.done { background: #cbd5e1; }
+
+        /* Planlar Listesi Taşma Engelli */
+        .task-card { 
+            background: white; padding: 15px; border-radius: 15px; display: flex; align-items: flex-start; gap: 12px; 
+            margin-bottom: 10px; border: 1px solid #e2e8f0; width: 100%; word-break: break-word; 
+        }
+        .task-card input { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: var(--primary); }
+        .task-info { flex: 1; display: flex; flex-direction: column; }
+        .task-time { font-weight: 800; color: var(--primary); font-size: 12px; margin-bottom: 2px; }
+        .task-text { font-size: 15px; line-height: 1.4; text-transform: capitalize; }
+        .task-card.done { opacity: 0.5; background: #f8fafc; }
+        .task-card.done .task-text { text-decoration: line-through; }
+
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; height: 70px; z-index: 200; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #94a3b8; cursor: pointer; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item span { margin-top: 4px; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: flex-end; z-index: 1000; }
+        .modal-content { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 25px; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        input[type="text"], input[type="time"] { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 10px; font-size: 16px; outline: none; }
+        .btn-save { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 16px; }
     </style>
 </head>
 <body>
 
-<div class="app-bar">
-    <h1 style="font-size: 18px; font-weight: 800;">Planlayıcı</h1>
-    <div id="headerInfo" style="font-size: 12px; color: var(--primary); font-weight: 600;">Mart 2026</div>
+<div class="header">
+    <h1 id="topTitle">Ajanda 2026</h1>
+    <div id="dateInfo" style="font-size: 12px; font-weight: 700; color: var(--primary);">Mart 2026</div>
 </div>
 
 <div class="container">
     <div id="year" class="view">
-        <h2 style="text-align: center;">2026</h2>
-        <div id="yearGrid" style="display: grid; gap: 15px;"></div>
+        <div class="cal-nav">
+            <button onclick="changeYear(-1)" style="border:0;background:none;font-size:20px;">◀</button>
+            <h2 id="yearLabel" style="margin:0">2026</h2>
+            <button onclick="changeYear(1)" style="border:0;background:none;font-size:20px;">▶</button>
+        </div>
+        <div class="year-grid" id="yearGrid"></div>
     </div>
 
     <div id="month" class="view active">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-            <button onclick="changeMonth(-1)" style="border:none; background:none; font-size: 18px;">◀</button>
+        <div class="cal-nav">
+            <button onclick="changeMonth(-1)" style="border:0;background:none;font-size:20px;">◀</button>
             <h2 id="monthLabel" style="margin:0; font-size: 18px;">Mart 2026</h2>
-            <button onclick="changeMonth(1)" style="border:none; background:none; font-size: 18px;">▶</button>
+            <button onclick="changeMonth(1)" style="border:0;background:none;font-size:20px;">▶</button>
         </div>
         <div class="m-grid" id="mGrid"></div>
     </div>
 
     <div id="day" class="view">
-        <h2 id="dayLabel" style="font-size: 20px; margin-bottom: 15px;">Planlar</h2>
+        <h2 id="dayLabel" style="font-size: 18px; margin-bottom: 15px;">Planlar</h2>
         <div id="dGrid"></div>
     </div>
 </div>
 
 <nav class="bottom-nav">
-    <div class="nav-item" onclick="tab('year', this)"><i>📅</i><span>Yıllık</span></div>
-    <div class="nav-item active" onclick="tab('month', this)"><i>🗓️</i><span>Takvim</span></div>
-    <div class="nav-item" onclick="tab('day', this)"><i>✅</i><span>Planlar</span></div>
+    <div class="nav-item" onclick="tab('year', this)">📅<span>Yıllık</span></div>
+    <div class="nav-item active" onclick="tab('month', this)">🗓️<span>Takvim</span></div>
+    <div class="nav-item" onclick="tab('day', this)">✅<span>Planlar</span></div>
 </nav>
 
 <div id="modal" class="modal" onclick="if(event.target==this) closeM()">
     <div class="modal-content">
-        <h3 id="modalDate" style="margin-top:0">Plan Ekle</h3>
-        <input type="time" id="inTime" value="09:00">
-        <input type="text" id="inText" placeholder="Planınızı yazın..." oninput="caps(this)">
-        <button class="btn btn-primary" onclick="save()">Kaydet</button>
-        <button class="btn" style="background:#f1f5f9; color:#64748b" onclick="closeM()">Kapat</button>
+        <h3 id="mDate" style="margin-top:0">Tarih</h3>
+        <input type="time" id="fTime" value="09:00">
+        <input type="text" id="fText" placeholder="Yeni görev..." oninput="caps(this)">
+        <button class="btn-save" onclick="save()">Kaydet</button>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('plannerAppV2')) || {};
+    let db = JSON.parse(localStorage.getItem('proPlannerAppV9')) || {};
     let viewDate = new Date(2026, 2, 1);
     let selectedD = new Date().toISOString().split('T')[0];
 
@@ -156,6 +136,30 @@
         if(t === 'month') renderMonth();
         if(t === 'day') renderDay(selectedD);
     }
+
+    function renderYear() {
+        const yg = document.getElementById('yearGrid'); yg.innerHTML = '';
+        const year = viewDate.getFullYear();
+        document.getElementById('yearLabel').innerText = year;
+        const months = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+        
+        months.forEach((m, idx) => {
+            const daysInMonth = new Date(year, idx + 1, 0).getDate();
+            const firstDay = (new Date(year, idx, 1).getDay() + 6) % 7;
+            let html = `<div class="month-card"><h4 onclick="goToMonth(${idx})">${m}</h4><div class="mini-grid">`;
+            for(let s=0; s<firstDay; s++) html += `<div></div>`;
+            for(let d=1; d<=daysInMonth; d++) {
+                const dStr = `${year}-${(idx+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+                const has = db[dStr] && db[dStr].length > 0;
+                const isToday = dStr === new Date().toISOString().split('T')[0];
+                html += `<div class="mini-day ${has?'has-data':''} ${isToday?'is-today':''}" onclick="openM('${dStr}')">${d}</div>`;
+            }
+            yg.innerHTML += html + `</div></div>`;
+        });
+    }
+
+    function changeYear(n) { viewDate.setFullYear(viewDate.getFullYear() + n); renderYear(); }
+    function goToMonth(m) { viewDate.setMonth(m); tab('month', document.querySelectorAll('.nav-item')[1]); }
 
     function renderMonth() {
         const mg = document.getElementById('mGrid'); mg.innerHTML = '';
@@ -174,62 +178,52 @@
             const isToday = dStr === new Date().toISOString().split('T')[0];
             mg.innerHTML += `<div class="m-day h${wIdx} ${isToday?'today':''}" onclick="openM('${dStr}')">
                 <span class="m-num">${d}</span>
-                <div style="display:flex; gap:2px; flex-wrap:wrap; margin-top:4px;">
-                    ${tasks.map(t=>`<div style="width:5px; height:5px; border-radius:50%; background:${t.done?'#cbd5e1':'var(--primary)'}"></div>`).join('')}
-                </div>
+                <div class="dot-box">${tasks.map(t=>`<div class="dot ${t.done?'done':''}"></div>`).join('')}</div>
             </div>`;
         }
     }
 
     function renderDay(date) {
         selectedD = date;
-        document.getElementById('dayLabel').innerText = date === new Date().toISOString().split('T')[0] ? "Bugün ("+date+")" : date;
+        document.getElementById('dayLabel').innerText = date;
         const dg = document.getElementById('dGrid');
         const tasks = db[date] || [];
         tasks.sort((a,b)=>a.time.localeCompare(b.time));
-        
         let html = '';
         tasks.forEach((t, i) => {
-            html += `
-                <div class="task-card ${t.done?'done':''}" onclick="toggle('${date}',${i})">
-                    <input type="checkbox" ${t.done?'checked':''}>
-                    <div class="task-info">
-                        <span class="task-time">${t.time}</span>
-                        <span class="task-text">${t.text}</span>
-                    </div>
-                </div>`;
+            html += `<div class="task-card ${t.done?'done':''}" onclick="toggle('${date}',${i})">
+                <input type="checkbox" ${t.done?'checked':''}>
+                <div class="task-info">
+                    <span class="task-time">${t.time}</span>
+                    <span class="task-text">${t.text}</span>
+                </div>
+            </div>`;
         });
-        dg.innerHTML = html || '<p style="text-align:center; color:#94a3b8; margin-top:40px;">Bu gün için plan yok.</p>';
+        dg.innerHTML = html || '<p style="text-align:center; color:#94a3b8; margin-top:50px;">Henüz plan yok.</p>';
     }
 
-    function toggle(d, i) {
-        db[d][i].done = !db[d][i].done;
-        localStorage.setItem('plannerAppV2', JSON.stringify(db));
-        renderDay(d);
-    }
-
-    function openM(d) {
-        selectedD = d;
-        document.getElementById('modalDate').innerText = d + " Planı";
-        document.getElementById('modal').style.display = 'flex';
-    }
-
+    function openM(d) { selectedD = d; document.getElementById('mDate').innerText = d; document.getElementById('modal').style.display = 'flex'; }
     function closeM() { document.getElementById('modal').style.display = 'none'; renderMonth(); }
     function caps(el) { if(el.value) el.value = el.value[0].toUpperCase() + el.value.slice(1); }
 
     function save() {
-        const t = document.getElementById('inTime').value;
-        const txt = document.getElementById('inText').value;
+        const txt = document.getElementById('fText').value;
         if(!txt) return;
         if(!db[selectedD]) db[selectedD] = [];
-        db[selectedD].push({time: t, text: txt, done: false});
-        localStorage.setItem('plannerAppV2', JSON.stringify(db));
-        document.getElementById('inText').value = '';
+        db[selectedD].push({time: document.getElementById('fTime').value, text: txt, done: false});
+        localStorage.setItem('proPlannerAppV9', JSON.stringify(db));
+        document.getElementById('fText').value = '';
         closeM();
         tab('day', document.querySelectorAll('.nav-item')[2]);
     }
 
-    function changeMonth(n) { viewDate.setMonth(viewDate.getMonth()+n); renderMonth(); }
+    function toggle(d, i) {
+        db[d][i].done = !db[d][i].done;
+        localStorage.setItem('proPlannerAppV9', JSON.stringify(db));
+        renderDay(d);
+    }
+
+    function changeMonth(n) { viewDate.setMonth(viewDate.getMonth() + n); renderMonth(); }
 
     renderMonth();
 </script>
